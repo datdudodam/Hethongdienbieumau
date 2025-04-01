@@ -1,0 +1,2 @@
+[console_scripts]
+updatelan5 = app:run_app

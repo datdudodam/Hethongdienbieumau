@@ -1,0 +1,11 @@
+include requirements.txt
+recursive-include static *
+recursive-include templates *
+recursive-include instance *
+recursive-include uploads *
+recursive-include config *.py
+recursive-include models *.py
+recursive-include routes *.py
+recursive-include utils *.py
+global-exclude *.pyc
+global-exclude __pycache__/*

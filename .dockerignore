@@ -1,0 +1,47 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+.env
+.venv
+.git
+.gitignore
+.pytest_cache/
+.coverage
+htmlcov/
+*.mp4
+dist/
+build/
+*.egg-info/
+.DS_Store
+
+# Thêm các file không cần thiết khác
+*.log
+*.swp
+*.swo
+.idea/
+.vscode/
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+*/*/*/*/__pycache__/
+
+# Thêm các file tạm thời
+*.tmp
+*.bak
+*.backup
+
+# Thêm các file cụ thể của dự án không cần thiết
+1.txt
+2.txt
+3.txt
+*.mp4
+
+# Đảm bảo không loại trừ các file quan trọng
+!form_data.json
+!form_history.json
