@@ -4,6 +4,7 @@ from .docx_routes import register_docx_routes
 from .auth import register_auth_routes
 from .ml_routes import register_ml_routes
 from .enhanced_routes import register_enhanced_routes
+from .admin_routes import register_admin_routes
 
 def register_routes(app):
     register_home_routes(app)
@@ -12,3 +13,4 @@ def register_routes(app):
     register_auth_routes(app)
     register_ml_routes(app)
     register_enhanced_routes(app)
+    register_admin_routes(app)

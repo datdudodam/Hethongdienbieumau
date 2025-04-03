@@ -127,19 +127,27 @@
 
         .register-btn {
             width: 100%;
-            padding: 12px;
-            background: #3498db;
+            padding: 14px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 5px;
             font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
             margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
 
         .register-btn:hover {
-            background: #2980b9;
+            background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
         }
 
         .social-login {
@@ -318,6 +326,9 @@
             <div class="image-section">
                 <h2>ĐĂNG NHẬP</h2>
                 <p>Chào mừng bạn quay trở lại</p>
+                <div style="margin-top: 20px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; border-left: 4px solid #3498db;">
+                    <p style="font-size: 14px; margin: 0;"><i class="fas fa-info-circle" style="color: #3498db; margin-right: 8px;"></i> Đăng nhập với tài khoản admin để truy cập trang quản trị</p>
+                </div>
             </div>
             <div class="form-section">
                 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -331,20 +342,23 @@
                 {% endwith %}
                 
                 <form action="/login" method="POST">
-
-
-
                     <div class="form-group">
-                        <input type="email" name="email" placeholder="Email" required>
+                        <div style="display: flex; align-items: center;">
+                            <i class="fas fa-envelope" style="margin-right: 10px; color: #3498db;"></i>
+                            <input type="email" name="email" placeholder="Email" required>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <input type="password" name="password" placeholder="Mật khẩu" required>
+                        <div style="display: flex; align-items: center;">
+                            <i class="fas fa-lock" style="margin-right: 10px; color: #3498db;"></i>
+                            <input type="password" name="password" placeholder="Mật khẩu" required>
+                        </div>
                     </div>
                     <div class="form-group remember-me">
                         <input type="checkbox" name="remember" id="remember">
                         <label for="remember">Ghi nhớ đăng nhập</label>
                     </div>
-                    <button type="submit" class="register-btn">Đăng nhập</button>
+                    <button type="submit" class="register-btn"><i class="fas fa-sign-in-alt"></i> Đăng nhập</button>
                     <div class="signup-link">
                         <p>Chưa có tài khoản? <a href="{{ url_for('signup') }}">Đăng ký ngay</a></p>
                     </div>

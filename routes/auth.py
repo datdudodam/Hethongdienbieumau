@@ -14,6 +14,9 @@ def dangNhap_Dangky(app):
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated:
+            # Nếu người dùng đã đăng nhập và là admin, chuyển hướng đến trang admin
+            if current_user.role_id == 1:  # 1 là role_id của admin
+                return redirect(url_for('admin_dashboard'))
             return redirect(url_for('index'))
 
         if request.method == 'POST':
@@ -26,6 +29,9 @@ def dangNhap_Dangky(app):
             if user and user.check_password(password):
                 login_user(user, remember=remember)
                 flash('Đăng nhập thành công!', 'success')
+                # Kiểm tra vai trò người dùng và chuyển hướng phù hợp
+                if user.role_id == 1:  # 1 là role_id của admin
+                    return redirect(url_for('admin_dashboard'))
                 return redirect(url_for('index'))
             else:
                 flash('Email hoặc mật khẩu không chính xác', 'error')

@@ -5,30 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Biểu mẫu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         :root {
-            --primary-color: #4f46e5;
-            --hover-color: #4338ca;
-            --bg-color: #f9fafb;
-            --text-color: #111827;
-            --border-color: #e5e7eb;
-            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --gradient-secondary: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --primary-color: #3b82f6;
+            --hover-color: #2563eb;
+            --bg-color: #f0f7ff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+            --card-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1), 0 4px 6px -2px rgba(59, 130, 246, 0.05);
+            --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            --gradient-secondary: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
             --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --card-radius: 15px;
+            --button-radius: 12px;
+            --glow-color: rgba(59, 130, 246, 0.15);
         }
 
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+        body {  
+            font-family: 'Poppins', sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
-            background-image: radial-gradient(circle at top right, rgba(79, 70, 229, 0.1) 0%, transparent 40%),
-                            radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+            background-image: 
+                radial-gradient(circle at top right, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at bottom left, rgba(96, 165, 250, 0.1) 0%, transparent 40%);
         }
 
         .container {
@@ -46,7 +51,7 @@
             margin-bottom: 2rem;
             padding: 1rem;
             background: white;
-            border-radius: 12px;
+            border-radius: var(--card-radius);
             box-shadow: var(--card-shadow);
         }
 
@@ -82,7 +87,7 @@
         .search-input {
             padding: 0.75rem 1rem 0.75rem 2.5rem;
             border: 1px solid var(--border-color);
-            border-radius: 50px;
+            border-radius: var(--button-radius);
             font-size: 0.875rem;
             width: 250px;
             transition: var(--transition-normal);
@@ -92,7 +97,7 @@
         .search-input:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 0 0 3px var(--glow-color);
             width: 280px;
         }
         
@@ -118,7 +123,7 @@
             padding: 0.5rem 1rem;
             background: var(--gradient-danger);
             color: white;
-            border-radius: 50px;
+            border-radius: var(--button-radius);
             text-decoration: none;
             font-weight: 500;
             transition: var(--transition-normal);
@@ -155,13 +160,13 @@
             max-width: unset;
             background: white;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-                padding: 1rem;
-            transition: var(--transition-normal);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             height: 120px;
@@ -181,7 +186,7 @@
 
         .form-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--card-shadow);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
             border-color: rgba(79, 70, 229, 0.3);
         }
 
@@ -231,7 +236,7 @@
         .action-button {
             padding: 0.5rem 1rem;
             border: none;
-            border-radius: 50px;
+            border-radius: var(--button-radius);
             font-size: 0.75rem;
             font-weight: 600;
             cursor: pointer;
@@ -284,7 +289,7 @@
             text-align: center;
             padding: 3rem;
             border: 2px dashed var(--border-color);
-            border-radius: 16px;
+            border-radius: var(--card-radius);
             margin-top: 2.5rem;
             background-color: rgba(249, 250, 251, 0.8);
             transition: var(--transition-normal);
@@ -299,15 +304,15 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(circle at center, rgba(79, 70, 229, 0.05) 0%, transparent 70%);
+            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
             z-index: 0;
         }
 
         .upload-section.drag-over {
-            background-color: rgba(79, 70, 229, 0.08);
+            background-color: rgba(59, 130, 246, 0.08);
             border-color: var(--primary-color);
             transform: scale(1.01);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 0 0 3px var(--glow-color);
         }
 
         .upload-section.drag-over::after {
@@ -317,7 +322,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(circle at center, rgba(79, 70, 229, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
             animation: pulse 1.5s infinite;
             z-index: 0;
         }
@@ -335,23 +340,23 @@
             padding: 0.875rem 1.5rem;
             background: var(--gradient-primary);
             color: white;
-            border-radius: 50px;
+            border-radius: var(--button-radius);
             cursor: pointer;
             transition: var(--transition-normal);
             font-weight: 600;
-            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.25);
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
             position: relative;
             z-index: 1;
         }
 
         .upload-label:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(79, 70, 229, 0.3);
+            box-shadow: 0 6px 12px rgba(59, 130, 246, 0.3);
         }
 
         .upload-label:active {
             transform: translateY(1px);
-            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
         }
 
         .upload-label i {
@@ -483,30 +488,31 @@
             width: 100%;
         }
 
-        .sidebar {
-            width: 280px;
-            background: white;
-            padding: 2rem 1rem;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-            left: 0;
-            top: 0;
-            z-index: 50;
-        }
+            .sidebar {
+                width: 280px;
+                background: var(--bg-color);
+                box-shadow: 4px 0 15px var(--glow-color);
+                padding: 2rem 1rem;
+                display: flex;
+                flex-direction: column;
+                position: fixed;
+                height: 100vh;
+                left: 0;
+                top: 0;
+                z-index: 50;
+            }
 
-        .sidebar-header {
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+            .sidebar-header {
+                margin-bottom: 2rem;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
 
-        .sidebar-nav {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
+            .sidebar-nav {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
 
         .nav-item {
             display: flex;
@@ -516,18 +522,43 @@
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
             border-radius: 0.5rem;
+            border: 2px solid transparent;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-link {
+            text-decoration: none !important;/* Xóa gạch chân mặc định */
         }
 
         .nav-item:hover {
             background: rgba(255, 255, 255, 0.1);
             color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateX(5px);
         }
 
         .nav-item.active {
             background: var(--gradient-primary);
             color: white;
         }
+
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-item:hover::after {
+            width: 100%;
+        }
+
+
 
         .nav-item i {
             width: 1.5rem;
@@ -538,7 +569,7 @@
             flex: 1;
             margin-left: 280px;
             padding: 2rem;
-            background: var(--bg-color);
+            background: url('/static/images/maunen.png') no-repeat center center/cover;
             min-height: 100vh;
             max-width: calc(100vw - 280px);
             overflow-x: hidden;
@@ -546,12 +577,16 @@
 
         .user-profile {
             margin-top: auto;
-            padding: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.25rem;
+            border-top: 1px solid var(--border-color);
+            background: white;
+            border-radius: var(--card-radius);
             display: flex;
             align-items: center;
-            gap: 1rem;
-        }
+                gap: 1rem;
+            margin: 1rem;
+                position: relative;
+            }
 
         .user-avatar {
             width: 40px;
@@ -563,35 +598,81 @@
             justify-content: center;
             color: white;
             font-weight: bold;
-        }
+            font-size: 1.2rem;
+            }
 
         .user-info {
             flex: 1;
-        }
+            min-width: 0;
+            cursor: pointer;
+            position: relative;
+            }
 
         .user-name {
-            color: white;
-            font-size: 0.9rem;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            font-weight: 600;
             margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .user-info:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+
+        .user-info:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.8);
+            margin-bottom: -5px;
         }
 
         .user-role {
-            color: #9ca3af;
+            color: #6b7280;
             font-size: 0.8rem;
             margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .logout-btn {
+        .logout-btn, .login-btn {
             padding: 0.5rem;
-            color: #9ca3af;
+            color: #6b7280;
             background: none;
             border: none;
             cursor: pointer;
             transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
         }
 
-        .logout-btn:hover {
-            color: white;
+        .logout-btn:hover, .login-btn:hover {
+            color: var(--primary-color);
+            background: rgba(79, 70, 229, 0.1);
         }
 
         .menu-toggle {
@@ -610,7 +691,7 @@
         @media (max-width: 1400px) {
             .container {
                 max-width: 100%;
-            }
+        }
 
             .form-grid {
                 grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -655,95 +736,226 @@
                 gap: 15px;
             }
         }
+
+        .user-profile {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 5px);
+            right: 0;
+            width: 250px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            z-index: 1000;
+        }
+
+        .user-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dropdown-header .full-name {
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .dropdown-header .email {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .dropdown-item.text-danger {
+            color: #dc2626;
+        }
+
+        .dropdown-item.text-danger:hover {
+            background-color: #fef2f2;
+        }
+
+        .dropdown-item i {
+            font-size: 1rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        .text-danger {
+            color: #dc2626;
+        }
+
+        .text-danger:hover {
+            background-color: #fef2f2;
+        }
+
+        @keyframes dropdownFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .user-dropdown.show {
+                animation: dropdownFadeIn 0.2s ease forwards;
+            }
+/* 
+        .nav-item:hover, .dropdown-item:hover {
+            background: var(--glow-color);
+            transform: translateX(5px);
+            transition: all 0.3s ease;
+        } */
+        
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--button-radius);
+            background: white;
+            color: var(--text-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+        
+        .filter-btn:hover {
+            background: var(--glow-color);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .filter-btn.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
     </style>
 </head>
 <body>
-
     <div class="layout-container">
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h1 class="text-2xl font-bold text-white mb-8">Quản lý Biểu mẫu</h1>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-content="trangchu">
-                    <i class="fas fa-home"></i>
-                    <span>Trang Chủ</span>
-                    <span>Home</span>
-                </a>
-                <a href="#" class="nav-item" data-content="upload">
-                    <i class="fas fa-upload"></i>
-                    <span>Tải lên Biểu mẫu</span>
-                </a>
-            </nav>
-        </div>
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h1>HỆ THỐNG BIỂU MẪU</h1>
-            </div>
+                                    </div>
             <nav>
                 <ul class="nav-menu">
                     <li class="nav-item">
-                        <a href="#" class="nav-link active">
+                        <a href="/" class="nav-link">
                             <i class="fas fa-home"></i>
                             Trang chủ
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link">
+                        <a href="/my-forms" class="nav-link">
                             <i class="fas fa-file-alt"></i>
                             Biểu mẫu của tôi
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link">
+                        <a href="/history" class="nav-link">
                             <i class="fas fa-history"></i>
                             Lịch sử
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link">
+                        <a href="/settings" class="nav-link">
                             <i class="fas fa-cog"></i>
                             Cài đặt
                         </a>
                     </li>
                 </ul>
             </nav>
-            <div class="user-profile">
-                <div class="user-avatar">
-                    <i class="fas fa-user"></i>
+            <div class="user-profile" id="userProfileContainer">
+                <div class="user-avatar" id="userAvatarBtn">
+                    {% if current_user.is_authenticated %}
+                        <span>{{ current_user.fullname[:1] | upper }}</span>
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+                            </div>
+                <div class="user-info" title="{{ current_user.fullname if current_user.is_authenticated else 'Khách' }}">
+                    {% if current_user.is_authenticated %}
+                        <p class="user-name">
+                            {% if current_user.fullname|length > 15 %}
+                                {{ current_user.fullname[:15] }}...
+                            {% else %}
+                                {{ current_user.fullname }}
+                            {% endif %}
+                        </p>
+                        <p class="user-role">{% if current_user.role_id == 1 %}Admin{% else %}Người dùng{% endif %}</p>
+                    {% else %}
+                        <p class="user-name">Khách</p>
+                        <p class="user-role">Chưa đăng nhập</p>
+                    {% endif %}
                 </div>
-                <div class="user-info">
-                    <p class="user-name">{{ current_user.name }}</p>
-                    <p class="user-role">Người dùng</p>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-header">
+                        <p class="full-name">{{ current_user.fullname }}</p>
+                        <p class="email">{{ current_user.email }}</p>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="/profile" class="dropdown-item">
+                        <i class="fas fa-user-circle"></i>
+                        Thông tin cá nhân
+                    </a>
+                    <a href="/settings" class="dropdown-item">
+                        <i class="fas fa-cog"></i>
+                        Cài đặt
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="/logout" class="dropdown-item text-danger">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Đăng xuất
+                    </a>
                 </div>
-                <button class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                </button>
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="container">
-                <!-- Header Section -->
                 <div class="header">
                     <h2><i class="fas fa-file-contract"></i> Quản lý Biểu mẫu</h2>
                     <div class="search-bar">
                         <input type="text" class="search-input" placeholder="Tìm kiếm biểu mẫu..." id="search-input">
                     </div>
-                    <div class="user-info">
-                        <span class="user-name">
-                            <i class="fas fa-user"></i> {{ current_user.fullname }}
-                        </span>
-                        <a href="/logout" class="logout-btn">
-                            <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                        </a>
                 </div>
-                    </div>
 
-                <!-- Upload Section -->
                 <section class="upload-section" id="upload-zone">
                     <h3><i class="fas fa-upload"></i> Tải lên biểu mẫu mới</h3>
                     <p>Kéo và thả file DOCX vào đây hoặc nhấp vào nút bên dưới</p>
@@ -754,24 +966,163 @@
                     <input type="file" id="file-upload" accept=".docx">
                     <div class="progress-bar" id="progress-bar">
                         <div class="progress" id="progress"></div>
-    </div>
+                    </div>
                     <div id="upload-message" class="message"></div>
                 </section>
 
-                <!-- Recent Forms Section -->
                 <section class="forms-section">
-                    <h3><i class="fas fa-history"></i> Biểu mẫu gần đây</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3><i class="fas fa-history"></i> Biểu mẫu gần đây</h3>
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" data-filter="all">Tất cả</button>
+                            <button class="filter-btn" data-filter="filled">Đã điền</button>
+                            <button class="filter-btn" data-filter="unfilled">Chưa điền</button>
+                        </div>
+                    </div>
                     <div class="form-grid" id="recent-forms"></div>
                     <div id="loading-forms" style="text-align: center; display: none;">
                         <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-color); margin: 2rem 0;"></i>
                         <p>Đang tải biểu mẫu...</p>
                     </div>
                 </section>
-                                    </div>
+            </div>
         </main>
-                                    </div>
+    </div>
+
+    <style>
+        .user-profile {
+            margin-top: auto;
+            padding: 1.25rem;
+            border-top: 1px solid var(--border-color);
+            background: white;
+            border-radius: var(--card-radius);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem;
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .user-name {
+            color: var(--text-color);
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .user-info:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+
+        .user-info:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.8);
+            margin-bottom: -5px;
+        }
+
+        .user-role {
+            color: #6b7280;
+            font-size: 0.8rem;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .logout-btn, .login-btn {
+            padding: 0.5rem;
+            color: #6b7280;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+        }
+
+        .logout-btn:hover, .login-btn:hover {
+            color: var(--primary-color);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .user-profile {
+                margin: 0.5rem;
+                padding: 0.75rem;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+        }
+    </style>
 
     <script>
+        // Lắng nghe sự kiện click vào các mục menu
+        const navItems = document.querySelectorAll('.nav-item');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // Loại bỏ lớp 'active' khỏi tất cả các mục
+                navItems.forEach(navItem => navItem.classList.remove('active'));
+
+                // Thêm lớp 'active' vào mục được nhấp
+                item.classList.add('active');
+            });
+        });
+
         $(document).ready(function() {
             const uploadZone = $('#upload-zone');
             const progressBar = $('#progress-bar');
@@ -781,7 +1132,6 @@
             const scrollRightBtn = $('#scrollRight');
             let searchTimeout;
 
-            // Xử lý cuộn ngang
             scrollLeftBtn.click(() => {
                 formGrid.animate({ scrollLeft: '-=300' }, 300);
             });
@@ -789,45 +1139,65 @@
             scrollRightBtn.click(() => {
                 formGrid.animate({ scrollLeft: '+=300' }, 300);
             });
-
-            // Cập nhật hiển thị nút cuộn
             function updateScrollButtons() {
                 const scrollLeft = formGrid.scrollLeft();
                 const maxScroll = formGrid[0].scrollWidth - formGrid[0].clientWidth;
 
                 scrollLeftBtn.css('display', scrollLeft <= 0 ? 'none' : 'flex');
                 scrollRightBtn.css('display', scrollLeft >= maxScroll ? 'none' : 'flex');
-            }
+        }
 
             formGrid.on('scroll', updateScrollButtons);
             $(window).on('resize', updateScrollButtons);
 
-            // Thêm hiệu ứng khi trang tải xong
             $('.container').css('opacity', '0').animate({opacity: 1}, 500);
-
-            function loadRecentForms(searchQuery = '') {
-                // Hiển thị trạng thái đang tải
+            let currentFilter = 'all';
+            
+            function loadRecentForms(searchQuery = '', filterType = 'all') {
                 $('#loading-forms').show();
                 $('#recent-forms').empty();
-                
+                currentFilter = filterType;
+
                 $.get('/get-recent-forms', { query: searchQuery }, function(data) {
                     const recentForms = $('#recent-forms');
                     recentForms.empty();
-                    // Ẩn trạng thái đang tải
                     $('#loading-forms').hide();
 
                     if (data.forms && data.forms.length > 0) {
-                        data.forms.forEach(form => {
-                            // Check if form has form_data
+                        // Lọc biểu mẫu theo trạng thái
+                        let filteredForms = data.forms;
+                        if (filterType === 'filled') {
+                            filteredForms = data.forms.filter(form => {
+                                if (!form.form_data) return false;
+                                const totalFields = Object.keys(form.form_data).length;
+                                const filledFields = Object.values(form.form_data).filter(value => value && value.trim() !== '').length;
+                                return filledFields > 0;
+                            });
+                        } else if (filterType === 'unfilled') {
+                            filteredForms = data.forms.filter(form => {
+                                if (!form.form_data) return true;
+                                const totalFields = Object.keys(form.form_data).length;
+                                const filledFields = Object.values(form.form_data).filter(value => value && value.trim() !== '').length;
+                                return filledFields === 0;
+                            });
+                        }
+                        
+                        if (filteredForms.length === 0) {
+                            recentForms.html(`
+                                <div class="empty-state">
+                                    <i class="far fa-folder-open"></i>
+                                    <p>Không có biểu mẫu nào phù hợp với bộ lọc.</p>
+                                </div>
+                            `);
+                            return;
+                        }
+                        
+                        filteredForms.forEach(form => {
                             const hasFormData = form.form_data ? true : false;
-                            
-                            // Lấy tên hiển thị phù hợp
                             let displayName = form.name;
                             if (form.form_data && form.form_data.document_name) {
                                 displayName = form.form_data.document_name;
                             }
-                            
-                            // Kiểm tra số lượng trường đã điền
                             let filledFields = 0;
                             let totalFields = 0;
                             if (form.form_data) {
@@ -835,14 +1205,17 @@
                                 filledFields = Object.values(form.form_data).filter(value => value && value.trim() !== '').length;
                             }
                             
+                            // Thêm trạng thái vào data-status để dễ dàng lọc
+                            const formStatus = hasFormData && filledFields > 0 ? 'filled' : 'unfilled';
+                            
                             const formCard = $(`
-                                <div class="form-card" data-id="${form.id}">
+                                <div class="form-card" data-id="${form.id}" data-status="${formStatus}">
                                     <h4>${displayName}</h4>
                                     <div class="form-meta">
                                         <div><i class="far fa-clock"></i> ${form.date}</div>
                                         <div><i class="far fa-file-word"></i> DOCX</div>
                                         ${hasFormData ? `<div><i class="fas fa-check-circle" style="color: #10b981;"></i> Đã điền ${filledFields}/${totalFields}</div>` : ''}
-                            </div>
+                                    </div>
                                     <div class="form-actions">
                                         <button class="action-button edit-btn" onclick="editForm('${form.id}')">Chỉnh sửa</button>
                                         <button class="action-button delete-btn" onclick="deleteForm('${form.id}')">Xóa</button>
@@ -852,12 +1225,10 @@
                             `);
                             recentForms.append(formCard);
 
-                            // Add click event to the form card
                             formCard.on('click', function(e) {
-                                // Only trigger if not clicking on a button
                                 if (!$(e.target).closest('button').length) {
                                     editForm(form.id);
-            }
+                                }
                             });
                         });
                     } else {
@@ -874,15 +1245,25 @@
             $('#search-input').on('input', function() {
                 const query = $(this).val();
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => loadRecentForms(query), 300);
+                searchTimeout = setTimeout(() => loadRecentForms(query, currentFilter), 300);
             });
-
+            
+            // Xử lý sự kiện click cho các nút lọc
+            $('.filter-btn').on('click', function() {
+                const filterType = $(this).data('filter');
+                $('.filter-btn').removeClass('active');
+                $(this).addClass('active');
+                
+                // Tải lại biểu mẫu với bộ lọc mới
+                const searchQuery = $('#search-input').val();
+                loadRecentForms(searchQuery, filterType);
+            });
             function showMessage(text, type) {
-                const message = $('#upload-message');
-                message.removeClass('success error').addClass(type);
-                message.text(text).fadeIn();
-                setTimeout(() => message.fadeOut(), 5000);
-            }
+            const message = $('#upload-message');
+            message.removeClass('success error').addClass(type);
+            message.text(text).fadeIn();
+            setTimeout(() => message.fadeOut(), 5000);
+        }
 
             function updateProgress(percent) {
                 progressBar.show();
@@ -937,7 +1318,6 @@
                 });
             });
 
-            // Drag and drop support
             uploadZone.on('dragover', function(e) {
                 e.preventDefault();
                 $(this).addClass('drag-over');
@@ -958,7 +1338,6 @@
                 }
             });
 
-            // Initial load
             loadRecentForms();
         });
 
@@ -992,6 +1371,43 @@
             message.text(text).fadeIn();
             setTimeout(() => message.fadeOut(), 5000);
         }
+
+        $(document).ready(function() {
+            const userProfile = $('#userProfileContainer');
+            const userAvatar = $('#userAvatarBtn');
+            const dropdown = $('#userDropdown');
+            let isDropdownVisible = false;
+
+            userProfile.add(userAvatar).on('click', function(e) {
+                e.stopPropagation();
+                isDropdownVisible = !isDropdownVisible;
+                if (isDropdownVisible) {
+                    dropdown.addClass('show');
+                } else {
+                    dropdown.removeClass('show');
+                }
+            });
+
+            $(document).on('click', function(e) {
+                if (!userProfile.is(e.target) && userProfile.has(e.target).length === 0) {
+                    dropdown.removeClass('show');
+                    isDropdownVisible = false;
+                }
+            });
+
+            $('.dropdown-item').on('click', function(e) {
+                e.stopPropagation();
+            });
+
+            $('.dropdown-item').hover(
+                function() {
+                    $(this).css('background-color', '#f3f4f6');
+                },
+                function() {
+                    $(this).css('background-color', 'transparent');
+                }
+            );
+        });
     </script>
 </body>
 </html>

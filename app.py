@@ -21,6 +21,9 @@ db.init_app(app)
 # Đảm bảo có một app context khi truy vấn DB
 with app.app_context():
     db.create_all()
+    # Khởi tạo các vai trò
+    from models.user import Role
+    Role.insert_roles()
 
 # Cấu hình Flask-Login
 login_manager = LoginManager() 
@@ -30,6 +33,7 @@ login_manager.login_view = 'login'  # Đặt view đăng nhập mặc định
 @login_manager.user_loader
 def load_user(user_id):
     with app.app_context():
+        # Use query.get instead of session.get to ensure the object stays attached to the session
         return db.session.get(User, int(user_id))
 
 # Đăng ký các route
