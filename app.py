@@ -6,6 +6,8 @@ from routes.docx_routes import register_docx_routes
 from routes import register_routes
 from flask_login import LoginManager
 from models.user import User, db
+import nltk
+import os
 
 # Khởi tạo ứng dụng Flask
 app = Flask(__name__)
@@ -35,6 +37,30 @@ def load_user(user_id):
     with app.app_context():
         # Use query.get instead of session.get to ensure the object stays attached to the session
         return db.session.get(User, int(user_id))
+
+# Đảm bảo các tài nguyên NLTK được tải xuống
+# def ensure_nltk_resources():
+#     resources = {
+#         'punkt_tab': 'tokenizers/punkt_tab',
+#         'stopwords': 'corpora/stopwords', 
+#         'wordnet': 'corpora/wordnet',
+#         'omw-1.4': 'corpora/omw-1.4'  # Cần thiết cho WordNetLemmatizer
+#     }
+#     for resource, path in resources.items():
+#         try:
+#             nltk.data.find(path)
+#             print(f"Resource {resource} already exists.")
+#         except LookupError:
+#             try:
+#                 print(f"Downloading {resource} resource...")
+#                 nltk.download(resource, quiet=True)
+#                 print(f"Downloaded {resource} successfully!")
+#             except Exception as e:
+#                 print(f"Error downloading {resource}: {e}")
+#                 print(f"Please manually download {resource} using: nltk.download('{resource}')")
+
+# # Tải các resource cần thiết
+# ensure_nltk_resources()
 
 # Đăng ký các route
 register_routes(app)

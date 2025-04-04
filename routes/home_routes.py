@@ -32,6 +32,9 @@ def register_home_routes(app):
         
         try:
             form_history = load_form_history()
+            # Đảm bảo form_history là một list
+            if form_history is None or not isinstance(form_history, list):
+                form_history = []
             query = request.args.get('query', '')
             
             # Format the forms for display
@@ -43,6 +46,7 @@ def register_home_routes(app):
                     # Kiểm tra nếu form có user_id và khác với current_user.id thì bỏ qua
                     if 'user_id' in form and form['user_id'] is not None and form['user_id'] != current_user.id:
                         continue
+                    # Nếu không có user_id, vẫn hiển thị (có thể là biểu mẫu cũ)
                 
                 # Format the date for display
                 timestamp = datetime.datetime.fromisoformat(form['timestamp'])

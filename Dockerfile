@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Cài đặt NLTK data cần thiết cho ứng dụng và đảm bảo quyền truy cập
 RUN mkdir -p /usr/share/nltk_data && \
-    python -m nltk.downloader -d /usr/share/nltk_data punkt stopwords wordnet && \
+    python -m nltk.downloader -d /usr/share/nltk_data punkt_tab stopwords wordnet && \
     chmod -R 755 /usr/share/nltk_data && \
     chown -R appuser:appuser /usr/share/nltk_data
 

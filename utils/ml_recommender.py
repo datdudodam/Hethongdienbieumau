@@ -17,11 +17,11 @@ from config.config import FORM_HISTORY_PATH
 
 # Đảm bảo các tài nguyên NLTK được tải xuống
 try:
-    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('tokenizers/punkt_tab')
     nltk.data.find('corpora/stopwords')
     nltk.data.find('corpora/wordnet')
 except LookupError:
-    nltk.download('punkt')
+    nltk.download('punkt_tab')
     nltk.download('stopwords')
     nltk.download('wordnet')
 
@@ -52,19 +52,36 @@ class MLRecommender:
                     self.form_data.append(form['form_data'])
     
     def preprocess_text(self, text):
-        """Tiền xử lý văn bản cho NLP"""
+        """Tiền xử lý văn bản cho NLP với hỗ trợ tốt hơn cho tiếng Việt"""
         if not text or not isinstance(text, str):
             return ""
             
-        # Chuyển về chữ thường và loại bỏ ký tự đặc biệt
+        # Chuyển về chữ thường
         text = text.lower()
-        text = re.sub(r'[^\w\s]', '', text)
         
-        # Tokenize và loại bỏ stopwords
+        # Chỉ loại bỏ một số ký tự đặc biệt, giữ lại dấu tiếng Việt
+        # Giữ lại các ký tự Unicode cho tiếng Việt
+        text = re.sub(r'[!"#$%&\'()*+,-./:;<=>?@\[\]^_`{|}~]', ' ', text)
+        
+        # Tokenize
         tokens = word_tokenize(text)
-        tokens = [self.lemmatizer.lemmatize(word) for word in tokens if word not in self.stop_words]
         
-        return " ".join(tokens)
+        # Loại bỏ stopwords nhưng giữ lại các từ có ý nghĩa
+        # Chỉ loại bỏ stopwords nếu từ đó thực sự là stopword và không phải từ có nghĩa
+        filtered_tokens = []
+        for word in tokens:
+            # Nếu từ chỉ có 1 ký tự, bỏ qua
+            if len(word) <= 1:
+                continue
+            # Nếu từ không phải stopword hoặc là từ có nghĩa, giữ lại
+            if word not in self.stop_words:
+                filtered_tokens.append(word)
+        
+        # Đảm bảo luôn có ít nhất một token để tránh empty vocabulary
+        if not filtered_tokens and tokens:
+            filtered_tokens = tokens[:1]  # Giữ lại ít nhất một token
+            
+        return " ".join(filtered_tokens)
     
     def build_content_based_model(self):
         """Xây dựng mô hình Content-Based Filtering"""
@@ -84,16 +101,37 @@ class MLRecommender:
         # Tạo vector TF-IDF cho mỗi trường
         for field, values in field_values.items():
             if len(values) > 1:  # Cần ít nhất 2 giá trị để tính toán similarity
-                vectorizer = TfidfVectorizer()
                 try:
+                    # Kiểm tra xem các giá trị có chứa từ nào không sau khi tiền xử lý
+                    has_tokens = False
+                    for value in values:
+                        if value.strip():
+                            has_tokens = True
+                            break
+                    
+                    if not has_tokens:
+                        print(f"Cảnh báo: Trường {field} không có từ nào sau khi tiền xử lý, bỏ qua")
+                        continue
+                    
+                    # Cấu hình TfidfVectorizer để xử lý tốt hơn với tiếng Việt
+                    # min_df=1: chấp nhận các từ xuất hiện ít nhất 1 lần
+                    # ngram_range=(1,2): xem xét cả từ đơn và cụm từ 2 từ
+                    vectorizer = TfidfVectorizer(min_df=1, ngram_range=(1,2))
                     tfidf_matrix = vectorizer.fit_transform(values)
-                    self.field_vectors[field] = {
-                        'vectorizer': vectorizer,
-                        'matrix': tfidf_matrix,
-                        'values': values
-                    }
+                    
+                    # Kiểm tra xem vocabulary có rỗng không
+                    if len(vectorizer.vocabulary_) > 0:
+                        self.field_vectors[field] = {
+                            'vectorizer': vectorizer,
+                            'matrix': tfidf_matrix,
+                            'values': values
+                        }
+                    else:
+                        print(f"Cảnh báo: Vocabulary rỗng cho trường {field}, bỏ qua")
                 except Exception as e:
                     print(f"Lỗi khi xây dựng vector TF-IDF cho trường {field}: {e}")
+                    # Ghi log chi tiết hơn để debug
+                    print(f"Chi tiết giá trị của trường {field}: {values}")
     
     def build_collaborative_model(self):
         """Xây dựng mô hình Collaborative Filtering sử dụng BiasedMF (SVD)"""
@@ -263,7 +301,7 @@ class MLRecommender:
         return []
     
     def get_nlp_recommendations(self, field_code, context_text=""):
-        """Lấy gợi ý dựa trên phân tích NLP nâng cao"""
+        """Lấy gợi ý dựa trên phân tích NLP nâng cao với xử lý tốt hơn cho tiếng Việt"""
         if not self.field_vectors or field_code not in self.field_vectors:
             return []
             
@@ -273,12 +311,22 @@ class MLRecommender:
         # Tiền xử lý văn bản ngữ cảnh
         processed_context = self.preprocess_text(context_text)
         
+        # Kiểm tra xem văn bản ngữ cảnh có từ nào không sau khi tiền xử lý
+        if not processed_context.strip():
+            print(f"Cảnh báo: Văn bản ngữ cảnh rỗng sau khi tiền xử lý cho trường {field_code}")
+            return []
+        
         # Chuyển đổi văn bản ngữ cảnh thành vector TF-IDF
         vectorizer = self.field_vectors[field_code]['vectorizer']
         values = self.field_vectors[field_code]['values']
         matrix = self.field_vectors[field_code]['matrix']
         
         try:
+            # Kiểm tra xem từ vựng có từ nào không
+            if len(vectorizer.vocabulary_) == 0:
+                print(f"Cảnh báo: Vocabulary rỗng cho trường {field_code}, không thể tạo vector")
+                return []
+                
             context_vector = vectorizer.transform([processed_context])
             
             # Tính toán similarity giữa văn bản ngữ cảnh và các giá trị của field_code

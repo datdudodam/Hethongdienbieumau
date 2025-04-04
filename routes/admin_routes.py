@@ -99,6 +99,10 @@ def register_admin_routes(app):
     def admin_forms():
         """Trang quản lý biểu mẫu"""
         forms_data = load_form_history()
+        # Thêm thông tin user_name vào mỗi form
+        for form in forms_data:
+            user = User.query.get(form.get('user_id'))
+            form['user_name'] = user.fullname if user else 'Unknown'
         return render_template('admin/forms.html', forms=forms_data)
     
     @app.route('/admin/forms/<form_id>')
@@ -113,7 +117,24 @@ def register_admin_routes(app):
             flash('Không tìm thấy biểu mẫu', 'error')
             return redirect(url_for('admin_forms'))
         
-        return render_template('admin/form_detail.html', form=form)
+        # Lấy thông tin người dùng
+        user = User.query.get(form.get('user_id'))
+        form['user_name'] = user.fullname if user else 'Unknown'
+        
+        # Chuẩn bị dữ liệu form để hiển thị
+        form_fields = []
+        if 'form_data' in form:
+            for field_name, field_value in form['form_data'].items():
+                if field_name not in ['form_id', 'document_name']:  # Bỏ qua các trường hệ thống
+                    form_fields.append({
+                        'name': field_name,
+                        'value': field_value
+                    })
+        
+        return render_template('admin/form_detail.html', 
+                            form=form, 
+                            form_fields=form_fields,
+                            document_name=form.get('form_data', {}).get('document_name', ''))
     
     @app.route('/admin/forms/edit/<form_id>', methods=['POST'])
     @login_required
@@ -128,22 +149,21 @@ def register_admin_routes(app):
             return redirect(url_for('admin_forms'))
         
         # Cập nhật thông tin biểu mẫu
-        forms_data[form_index]['document_name'] = request.form.get('document_name')
-        forms_data[form_index]['status'] = request.form.get('status')
+        new_document_name = request.form.get('document_name')
+        if new_document_name:
+            forms_data[form_index]['form_data']['document_name'] = new_document_name
         
-        # Cập nhật các trường dữ liệu nếu có
-        fields = request.form.getlist('field_name[]')
-        values = request.form.getlist('field_value[]')
+        # Cập nhật các trường dữ liệu
+        field_names = request.form.getlist('field_name[]')
+        field_values = request.form.getlist('field_value[]')
         
-        if fields and values and len(fields) == len(values):
-            form_data = {}
-            for i in range(len(fields)):
-                form_data[fields[i]] = values[i]
-            forms_data[form_index]['data'] = form_data
+        for name, value in zip(field_names, field_values):
+            if name in forms_data[form_index]['form_data']:
+                forms_data[form_index]['form_data'][name] = value
         
         save_form_history(forms_data)
         flash('Cập nhật biểu mẫu thành công', 'success')
-        return redirect(url_for('admin_forms'))
+        return redirect(url_for('admin_view_form', form_id=form_id))
     
     @app.route('/admin/forms/delete/<form_id>', methods=['POST'])
     @login_required
@@ -163,4 +183,8 @@ def register_admin_routes(app):
     def admin_form_history():
         """Xem lịch sử biểu mẫu"""
         history_data = load_form_history()
+        # Thêm thông tin user_name vào mỗi bản ghi
+        for record in history_data:
+            user = User.query.get(record.get('user_id'))
+            record['user_name'] = user.fullname if user else 'Unknown'
         return render_template('admin/form_history.html', history=history_data)

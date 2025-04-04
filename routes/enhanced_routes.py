@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, session
 from utils.field_matcher import get_field_matcher, auto_fill_form
 from utils.ml_recommender import get_ml_suggestions, get_recommender
 import json
@@ -7,52 +7,28 @@ def register_enhanced_routes(app):
     """
     Đăng ký các route cho tính năng nâng cao
     """
-    @app.route('/auto_fill_form', methods=['POST'])
-    def auto_fill_form_route():
-        """
-        API endpoint để tự động điền biểu mẫu dựa trên lịch sử
-        
-        Request JSON:
-        {
-            "target_fields": ["[_001_]", "[_002_]", ...]
-        }
-        
-        Response:
-        {
-            "auto_fill_data": {"[_001_]": "giá trị", ...},
-            "error_details": "Chi tiết lỗi nếu có"
-        }
-        """
+    @app.route('/auto_fill_field', methods=['POST'])
+    def handle_auto_fill():
         try:
-            data = request.json
-            if not data or 'target_fields' not in data:
+            data = request.get_json()
+            field_code = data.get('field_code')
+            
+            # Tạm dùng user_id mặc định cho mục đích phát triển
+            user_id = "demo_user"  # Thay bằng cơ chế xác thực thực tế
+            
+            matcher = get_field_matcher()
+            auto_fill_result = matcher.auto_fill_form([field_code])
+            auto_fill_data = auto_fill_result['suggestions']
+            
+            if field_code in auto_fill_data:
                 return jsonify({
-                    'error': 'Target fields are required',
-                    'error_details': 'Thiếu danh sách trường cần điền'
-                }), 400
-                
-            target_fields = data.get('target_fields', [])
-            
-            # Lấy user_id từ session (nếu đã đăng nhập)
-            user_id = None
-            # TODO: Lấy user_id từ Flask-Login nếu đã triển khai
-            # from flask_login import current_user
-            # if current_user.is_authenticated:
-            #     user_id = current_user.id
-            
-            # Lấy dữ liệu tự động điền
-            auto_fill_data = auto_fill_form(user_id, target_fields)
-            
-            return jsonify({
-                'auto_fill_data': auto_fill_data
-            }), 200
+                    'value': auto_fill_data[field_code],
+                    'status': 'success'
+                })
+            return jsonify({'value': '', 'status': 'no_data'})
             
         except Exception as e:
-            print(f"Error in auto_fill_form: {str(e)}")
-            return jsonify({
-                'error': 'Failed to auto-fill form',
-                'error_details': str(e)
-            }), 500
+            return jsonify({'error': str(e)}), 500
     
     @app.route('/get_enhanced_suggestions', methods=['POST'])
     def get_enhanced_suggestions_route():

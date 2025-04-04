@@ -3,6 +3,8 @@ from utils.document_utils import load_document, extract_fields, get_doc_path, se
 from utils.ai_utils import generate_suggestions, get_gpt_suggestions
 from models.data_model import load_db, save_db, load_form_history, save_form_history
 import os
+import uuid
+
 
 def register_form_routes(app):
     """
@@ -21,48 +23,52 @@ def register_form_routes(app):
         suggestions = generate_suggestions(db_data) if db_data else {}
         
         return render_template("index.html", fields=fields, suggestions=suggestions)
-    
-    @app.route('/submit', methods=['POST'])
-    def submit():
+    @app.route('/save-and-generate-docx', methods=['POST'])
+    def save_and_generate_docx():
         try:
             form_data = request.form.to_dict()
             if not form_data:
                 return jsonify({"error": "Không có dữ liệu được gửi"}), 400
-            
-            # Tạo form_id unique
-            import uuid
-            form_id = str(uuid.uuid4())
-            
+
             # Lấy document path hiện tại
             doc_path = get_doc_path()
             if not doc_path:
                 return jsonify({"error": "Không tìm thấy tài liệu"}), 400
-                
-            # Tải nội dung tài liệu và trích xuất các trường
+
+            # Lưu dữ liệu form (phần này giữ nguyên như cũ)
+            form_id = str(uuid.uuid4())
             text = load_document(doc_path)
             fields = extract_fields(text)
             
-            # Tạo dictionary mới với field_name và giá trị
             transformed_data = {
                 "form_id": form_id,
                 "document_name": form_data.get('document_name', '')
             }
             
-            # Lưu trực tiếp field_name và value
             for field in fields:
                 field_code = field['field_code']
                 field_name = field['field_name']
                 if field_code in form_data:
                     transformed_data[field_name] = form_data[field_code]
-            
+
             # Lưu vào form history
             try:
                 from flask_login import current_user
                 form_history = load_form_history()
                 
+                # Đảm bảo form_history là một list
+                if form_history is None or not isinstance(form_history, list):
+                    form_history = []
+                
+                # Thêm tên tài liệu vào form_entry nếu có
+                document_name = form_data.get('document_name', '')
+                if not document_name:
+                    document_name = os.path.basename(doc_path)
+                
                 form_entry = {
                     "form_id": form_id,
                     "path": doc_path,
+                    "name": document_name,  # Thêm tên để hiển thị trong biểu mẫu gần đây
                     "form_data": transformed_data,
                     "timestamp": __import__('datetime').datetime.now().isoformat(),
                     "user_id": current_user.id if current_user.is_authenticated else None,
@@ -71,19 +77,20 @@ def register_form_routes(app):
                 
                 form_history.append(form_entry)
                 save_form_history(form_history)
-                
-                return jsonify({
-                    "message": "Lưu thông tin thành công",
-                    "form_id": form_id
-                })
-                
+                print(f"Form history saved successfully: {form_id}")
             except Exception as e:
                 print(f"Error saving form history: {str(e)}")
-                return jsonify({"error": "Có lỗi xảy ra khi lưu lịch sử"}), 500
-                
+                import traceback
+                traceback.print_exc()
+
+            # Tạo và trả về file docx
+            custom_filename = form_data.get('document_name', None)
+            from utils.docx_generator import generate_docx
+            return generate_docx(form_data, doc_path, custom_filename)
+
         except Exception as e:
-            print(f"Error submitting form: {str(e)}")
-            return jsonify({"error": "Có lỗi xảy ra khi lưu dữ liệu"}), 500
+            print(f"Error in save_and_generate_docx: {str(e)}")
+            return jsonify({"error": "Có lỗi xảy ra khi xử lý yêu cầu"}), 500
     
     @app.route('/get_suggestions', methods=['POST'])
     def get_suggestions():

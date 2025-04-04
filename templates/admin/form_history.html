@@ -293,6 +293,17 @@
             color: var(--text-color);
         }
 
+        .timeline-user {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .timeline-document {
+            margin-top: 5px;
+            font-size: 0.9rem;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
@@ -388,17 +399,30 @@
                         <div class="timeline-dot"></div>
                         <div class="timeline-content">
                             <span class="timeline-date">{{ item.timestamp if item.timestamp else 'N/A' }}</span>
-                            <h3 class="timeline-title">{{ item.title if item.title else 'Biểu mẫu' }}</h3>
-                            <p class="timeline-description">{{ item.action if item.action else 'Hoạt động không xác định' }}</p>
-                            {% if item.status %}
+                            <h3 class="timeline-title">{{ item.form_data.document_name if item.form_data and item.form_data.document_name else 'Biểu mẫu' }}</h3>
+                            
+                            <div class="timeline-user">
+                                <strong>Người gửi:</strong> {{ item.user_name }} (ID: {{ item.user_id }})
+                            </div>
+                            
+                            <div class="timeline-document">
+                                <strong>ID biểu mẫu:</strong> {{ item.form_id }}
+                            </div>
+                            
+                            <p class="timeline-description">
+                                <strong>Đường dẫn file:</strong> {{ item.path }}
+                            </p>
+                            
+                            {% if item.form_data %}
                             <div style="margin-top: 10px;">
-                                {% if item.status == 'completed' %}
-                                <span class="badge badge-success">Hoàn thành</span>
-                                {% elif item.status == 'pending' %}
-                                <span class="badge badge-warning">Đang xử lý</span>
-                                {% else %}
-                                <span class="badge badge-danger">Lỗi</span>
-                                {% endif %}
+                                <strong>Dữ liệu biểu mẫu:</strong>
+                                <ul style="margin-top: 5px; padding-left: 20px;">
+                                    {% for field_name, field_value in item.form_data.items() %}
+                                        {% if field_name not in ['form_id', 'document_name'] %}
+                                        <li><strong>{{ field_name }}:</strong> {{ field_value }}</li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
                             </div>
                             {% endif %}
                         </div>

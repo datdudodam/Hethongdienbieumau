@@ -259,6 +259,90 @@
             font-size: 1.2rem;
         }
 
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: var(--card-radius);
+            width: 600px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-cancel {
+            background: white;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
@@ -337,7 +421,9 @@
                 <h1>Chi tiết biểu mẫu</h1>
                 <div>
                     <a href="{{ url_for('admin_forms') }}" class="btn"><i class="fas fa-arrow-left"></i> Quay lại</a>
-                    <button class="btn" onclick="openEditFormModal('{{ form.id }}', '{{ form.title }}', '{{ form.status }}')"><i class="fas fa-edit"></i> Chỉnh sửa</button>
+                    <button class="btn" onclick="openEditFormModal('{{ form.form_id }}', '{{ form.form_data.document_name }}')">
+                        <i class="fas fa-edit"></i> Chỉnh sửa
+                    </button>
                 </div>
             </div>
 
@@ -348,27 +434,23 @@
                 <div class="form-detail">
                     <div class="form-detail-item">
                         <div class="form-detail-label">ID:</div>
-                        <div class="form-detail-value">{{ form.id }}</div>
+                        <div class="form-detail-value">{{ form.form_id }}</div>
                     </div>
                     <div class="form-detail-item">
-                        <div class="form-detail-label">Tiêu đề:</div>
-                        <div class="form-detail-value">{{ form.title }}</div>
+                        <div class="form-detail-label">Tên biểu mẫu:</div>
+                        <div class="form-detail-value">{{ form.form_data.document_name }}</div>
                     </div>
                     <div class="form-detail-item">
-                        <div class="form-detail-label">Trạng thái:</div>
-                        <div class="form-detail-value">
-                            {% if form.status == 'completed' %}
-                            <span class="badge badge-success">Hoàn thành</span>
-                            {% elif form.status == 'pending' %}
-                            <span class="badge badge-warning">Đang xử lý</span>
-                            {% else %}
-                            <span class="badge badge-danger">Lỗi</span>
-                            {% endif %}
-                        </div>
+                        <div class="form-detail-label">Người gửi:</div>
+                        <div class="form-detail-value">{{ form.user_name }} (ID: {{ form.user_id }})</div>
                     </div>
                     <div class="form-detail-item">
-                        <div class="form-detail-label">Ngày tạo:</div>
-                        <div class="form-detail-value">{{ form.created_at if form.created_at else 'N/A' }}</div>
+                        <div class="form-detail-label">Đường dẫn file:</div>
+                        <div class="form-detail-value">{{ form.path }}</div>
+                    </div>
+                    <div class="form-detail-item">
+                        <div class="form-detail-label">Thời gian gửi:</div>
+                        <div class="form-detail-value">{{ form.timestamp }}</div>
                     </div>
                 </div>
             </div>
@@ -378,12 +460,20 @@
                     <h2>Dữ liệu biểu mẫu</h2>
                 </div>
                 <div class="form-fields">
-                    {% if form.data %}
-                        {% for field_name, field_value in form.data.items() %}
-                        <div class="form-field-item">
-                            <div class="form-field-name">{{ field_name }}</div>
-                            <div class="form-field-value">{{ field_value }}</div>
-                        </div>
+                    {% if form.form_data %}
+                        {% for field_name, field_value in form.form_data.items() %}
+                            {% if field_name not in ['form_id', 'document_name'] %}
+                            <div class="form-field-item">
+                                <div class="form-field-name">{{ field_name }}</div>
+                                <div class="form-field-value">
+                                    {% if field_value is sequence and field_value is not string %}
+                                        {{ field_value|join(', ') }}
+                                    {% else %}
+                                        {{ field_value }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
                         {% endfor %}
                     {% else %}
                         <p>Không có dữ liệu biểu mẫu.</p>
@@ -400,31 +490,30 @@
                 <h3>Chỉnh sửa biểu mẫu</h3>
                 <button class="close-modal" onclick="closeModal('editFormModal')">&times;</button>
             </div>
-            <form id="editFormForm" action="" method="POST">
-                <div class="form-group">
-                    <label for="edit_title">Tiêu đề</label>
-                    <input type="text" id="edit_title" name="title" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit_status">Trạng thái</label>
-                    <select id="edit_status" name="status" class="form-control">
-                        <option value="completed">Hoàn thành</option>
-                        <option value="pending">Đang xử lý</option>
-                        <option value="error">Lỗi</option>
-                    </select>
-                </div>
-                
-                {% if form.data %}
-                <div class="form-group">
-                    <label>Dữ liệu biểu mẫu</label>
-                    {% for field_name, field_value in form.data.items() %}
-                    <div class="field-edit-row" style="margin-bottom: 10px;">
-                        <input type="text" name="field_name[]" value="{{ field_name }}" class="form-control" style="width: 40%; display: inline-block; margin-right: 10px;" placeholder="Tên trường">
-                        <input type="text" name="field_value[]" value="{{ field_value }}" class="form-control" style="width: 55%; display: inline-block;" placeholder="Giá trị">
+            <form id="editFormForm" action="{{ url_for('admin_edit_form', form_id=form.form_id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit_document_name">Tên biểu mẫu</label>
+                        <input type="text" id="edit_document_name" name="document_name" 
+                               class="form-control" value="{{ form.form_data.document_name }}" required>
                     </div>
-                    {% endfor %}
+                    
+                    {% if form.form_data %}
+                        <div class="form-group">
+                            <label>Dữ liệu biểu mẫu</label>
+                            {% for field_name, field_value in form.form_data.items() %}
+                                {% if field_name not in ['form_id', 'document_name'] %}
+                                <div class="field-edit-row" style="margin-bottom: 10px; display: flex; gap: 10px;">
+                                    <input type="text" name="field_name[]" value="{{ field_name }}" 
+                                           class="form-control" style="flex: 1;" placeholder="Tên trường" readonly>
+                                    <input type="text" name="field_value[]" value="{{ field_value }}" 
+                                           class="form-control" style="flex: 1;" placeholder="Giá trị">
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
-                {% endif %}
                 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-cancel" onclick="closeModal('editFormModal')">Hủy</button>
@@ -436,9 +525,8 @@
 
     <script>
         // Modal functions
-        function openEditFormModal(formId, title, status) {
-            document.getElementById('edit_title').value = title;
-            document.getElementById('edit_status').value = status;
+        function openEditFormModal(formId, documentName) {
+            document.getElementById('edit_document_name').value = documentName;
             document.getElementById('editFormForm').action = `/admin/forms/edit/${formId}`;
             document.getElementById('editFormModal').classList.add('active');
         }

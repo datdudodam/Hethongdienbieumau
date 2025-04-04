@@ -22,10 +22,18 @@ def load_form_history():
     """
     Tải lịch sử biểu mẫu từ file JSON
     """
-    if os.path.exists(FORM_HISTORY_PATH):
-        with open(FORM_HISTORY_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
+    try:
+        if os.path.exists(FORM_HISTORY_PATH):
+            with open(FORM_HISTORY_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Đảm bảo dữ liệu trả về luôn là một list
+                if not isinstance(data, list):
+                    return []
+                return data
+        return []
+    except Exception as e:
+        print(f"Error loading form history: {str(e)}")
+        return []
 
 def save_form_history(data):
     """

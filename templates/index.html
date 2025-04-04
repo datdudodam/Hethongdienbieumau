@@ -3,212 +3,531 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Nhập Liệu</title>
+    <title>Hệ Thống Nhập Liệu Thông Minh</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary-color: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+        
         body {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e6f3ff 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
         }
-        .form-input-group:focus-within label {
-            color: #2563eb;
-            transform: translateY(-0.25rem);
-        }
-        .form-input-group:hover label {
-            color: #4b5563;
-        }
-        .form-input {
+        
+        .card-container {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
         }
-        .form-input:focus {
-            transform: translateY(-0.125rem);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        
+        .card-container:hover {
+            box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.15);
         }
+        
+        .header-gradient {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+        
+        .form-input-group label {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .form-input-group:focus-within label {
+            color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        
+        .form-input {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .form-input:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            transform: translateY(-1px);
+        }
+        
         .suggestion-button {
             transition: all 0.2s ease;
         }
+        
         .suggestion-button:hover {
-            transform: translateX(0.125rem);
-        }
-        .card-container {
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-1px);
         }
         
+        .suggestions-list {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+        }
+        
+        .submit-button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px -5px rgba(59, 130, 246, 0.4);
+        }
+        
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px -5px rgba(59, 130, 246, 0.5);
+        }
+        
+        .tooltip {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        
+        @media (max-width: 640px) {
+            .input-button-group {
+                flex-direction: column;
+            }
+            
+            .suggestion-button {
+                width: 100%;
+                margin-top: 8px;
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen py-12 px-4 font-[Inter]">
-    <div class="max-w-3xl mx-auto">
-        <div class="card-container shadow-2xl rounded-3xl overflow-hidden border border-gray-100/50">
-            <div class="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 px-8 py-8">
-                <h2 class="text-3xl font-bold text-white text-center tracking-tight">Hệ Thống Nhập Liệu Thông Minh</h2>
-                <p class="text-blue-100 text-center mt-3 text-base font-medium">Vui lòng điền đầy đủ thông tin bên dưới</p>
+<body class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="card-container rounded-2xl overflow-hidden border border-gray-100/30 animate__animated animate__fadeIn">
+            <div class="header-gradient px-8 py-8 sm:py-10">
+                <div class="flex flex-col items-center">
+                    <svg class="w-12 h-12 text-white mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h1 class="text-3xl sm:text-4xl font-bold text-white text-center tracking-tight">Hệ Thống Nhập Liệu Thông Minh</h1>
+                    <p class="text-blue-100 text-center mt-3 text-base font-medium max-w-md">Nhập thông tin một cách thông minh với sự hỗ trợ của AI và gợi ý tự động</p>
+                </div>
             </div>
             
-            <div class="p-8">
+            <div class="p-6 sm:p-8 md:p-10">
                 <form action="/submit" method="post" class="space-y-6">
-                    <div class="form-input-group group transition-all duration-300">
-                        <label for="document_name" class="block text-sm font-semibold text-gray-700 mb-2 transition-all duration-300">Tên tài liệu</label>
-                        <div class="relative">
-                            <input 
-                                type="text" 
-                                id="document_name" 
-                                name="document_name" 
-                                class="form-input w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm bg-white/80"
-                                placeholder="Nhập tên tài liệu"
-                                autocomplete="off"
-                                value="{{ document_name if document_name else '' }}"
-                            >
-                            <div id="error-document_name" class="hidden mt-2 text-red-500 text-sm"></div>
-                        </div>
-                    </div>
                     {% for field in fields %}
-                    <div class="form-input-group group transition-all duration-300">
-                        <label for="{{ field.field_code }}" class="block text-sm font-semibold text-gray-700 mb-2 transition-all duration-300">{{ field.field_name }}</label>
+                    <div class="form-input-group">
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="{{ field.field_code }}" class="block text-sm font-medium text-gray-700">{{ field.field_name }}</label>
+                            <span class="text-xs text-gray-400">Trường bắt buộc</span>
+                        </div>
+                        
                         <div class="relative">
-                            <div class="relative flex gap-3">
-                                <input 
-                                    type="text" 
-                                    id="{{ field.field_code }}" 
-                                    name="{{ field.field_code }}" 
-                                    class="form-input w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm bg-white/80"
-                                    required
-                                    placeholder="Nhập {{ field.field_name | lower }}"
-                                    autocomplete="off"
-                                    value="{{ field.value if field.value else '' }}"
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <div class="flex-1">
+                                    <input 
+                                        type="text" 
+                                        id="{{ field.field_code }}" 
+                                        name="{{ field.field_code }}" 
+                                        class="form-input w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder-gray-400"
+                                        required
+                                        placeholder="Nhập {{ field.field_name | lower }}"
+                                        autocomplete="off"
+                                        value="{{ field.value if field.value else '' }}"
+                                    >
+                                </div>
+                                
+                                <div class="flex gap-2 sm:gap-3 input-button-group">
+                                    <button 
+                                        type="button" 
+                                        onclick="loadSuggestions('{{ field.field_code }}')" 
+                                        class="suggestion-button px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-blue-200 relative group"
+                                        title="Xem gợi ý"
+                                        aria-label="Xem gợi ý cho {{ field.field_name }}"
+                                    >
+                                        <span class="suggestion-loading hidden">
+                                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="suggestion-icon flex items-center">
+                                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                            <span class="hidden sm:inline">Gợi ý</span>
+                                        </span>
+                                        <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                            Gợi ý cho {{ field.field_name }}
+                                        </div>
+                                    </button>
+                                     <!-- Thêm nút điền tự động -->
+                                    <button 
+                                        type="button" 
+                                        onclick="autoFillField('{{ field.field_code }}')" 
+                                        class="suggestion-button px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-yellow-200 relative group"
+                                        title="Điền tự động"
+                                        aria-label="Điền tự động cho {{ field.field_name }}"
+                                    >
+                                        <span class="auto-fill-loading hidden">
+                                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="auto-fill-icon flex items-center">
+                                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                            <span class="hidden sm:inline">Tự động</span>
+                                        </span>
+                                        <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                            Điền tự động cho {{ field.field_name }}
+                                        </div>
+                                </button>
+                                    <button 
+                                        type="button" 
+                                        onclick="loadGptSuggestions('{{ field.field_code }}')" 
+                                        class="suggestion-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-green-200 relative group"
+                                        title="Gợi ý AI"
+                                        aria-label="Gợi ý AI cho {{ field.field_name }}"
+                                    >
+                                        <span class="gpt-suggestion-loading hidden">
+                                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="gpt-suggestion-icon flex items-center">
+                                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                            </svg>
+                                            <span class="hidden sm:inline">AI</span>
+                                        </span>
+                                        <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                            Gợi ý AI cho {{ field.field_name }}
+                                        </div>
+                                    </button>
                                     
-                                >
-                                <button 
-                                    type="button" 
-                                    onclick="loadSuggestions('{{ field.field_code }}')" 
-                                    class="suggestion-button px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-blue-200 touch-manipulation relative group"
-                                    title="Xem gợi ý"
-                                    aria-label="Xem gợi ý cho {{ field.field_name }}"
-                                >
-                                    <span class="suggestion-loading hidden">
-                                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    </span>
-                                    <span class="suggestion-icon">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                                        </svg>
-                                    </span>
-                                    <div class="absolute invisible group-hover:visible bg-blue-600 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                                        Xem gợi ý cho {{ field.field_name }}
-                                    </div>
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onclick="loadGptSuggestions('{{ field.field_code }}')" 
-                                    class="suggestion-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-green-200 touch-manipulation relative group"
-                                    title="Gợi ý AI"
-                                    aria-label="Gợi ý AI cho {{ field.field_name }}"
-                                >
-                                    <span class="gpt-suggestion-loading hidden">
-                                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    </span>
-                                    <span class="gpt-suggestion-icon">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 13.5l4.5-4.5m0 0l4.5 4.5"></path>
-                                        </svg>
-                                    </span>
-                                    <div class="absolute invisible group-hover:visible bg-green-600 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                                        Gợi ý AI cho {{ field.field_name }}
-                                    </div>
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onclick="loadMlSuggestions('{{ field.field_code }}')" 
-                                    class="suggestion-button px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-purple-200 touch-manipulation relative group"
-                                    title="Gợi ý thông minh"
-                                    aria-label="Gợi ý thông minh cho {{ field.field_name }}"
-                                >
-                                    <span class="ml-suggestion-loading hidden">
-                                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    </span>
-                                    <span class="ml-suggestion-icon">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </span>
-                                    <div class="absolute invisible group-hover:visible bg-purple-600 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                                        Gợi ý thông minh cho {{ field.field_name }}
-                                    </div>
-                                </button>
+                                    <button 
+                                        type="button" 
+                                        onclick="loadMlSuggestions('{{ field.field_code }}')" 
+                                        class="suggestion-button px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-purple-200 relative group"
+                                        title="Gợi ý thông minh"
+                                        aria-label="Gợi ý thông minh cho {{ field.field_name }}"
+                                    >
+                                        <span class="ml-suggestion-loading hidden">
+                                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="ml-suggestion-icon flex items-center">
+                                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                            </svg>
+                                            <span class="hidden sm:inline">Thông minh</span>
+                                        </span>
+                                        <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                            Gợi ý thông minh cho {{ field.field_name }}
+                                        </div>
+                                    </button>
+                                </div>
                             </div>
-                            <ul id="suggestions-{{ field.field_code }}" class="absolute z-10 w-full bg-white/95 mt-2 rounded-xl shadow-lg border border-gray-100 hidden max-h-48 overflow-y-auto backdrop-blur-sm divide-y divide-gray-100">
+                            
+                            <ul id="suggestions-{{ field.field_code }}" class="suggestions-list absolute z-10 w-full mt-2 rounded-lg border border-gray-100 hidden max-h-60 overflow-y-auto divide-y divide-gray-100">
+                                <!-- Suggestions will be populated here -->
                             </ul>
+                            
                             <div id="error-{{ field.field_code }}" class="hidden mt-2 text-red-500 text-sm"></div>
                         </div>
                     </div>
                     {% endfor %}
                     
-                    <div class="flex flex-col gap-4 pt-8">
-                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 rounded-xl hover:from-blue-700 hover:to-blue-600 focus:ring-4 focus:ring-blue-200 transition-all duration-300 flex items-center justify-center space-x-2 font-semibold shadow-lg shadow-blue-200/50 hover:shadow-blue-300/50 hover:transform hover:-translate-y-0.5">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    <div class="pt-8">
+                        <button 
+                            type="button" 
+                            onclick="autoFillAllFields()" 
+                            class="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-yellow-200"
+                             >
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
-                            <span>Lưu Thông Tin</span>
+                            Điền tất cả tự động
                         </button>
-                        
-                        <button type="button" onclick="generateDocx()" class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-4 rounded-xl hover:from-green-700 hover:to-green-600 focus:ring-4 focus:ring-green-200 transition-all duration-300 flex items-center justify-center space-x-2 font-semibold shadow-lg shadow-green-200/50 hover:shadow-green-300/50 hover:transform hover:-translate-y-0.5">
+                        <button 
+                            type="button" 
+                            onclick="saveAndGenerateDocx()" 
+                            class="submit-button w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3.5 rounded-lg hover:from-blue-700 hover:to-blue-600 focus:ring-4 focus:ring-blue-200 transition-all flex items-center justify-center space-x-2 font-semibold"
+                        >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            <span>Tạo Tài Liệu DOCX</span>
+                            <span>Lưu và Tạo Tài Liệu DOCX</span>
                         </button>
                     </div>
                 </form>
             </div>
         </div>
         
-        <div class="text-center mt-8 text-sm text-gray-500">
-            © 2024 Hệ Thống Nhập Liệu Thông Minh. Bảo lưu mọi quyền.
+        <div class="text-center mt-8 text-sm text-gray-500 animate__animated animate__fadeIn animate__delay-1s">
+            <p>© 2024 Hệ Thống Nhập Liệu Thông Minh. Bản quyền thuộc về công ty chúng tôi.</p>
+            <p class="mt-1 text-xs text-gray-400">Phiên bản 2.0.0 | Đã được cải tiến với AI</p>
         </div>
     </div>
 
     <script>
-        function viewFormDetails(formId) {
-        fetch(`/form/${formId}`)
+        function autoFillField(fieldCode) {
+            const input = document.getElementById(fieldCode);
+            if (!input) return;
+
+            // Tìm button bằng cách duyệt qua các phần tử anh em
+            const buttonContainer = input.closest('.flex').querySelector('.input-button-group');
+            const button = buttonContainer.querySelector('button[onclick^="autoFillField"]');
+            if (!button) return;
+
+            const loadingIcon = button.querySelector('.auto-fill-loading');
+            const autoFillIcon = button.querySelector('.auto-fill-icon');
+            const errorDiv = document.getElementById(`error-${fieldCode}`);
+            
+            loadingIcon.classList.remove('hidden');
+            autoFillIcon.classList.add('hidden');
+            button.disabled = true;
+            if (errorDiv) errorDiv.classList.add('hidden');
+            
+            // Lấy danh sách các trường đã điền để gửi lên server
+            const filledFields = {};
+            document.querySelectorAll('form input[type="text"]').forEach(input => {
+                if (input.value.trim() && input.id !== fieldCode) {
+                    filledFields[input.id] = input.value.trim();
+                }
+            });
+            
+            fetch('/auto_fill_field', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    field_code: fieldCode,
+                    filled_fields: filledFields
+                })
+            })
             .then(response => {
                 if (!response.ok) {
                     return response.json().then(err => {
-                        throw new Error(err.error || 'Có lỗi xảy ra');
+                        throw new Error(err.error || 'Network response was not ok');
                     });
                 }
-                return response.text();
+                return response.json();
             })
-            .then(html => {
-                // Thay thế nội dung trang với form đã load
-                document.documentElement.innerHTML = html;
-                
-                // Khôi phục các event listeners
-                initializeEventListeners();
+            .then(data => {
+                if (data.value) {
+                    input.value = data.value;
+                    showToast(`Đã tự động điền ${data.field_name || 'trường'}`, 'success');
+                    
+                    // Hiển thị thông tin chi tiết nếu có
+                    if (data.details) {
+                        // Xóa thông tin chi tiết cũ nếu có
+                        const oldDetails = input.parentNode.querySelector('.auto-fill-details');
+                        if (oldDetails) oldDetails.remove();
+                        
+                        const details = document.createElement('div');
+                        details.className = 'auto-fill-details mt-2 text-sm text-gray-600 bg-blue-50 p-2 rounded';
+                        details.innerHTML = `
+                            <p><strong>Nguồn:</strong> ${data.details.source_name || 'Không rõ'}</p>
+                            ${data.details.similarity ? `<p><strong>Độ tương đồng:</strong> ${Math.round(data.details.similarity * 100)}%</p>` : ''}
+                        `;
+                        input.parentNode.insertBefore(details, input.nextSibling);
+                        
+                        // Tự động xóa sau 5 giây
+                        setTimeout(() => {
+                            details.remove();
+                        }, 5000);
+                    }
+                } else {
+                    const errorMsg = data.message || 'Không tìm thấy dữ liệu để điền tự động';
+                    if (errorDiv) {
+                        errorDiv.textContent = errorMsg;
+                        errorDiv.classList.remove('hidden');
+                    } else {
+                        showToast(errorMsg, 'error');
+                    }
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert(error.message || 'Có lỗi xảy ra khi tải biểu mẫu');
+                const errorMsg = error.message || 'Có lỗi xảy ra khi điền tự động. Vui lòng thử lại.';
+                if (errorDiv) {
+                    errorDiv.textContent = errorMsg;
+                    errorDiv.classList.remove('hidden');
+                } else {
+                    showToast(errorMsg, 'error');
+                }
+            })
+            .finally(() => {
+                loadingIcon.classList.add('hidden');
+                autoFillIcon.classList.remove('hidden');
+                button.disabled = false;
             });
-    }
+        }
 
-    // Hàm khởi tạo lại các event listeners
-    function initializeEventListeners() {
-        // Thêm lại các event listeners cần thiết
-        document.querySelector('form')?.addEventListener('submit', handleFormSubmit);
-        // Thêm các event listeners khác nếu cần
-    }
+        function autoFillAllFields() {
+            // Lấy danh sách tất cả các trường input
+            const inputs = document.querySelectorAll('form input[type="text"]');
+            const fieldsToFill = Array.from(inputs).filter(input => !input.value.trim());
+            
+            if (fieldsToFill.length === 0) {
+                showToast('Tất cả các trường đã được điền', 'info');
+                return;
+            }
+            
+            // Disable nút và hiển thị loading
+            const button = event.target;
+            const originalContent = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = `
+                <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Đang xử lý...
+            `;
+            
+            const progressToast = document.createElement('div');
+            progressToast.className = 'fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium animate__animated animate__fadeInUp bg-blue-500';
+            progressToast.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Đang điền tự động (0/${fieldsToFill.length})...</span>
+                </div>
+            `;
+            document.body.appendChild(progressToast);
+            
+            let completed = 0;
+            let hasError = false;
+            
+            // Hàm xử lý hoàn thành
+            const handleComplete = () => {
+                button.disabled = false;
+                button.innerHTML = originalContent;
+                
+                if (hasError) {
+                    progressToast.innerHTML = `
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Đã điền tự động ${completed} trường (có lỗi)</span>
+                        </div>
+                    `;
+                } else {
+                    progressToast.innerHTML = `
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Đã điền tự động ${completed} trường</span>
+                        </div>
+                    `;
+                }
+                
+                setTimeout(() => {
+                    progressToast.classList.remove('animate__fadeInUp');
+                    progressToast.classList.add('animate__fadeOutDown');
+                    setTimeout(() => {
+                        document.body.removeChild(progressToast);
+                    }, 500);
+                }, 2000);
+            };
+            
+            // Điền từng trường một
+            fieldsToFill.forEach((input, index) => {
+                setTimeout(() => {
+                    fetch('/auto_fill_field', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            field_code: input.id,
+                            filled_fields: {} // Có thể cải tiến bằng cách gửi các trường đã điền
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(err.error || 'Network response was not ok');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.value) {
+                            input.value = data.value;
+                        }
+                        completed++;
+                        progressToast.querySelector('span').textContent = 
+                            `Đang điền tự động (${completed}/${fieldsToFill.length})...`;
+                        
+                        if (completed === fieldsToFill.length) {
+                            handleComplete();
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`Error auto-filling field ${input.id}:`, error);
+                        hasError = true;
+                        completed++;
+                        
+                        // Hiển thị lỗi cho trường cụ thể
+                        const errorDiv = document.getElementById(`error-${input.id}`);
+                        if (errorDiv) {
+                            errorDiv.textContent = error.message || 'Lỗi khi điền tự động';
+                            errorDiv.classList.remove('hidden');
+                        }
+                        
+                        if (completed === fieldsToFill.length) {
+                            handleComplete();
+                        }
+                    });
+                }, index * 500); // Delay mỗi request 500ms để tránh overload server
+            });
+        }
+        // Các hàm JavaScript giữ nguyên như bản gốc
+        function viewFormDetails(formId) {
+            fetch(`/form/${formId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.error || 'Có lỗi xảy ra');
+                        });
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    document.documentElement.innerHTML = html;
+                    initializeEventListeners();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast(error.message || 'Có lỗi xảy ra khi tải biểu mẫu', 'error');
+                });
+        }
 
-    // Khởi tạo khi trang load
-    document.addEventListener('DOMContentLoaded', initializeEventListeners);
+        function initializeEventListeners() {
+            document.querySelector('form')?.addEventListener('submit', handleFormSubmit);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            
+            // Thêm hiệu ứng khi trang load
+            document.querySelectorAll('.form-input-group').forEach((group, index) => {
+                group.style.opacity = '0';
+                group.style.transform = 'translateY(10px)';
+                group.style.animation = `fadeInUp 0.3s ease forwards ${index * 0.1}s`;
+            });
+        });
+
         document.addEventListener('mousedown', function(e) {
             document.querySelectorAll("ul[id^='suggestions-']").forEach(suggestionsList => {
                 if (!suggestionsList.contains(e.target) && !e.target.closest('button[onclick^="loadSuggestions"]')) {
@@ -220,12 +539,11 @@
         function loadSuggestions(fieldCode) {
             const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
             const input = document.getElementById(fieldCode);
-            const button = input.nextElementSibling;
+            const button = input.nextElementSibling.querySelector('button[onclick^="loadSuggestions"]');
             const loadingIcon = button.querySelector('.suggestion-loading');
             const suggestionIcon = button.querySelector('.suggestion-icon');
             const errorDiv = document.getElementById(`error-${fieldCode}`);
             
-            // Lấy tất cả giá trị hiện tại của form
             const formData = {};
             document.querySelectorAll('form input[type="text"]').forEach(input => {
                 if (input.value.trim()) {
@@ -233,7 +551,6 @@
                 }
             });
     
-            // Toggle loading state
             loadingIcon.classList.remove('hidden');
             suggestionIcon.classList.add('hidden');
             button.disabled = true;
@@ -260,7 +577,7 @@
                 if (data.suggestions && data.suggestions.length > 0) {
                     data.suggestions.forEach((suggestion, index) => {
                         const li = document.createElement('li');
-                        li.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200 touch-manipulation';
+                        li.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200';
                         li.textContent = suggestion;
                         li.setAttribute('role', 'option');
                         li.setAttribute('tabindex', '0');
@@ -301,12 +618,11 @@
         function loadGptSuggestions(fieldCode) {
             const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
             const input = document.getElementById(fieldCode);
-            const button = input.nextElementSibling.nextElementSibling;
+            const button = input.nextElementSibling.querySelector('button[onclick^="loadGptSuggestions"]');
             const loadingIcon = button.querySelector('.gpt-suggestion-loading');
             const suggestionIcon = button.querySelector('.gpt-suggestion-icon');
             const errorDiv = document.getElementById(`error-${fieldCode}`);
     
-            // Toggle loading state
             loadingIcon.classList.remove('hidden');
             suggestionIcon.classList.add('hidden');
             button.disabled = true;
@@ -330,7 +646,7 @@
                 if (data.suggestions && data.suggestions.length > 0) {
                     data.suggestions.forEach((suggestion, index) => {
                         const li = document.createElement('li');
-                        li.className = 'px-4 py-3 hover:bg-green-50 cursor-pointer transition-colors duration-200 touch-manipulation';
+                        li.className = 'px-4 py-3 hover:bg-green-50 cursor-pointer transition-colors duration-200';
                         li.textContent = suggestion;
                         li.setAttribute('role', 'option');
                         li.setAttribute('tabindex', '0');
@@ -369,92 +685,90 @@
         }
     
         function generateDocx() { 
-    const button = event.target.closest('button');
-    const originalContent = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="ml-2">Đang xử lý...</span>';
+            const button = event.target.closest('button');
+            const originalContent = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="ml-2">Đang xử lý...</span>';
 
-    // Thu thập dữ liệu từ form
-    const formData = {};
-    const form = document.querySelector('form');
-    const inputs = form.querySelectorAll('input[type="text"]');
+            const formData = new FormData();
+            const form = document.querySelector('form');
+            const inputs = form.querySelectorAll('input[type="text"]');
 
-    inputs.forEach(input => {
-        if (input.id && input.value) {
-            formData[input.id] = input.value;
-        }
-    });
-    
-    // Thêm tên tài liệu vào formData nếu có
-    const documentNameInput = document.getElementById('document_name');
-    if (documentNameInput && documentNameInput.value) {
-        formData['filename'] = documentNameInput.value;
-    }
+            inputs.forEach(input => {
+                if (input.id && input.value) {
+                    formData.append(input.id, input.value);
+                }
+            });
+            
+            // Tạo tên tài liệu tự động dựa trên nội dung form
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            let documentName = 'Tài-liệu-' + timestamp;
+            
+            // Nếu có trường quan trọng, sử dụng nó làm tên tài liệu
+            if (formData.get('contract_number')) {
+                documentName = 'Hợp-đồng-' + formData.get('contract_number');
+            } else if (formData.get('customer_name')) {
+                documentName = 'Tài-liệu-' + formData.get('customer_name');
+            }
+            
+            formData.append('document_name', documentName);
 
-    fetch('/generate-docx', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => {
-        const contentType = response.headers.get('Content-Type');
-        if (!response.ok) {
-            return response.json().then(err => {
-                throw new Error(err.error || 'Có lỗi xảy ra khi tạo tài liệu');
+            fetch('/save-and-generate-docx', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                const contentType = response.headers.get('Content-Type');
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Có lỗi xảy ra khi tạo tài liệu');
+                    });
+                }
+                if (!contentType || !contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+                    throw new Error('Định dạng tài liệu không hợp lệ');
+                }
+                return response.blob().then(blob => ({ blob, headers: response.headers }));
+            })
+            .then(({ blob, headers }) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                let filename = documentName + '.docx';
+                
+                const contentDisposition = headers.get('Content-Disposition');
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+?)"/i);
+                    if (filenameMatch && filenameMatch[1]) {
+                        filename = filenameMatch[1];
+                    }
+                }
+                
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                button.disabled = false;
+                button.innerHTML = originalContent;
+                showToast('Tài liệu đã được tạo và lưu thành công!', 'success');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+                button.innerHTML = originalContent;
+                showToast(error.message || 'Có lỗi xảy ra khi tạo tài liệu. Vui lòng thử lại.', 'error');
             });
         }
-        if (!contentType || !contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
-            throw new Error('Định dạng tài liệu không hợp lệ');
-        }
-        return response.blob().then(blob => ({ blob, headers: response.headers }));
-    })
-    .then(({ blob, headers }) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        let filename = 'form-data.docx';
-        
-        // Cố gắng lấy tên file từ Content-Disposition header
-        const contentDisposition = headers.get('Content-Disposition');
-        if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="(.+?)"/i);
-            if (filenameMatch && filenameMatch[1]) {
-                filename = filenameMatch[1];
-            } else {
-                filename = `form-data-${timestamp}.docx`;
-            }
-        }
-        
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-
-        button.disabled = false;
-        button.innerHTML = originalContent;
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        button.disabled = false;
-        button.innerHTML = originalContent;
-        alert(error.message || 'Có lỗi xảy ra khi tạo tài liệu. Vui lòng thử lại.');
-    });
-}
 
         function loadMlSuggestions(fieldCode) {
             const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
             const input = document.getElementById(fieldCode);
-            const button = input.nextElementSibling.nextElementSibling.nextElementSibling;
+            const button = input.nextElementSibling.querySelector('button[onclick^="loadMlSuggestions"]');
             const loadingIcon = button.querySelector('.ml-suggestion-loading');
             const suggestionIcon = button.querySelector('.ml-suggestion-icon');
             const errorDiv = document.getElementById(`error-${fieldCode}`);
             
-            // Lấy tất cả giá trị hiện tại của form
             const formData = {};
             document.querySelectorAll('form input[type="text"]').forEach(input => {
                 if (input.value.trim()) {
@@ -462,10 +776,8 @@
                 }
             });
             
-            // Lấy văn bản ngữ cảnh từ các trường đã điền
             let contextText = Object.values(formData).join(' ');
     
-            // Toggle loading state
             loadingIcon.classList.remove('hidden');
             suggestionIcon.classList.add('hidden');
             button.disabled = true;
@@ -493,7 +805,7 @@
                 if (data.suggestions && data.suggestions.length > 0) {
                     data.suggestions.forEach((suggestion, index) => {
                         const li = document.createElement('li');
-                        li.className = 'px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors duration-200 touch-manipulation';
+                        li.className = 'px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors duration-200';
                         li.textContent = suggestion;
                         li.setAttribute('role', 'option');
                         li.setAttribute('tabindex', '0');
@@ -515,7 +827,6 @@
                     suggestionsList.setAttribute('role', 'listbox');
                     suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý thông minh');
                 } else {
-                    // Hiển thị thông báo lỗi chi tiết nếu có
                     if (data.error_details) {
                         errorDiv.textContent = `Không có gợi ý thông minh: ${data.error_details}`;
                     } else {
@@ -534,6 +845,49 @@
                 suggestionIcon.classList.remove('hidden');
                 button.disabled = false;
             });
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium animate__animated animate__fadeInUp ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('animate__fadeInUp');
+                toast.classList.add('animate__fadeOutDown');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 500);
+            }, 3000);
+        }
+        
+        function saveAndGenerateDocx() {
+            // Validate form first
+            let isValid = true;
+            document.querySelectorAll('form input[type="text"][required]').forEach(input => {
+                if (!input.value.trim()) {
+                    isValid = false;
+                    const errorDiv = document.getElementById(`error-${input.id}`);
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Vui lòng điền thông tin vào trường này';
+                        errorDiv.classList.remove('hidden');
+                    }
+                }
+            });
+            
+            if (isValid) {
+                generateDocx();
+            } else {
+                showToast('Vui lòng điền đầy đủ các trường bắt buộc', 'error');
+                // Scroll to first error
+                const firstError = document.querySelector('[id^="error-"]:not(.hidden)');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
         }
     </script>
 </body>
