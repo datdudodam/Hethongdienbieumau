@@ -84,8 +84,9 @@ class MLRecommender:
         return " ".join(filtered_tokens)
     
     def build_content_based_model(self):
-        """Xây dựng mô hình Content-Based Filtering"""
+        """Xây dựng mô hình Content-Based Filtering với cải thiện xử lý trường hợp không có dữ liệu"""
         if not self.form_data:
+            logger.warning("No form data available for building content-based model")
             return
             
         # Tạo từ điển chứa tất cả các giá trị cho mỗi trường
@@ -173,9 +174,15 @@ class MLRecommender:
             print(f"Lỗi khi xây dựng mô hình Collaborative Filtering: {e}")
     
     def get_content_based_recommendations(self, partial_form, field_code):
-        """Lấy gợi ý dựa trên nội dung đã nhập"""
+        """Lấy gợi ý dựa trên nội dung đã nhập với xử lý nâng cao cho trường hợp không có dữ liệu"""
         if not self.field_vectors or field_code not in self.field_vectors:
-            return []
+            # Thử tìm trường tương tự nếu không tìm thấy trường chính xác
+            similar_fields = self._find_similar_fields(field_code)
+            if similar_fields:
+                # Sử dụng trường tương tự nhất
+                field_code = similar_fields[0]
+            else:
+                return []
             
         # Tìm các trường đã có giá trị trong form hiện tại
         filled_fields = {k: v for k, v in partial_form.items() if v and k != field_code}

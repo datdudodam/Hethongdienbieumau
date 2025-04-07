@@ -11,33 +11,67 @@ document.addEventListener('DOMContentLoaded', function() {
     // Thêm nút gợi ý nâng cao cho mỗi trường
     addEnhancedSuggestionButtons();
 });
-
-// Tự động điền biểu mẫu dựa trên lịch sử
-function autoFillForm() {
-    // Lấy danh sách các trường trong biểu mẫu hiện tại
-    const formFields = [];
+// Thêm nút gợi ý nâng cao cho mỗi trường văn bản
+function addEnhancedSuggestionButtons() {
     document.querySelectorAll('form input[type="text"]').forEach(input => {
         if (input.id && input.id.match(/\[_\d+_\]/)) {
-            formFields.push(input.id);
+            // Tạo vùng chứa nút + suggestions nếu chưa có
+            let wrapper = input.parentElement;
+            if (!wrapper.querySelector(`button[data-enhanced-suggestions="${input.id}"]`)) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'ml-2 p-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-full relative';
+                button.setAttribute('data-enhanced-suggestions', input.id);
+                button.setAttribute('aria-label', 'Gợi ý nâng cao');
+                button.innerHTML = `
+                    <span class="enhanced-suggestion-icon">🔍</span>
+                    <span class="enhanced-suggestion-loading hidden animate-spin">⏳</span>
+                `;
+                button.onclick = () => loadEnhancedSuggestions(input.id);
+                wrapper.appendChild(button);
+
+                // Tạo danh sách suggestions
+                const suggestionsList = document.createElement('ul');
+                suggestionsList.id = `suggestions-${input.id}`;
+                suggestionsList.className = 'hidden border rounded-lg bg-white shadow-lg mt-2 absolute z-50 max-h-48 overflow-y-auto w-full';
+                wrapper.appendChild(suggestionsList);
+
+                // Tạo div báo lỗi nếu cần
+                const errorDiv = document.createElement('div');
+                errorDiv.id = `error-${input.id}`;
+                errorDiv.className = 'text-red-500 text-sm mt-1 hidden';
+                wrapper.appendChild(errorDiv);
+            }
         }
     });
+}
+
+
+// Tự động điền biểu mẫu dựa trên lịch sử
+function autoFillField(fieldName) {
+   
+    const fieldGroup = input.closest('.form-input-group');
     
-    if (formFields.length === 0) {
-        console.log('Không tìm thấy trường nào trong biểu mẫu');
-        return;
-    }
+    // Lấy tên trường từ label
+    const fieldName = fieldGroup.querySelector('label').textContent.trim();
     
-    // Hiển thị thông báo đang tải
-    const loadingToast = showToast('Đang tự động điền biểu mẫu...', 'info', 0);
-    
-    // Gọi API để lấy dữ liệu tự động điền
-    fetch('/auto_fill_form', {
+    // Lấy dữ liệu form hiện tại
+    const formData = {};
+    document.querySelectorAll('form input[type="text"]').forEach(input => {
+        if (input.value.trim()) {
+            formData[input.id] = input.value.trim();
+        }
+    });
+
+    fetch('/auto_fill_field', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            target_fields: formFields
+           
+            field_name: fieldName, // Gửi cả tên trường
+            partial_form: formData
         })
     })
     .then(response => {

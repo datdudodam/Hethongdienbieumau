@@ -273,225 +273,122 @@
     </div>
 
     <script>
-        function autoFillField(fieldCode) {
-            const input = document.getElementById(fieldCode);
-            if (!input) return;
-
-            // Tìm button bằng cách duyệt qua các phần tử anh em
-            const buttonContainer = input.closest('.flex').querySelector('.input-button-group');
-            const button = buttonContainer.querySelector('button[onclick^="autoFillField"]');
-            if (!button) return;
-
+        // Thêm các hàm xử lý tự động điền vào phần script
+        function autoFillField(fieldName) {
+            const input = document.getElementById(fieldName);
+            const button = input.closest('.form-input-group').querySelector('button[onclick*="autoFillField"]');
             const loadingIcon = button.querySelector('.auto-fill-loading');
-            const autoFillIcon = button.querySelector('.auto-fill-icon');
-            const errorDiv = document.getElementById(`error-${fieldCode}`);
+            const fillIcon = button.querySelector('.auto-fill-icon');
+            const errorDiv = document.getElementById(`error-${fieldName}`);
             
-            loadingIcon.classList.remove('hidden');
-            autoFillIcon.classList.add('hidden');
-            button.disabled = true;
-            if (errorDiv) errorDiv.classList.add('hidden');
-            
-            // Lấy danh sách các trường đã điền để gửi lên server
-            const filledFields = {};
+            // Lấy dữ liệu form hiện tại
+            const formData = {};
             document.querySelectorAll('form input[type="text"]').forEach(input => {
-                if (input.value.trim() && input.id !== fieldCode) {
-                    filledFields[input.id] = input.value.trim();
+                if (input.value.trim()) {
+                    formData[input.id] = input.value.trim();
                 }
             });
-            
+
+            loadingIcon.classList.remove('hidden');
+            fillIcon.classList.add('hidden');
+            button.disabled = true;
+            errorDiv.classList.add('hidden');
+
             fetch('/auto_fill_field', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ 
-                    field_code: fieldCode,
-                    filled_fields: filledFields
+                    field_name: fieldName,        // ✅ Đã sửa từ field_code => field_name
+                    partial_form: formData
                 })
             })
             .then(response => {
                 if (!response.ok) {
-                    return response.json().then(err => {
-                        throw new Error(err.error || 'Network response was not ok');
-                    });
+                    return response.json().then(err => { throw err; });
                 }
                 return response.json();
             })
             .then(data => {
                 if (data.value) {
                     input.value = data.value;
-                    showToast(`Đã tự động điền ${data.field_name || 'trường'}`, 'success');
-                    
-                    // Hiển thị thông tin chi tiết nếu có
-                    if (data.details) {
-                        // Xóa thông tin chi tiết cũ nếu có
-                        const oldDetails = input.parentNode.querySelector('.auto-fill-details');
-                        if (oldDetails) oldDetails.remove();
-                        
-                        const details = document.createElement('div');
-                        details.className = 'auto-fill-details mt-2 text-sm text-gray-600 bg-blue-50 p-2 rounded';
-                        details.innerHTML = `
-                            <p><strong>Nguồn:</strong> ${data.details.source_name || 'Không rõ'}</p>
-                            ${data.details.similarity ? `<p><strong>Độ tương đồng:</strong> ${Math.round(data.details.similarity * 100)}%</p>` : ''}
-                        `;
-                        input.parentNode.insertBefore(details, input.nextSibling);
-                        
-                        // Tự động xóa sau 5 giây
-                        setTimeout(() => {
-                            details.remove();
-                        }, 5000);
-                    }
+                    showAutoFillDetails(input, data);
+                    showToast(`Đã tự động điền trường "${fieldName}"`, 'success');
                 } else {
-                    const errorMsg = data.message || 'Không tìm thấy dữ liệu để điền tự động';
-                    if (errorDiv) {
-                        errorDiv.textContent = errorMsg;
-                        errorDiv.classList.remove('hidden');
-                    } else {
-                        showToast(errorMsg, 'error');
-                    }
+                    errorDiv.textContent = data.error || 'Không tìm thấy giá trị phù hợp';
+                    errorDiv.classList.remove('hidden');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                const errorMsg = error.message || 'Có lỗi xảy ra khi điền tự động. Vui lòng thử lại.';
-                if (errorDiv) {
-                    errorDiv.textContent = errorMsg;
-                    errorDiv.classList.remove('hidden');
-                } else {
-                    showToast(errorMsg, 'error');
-                }
+                errorDiv.textContent = error.error || 'Có lỗi xảy ra khi điền tự động. Vui lòng thử lại.';
+                errorDiv.classList.remove('hidden');
             })
             .finally(() => {
                 loadingIcon.classList.add('hidden');
-                autoFillIcon.classList.remove('hidden');
+                fillIcon.classList.remove('hidden');
                 button.disabled = false;
             });
         }
 
-        function autoFillAllFields() {
-            // Lấy danh sách tất cả các trường input
-            const inputs = document.querySelectorAll('form input[type="text"]');
-            const fieldsToFill = Array.from(inputs).filter(input => !input.value.trim());
-            
-            if (fieldsToFill.length === 0) {
-                showToast('Tất cả các trường đã được điền', 'info');
-                return;
-            }
-            
-            // Disable nút và hiển thị loading
+
+        function autoFillAllFields(event) {
             const button = event.target;
-            const originalContent = button.innerHTML;
+            const originalText = button.innerHTML;
             button.disabled = true;
-            button.innerHTML = `
-                <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Đang xử lý...
-            `;
+            button.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang điền tự động...';
             
-            const progressToast = document.createElement('div');
-            progressToast.className = 'fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium animate__animated animate__fadeInUp bg-blue-500';
-            progressToast.innerHTML = `
-                <div class="flex items-center">
-                    <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Đang điền tự động (0/${fieldsToFill.length})...</span>
-                </div>
-            `;
-            document.body.appendChild(progressToast);
-            
-            let completed = 0;
-            let hasError = false;
-            
-            // Hàm xử lý hoàn thành
-            const handleComplete = () => {
-                button.disabled = false;
-                button.innerHTML = originalContent;
-                
-                if (hasError) {
-                    progressToast.innerHTML = `
-                        <div class="flex items-center">
-                            <svg class="h-5 w-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span>Đã điền tự động ${completed} trường (có lỗi)</span>
-                        </div>
-                    `;
-                } else {
-                    progressToast.innerHTML = `
-                        <div class="flex items-center">
-                            <svg class="h-5 w-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span>Đã điền tự động ${completed} trường</span>
-                        </div>
-                    `;
+            // Lấy dữ liệu form hiện tại
+            const formData = {};
+            document.querySelectorAll('form input[type="text"]').forEach(input => {
+                if (input.value.trim()) {
+                    formData[input.id] = input.value.trim();
                 }
-                
-                setTimeout(() => {
-                    progressToast.classList.remove('animate__fadeInUp');
-                    progressToast.classList.add('animate__fadeOutDown');
-                    setTimeout(() => {
-                        document.body.removeChild(progressToast);
-                    }, 500);
-                }, 2000);
-            };
+            });
             
-            // Điền từng trường một
-            fieldsToFill.forEach((input, index) => {
-                setTimeout(() => {
-                    fetch('/auto_fill_field', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ 
-                            field_code: input.id,
-                            filled_fields: {} // Có thể cải tiến bằng cách gửi các trường đã điền
-                        })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => {
-                                throw new Error(err.error || 'Network response was not ok');
-                            });
+            fetch('/auto_fill_all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    partial_form: formData
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.suggestions) {
+                    let filledCount = 0;
+                    for (const [fieldCode, suggestion] of Object.entries(data.suggestions)) {
+                        const input = document.getElementById(fieldCode);
+                        if (input && !input.value.trim() && suggestion.value) {
+                            input.value = suggestion.value;
+                            showAutoFillDetails(input, suggestion);
+                            filledCount++;
                         }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.value) {
-                            input.value = data.value;
-                        }
-                        completed++;
-                        progressToast.querySelector('span').textContent = 
-                            `Đang điền tự động (${completed}/${fieldsToFill.length})...`;
-                        
-                        if (completed === fieldsToFill.length) {
-                            handleComplete();
-                        }
-                    })
-                    .catch(error => {
-                        console.error(`Error auto-filling field ${input.id}:`, error);
-                        hasError = true;
-                        completed++;
-                        
-                        // Hiển thị lỗi cho trường cụ thể
-                        const errorDiv = document.getElementById(`error-${input.id}`);
-                        if (errorDiv) {
-                            errorDiv.textContent = error.message || 'Lỗi khi điền tự động';
-                            errorDiv.classList.remove('hidden');
-                        }
-                        
-                        if (completed === fieldsToFill.length) {
-                            handleComplete();
-                        }
-                    });
-                }, index * 500); // Delay mỗi request 500ms để tránh overload server
+                    }
+                    showToast(`Đã tự động điền ${filledCount} trường`, 'success');
+                } else {
+                    showToast('Không tìm thấy dữ liệu để điền tự động', 'warning');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Có lỗi xảy ra khi điền tự động. Vui lòng thử lại.', 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = originalText;
             });
         }
+
+        
         // Các hàm JavaScript giữ nguyên như bản gốc
         function viewFormDetails(formId) {
             fetch(`/form/${formId}`)
@@ -889,6 +786,36 @@
                 }
             }
         }
+       
+
+        function showAutoFillDetails(input, data) {
+        // Xóa thông tin cũ nếu có
+                const oldDetails = input.parentNode.querySelector('.auto-fill-details');
+                if (oldDetails) oldDetails.remove();
+                
+                if (data.details) {
+                    const details = document.createElement('div');
+                    details.className = 'auto-fill-details mt-2 text-sm text-gray-600 bg-blue-50 p-2 rounded-lg border border-blue-100';
+                    details.innerHTML = `
+                        <div class="font-medium text-blue-700">Thông tin tự động điền:</div>
+                        <div class="mt-1 grid grid-cols-2 gap-1">
+                            <div class="text-blue-600">Nguồn:</div>
+                            <div>${data.details.source_name || 'Không rõ'}</div>
+                            ${data.details.similarity ? `<div class="text-blue-600">Độ tương đồng:</div><div>${Math.round(data.details.similarity * 100)}%</div>` : ''}
+                            ${data.details.confidence ? `<div class="text-blue-600">Độ tin cậy:</div><div>${Math.round(data.details.confidence * 100)}%</div>` : ''}
+                            ${data.details.method ? `<div class="text-blue-600">Phương pháp:</div><div>${data.details.method}</div>` : ''}
+                        </div>
+                    `;
+                    input.parentNode.insertBefore(details, input.nextSibling);
+                    
+                    // Tự động ẩn sau 5 giây
+                    setTimeout(() => {
+                        details.remove();
+                    }, 5000);
+                }
+            }
+
+          
     </script>
 </body>
 </html>

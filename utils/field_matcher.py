@@ -2,23 +2,25 @@ import numpy as np
 import re
 import nltk
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import gensim
 from gensim.models import Word2Vec
 import os
 import json
+from typing import List, Dict, Optional, Tuple, Set
+from collections import defaultdict
+import difflib
+import unicodedata
+import re
 from config.config import FORM_HISTORY_PATH
-nltk.download('punkt_tab')
+from nltk.stem import WordNetLemmatizer
 # Đảm bảo các tài nguyên NLTK được tải xuống
 def ensure_nltk_resources():
     resources = {
-        'punkt_tab': 'tokenizers/punkt_tab',
+        'punkt_tab': 'tokenizers/punkt_tab', 
         'stopwords': 'corpora/stopwords', 
         'wordnet': 'corpora/wordnet',
-        'omw-1.4': 'corpora/omw-1.4'  # Cần thiết cho WordNetLemmatizer
+        'omw-1.4': 'corpora/omw-1.4'
     }
     for resource, path in resources.items():
         try:
@@ -32,448 +34,335 @@ def ensure_nltk_resources():
             except Exception as e:
                 print(f"Error downloading {resource}: {e}")
                 print(f"Please manually download {resource} using: nltk.download('{resource}')")
-                # Không dừng vòng lặp nếu tải thất bại, chỉ ghi log lỗi
 
 # Tải các resource cần thiết
 ensure_nltk_resources()
-class FieldMatcher:
-    def __init__(self):
-        self.lemmatizer = WordNetLemmatizer()
-        self.stop_words = set(stopwords.words('english'))
-        # Mở rộng stopwords tiếng Việt
-        self.vietnamese_stopwords = {
-            'của', 'và', 'các', 'có', 'được', 'trong', 'là', 'cho', 'những', 'với', 
-            'không', 'này', 'đến', 'khi', 'về', 'như', 'từ', 'một', 'người', 'năm', 
-            'bị', 'đã', 'sẽ', 'cũng', 'vào', 'ra', 'nếu', 'để', 'tại', 'theo', 
+
+class EnhancedFieldMatcher:
+    def __init__(self, form_history_path: str):
+        self.form_history_path = form_history_path
+        self.stop_words = self._initialize_stopwords()
+        self.field_name_cache = {}
+        self.field_value_mapping = defaultdict(list)
+        self.vectorizer = None
+        self.word2vec_model = None
+        self.field_vectors = None
+        self.field_names = []
+        self.field_embeddings = {}
+        self.matched_fields = {}
+        
+        # Tải và xử lý dữ liệu lịch sử
+        self.form_history = self._load_form_history()
+        self._build_field_value_mapping()
+        self._build_models()
+    
+    def _initialize_stopwords(self) -> Set[str]:
+        """Khởi tạo stopwords cho cả tiếng Anh và tiếng Việt"""
+        english_stopwords = set(stopwords.words('english'))
+        vietnamese_stopwords = {
+            'của', 'và', 'các', 'có', 'được', 'trong', 'là', 'cho', 'những', 'với',
+            'không', 'này', 'đến', 'khi', 'về', 'như', 'từ', 'một', 'người', 'năm',
+            'bị', 'đã', 'sẽ', 'cũng', 'vào', 'ra', 'nếu', 'để', 'tại', 'theo',
             'sau', 'trên', 'hoặc', 'tôi', 'bạn', 'anh', 'chị', 'họ', 'của', 'mình'
         }
-        self.stop_words.update(self.vietnamese_stopwords)
-        self.form_history = self._load_form_history()
-        self.field_vectors = {}
-        self.field_embeddings = {}
-        self.field_name_cache = {}  # Cache cho tên trường đã xử lý
-        self.word2vec_model = None
-        self.build_models()
+        return english_stopwords.union(vietnamese_stopwords)
     
-    def _load_form_history(self):
+    def _load_form_history(self) -> List[Dict]:
         """Tải lịch sử biểu mẫu từ file JSON"""
-        if os.path.exists(FORM_HISTORY_PATH):
-            with open(FORM_HISTORY_PATH, 'r', encoding='utf-8') as f:
-                return json.load(f)
+        if os.path.exists(self.form_history_path):
+            try:
+                with open(self.form_history_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"Error loading form history: {e}")
+                return []
         return []
     
-    def preprocess_text(self, text):
-        """Tiền xử lý văn bản cho NLP với hỗ trợ tốt hơn cho tiếng Việt"""
-        if not text or not isinstance(text, str):
+    def _build_field_value_mapping(self):
+        """Xây dựng ánh xạ giữa tên trường và các giá trị đã điền"""
+        for form in self.form_history:
+            if isinstance(form, dict) and 'form_data' in form:
+                form_data = form['form_data']
+                # Bỏ qua các trường đặc biệt
+                special_fields = {'form_id', 'document_name'}
+                for field_name, value in form_data.items():
+                    if field_name not in special_fields and value and (val_str := str(value).strip()):
+                        self.field_value_mapping[field_name].append(val_str)
+    
+    def _preprocess_text(self, text: str) -> str:
+        """Tiền xử lý văn bản nâng cao cho tiếng Việt"""
+        if not text:
             return ""
             
-        # Chuyển về chữ thường
-        text = text.lower()
+        # Chuẩn hóa Unicode và chuyển đổi về chữ thường
+        text = unicodedata.normalize('NFC', text.lower())
         
-        # Chỉ loại bỏ một số ký tự đặc biệt, giữ lại dấu tiếng Việt
-        # Giữ lại các ký tự Unicode cho tiếng Việt
-        text = re.sub(r'[!"#$%&\'()*+,-./:;<=>?@\[\]^_`{|}~]', ' ', text)
+        # Loại bỏ dấu câu và ký tự đặc biệt, giữ lại dấu tiếng Việt
+        text = re.sub(r'[^\w\sáàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]', ' ', text)
         
-        # Tokenize
-        tokens = word_tokenize(text)
+        # Thay thế từ đồng nghĩa phổ biến
+        synonyms = {
+            'ho_ten': ['hovaten', 'hoten', 'họ_tên', 'tên', 'họ và tên'],
+            'dia_chi': ['diachi', 'địa_chỉ', 'noi_o', 'địa chỉ', 'address'],
+            'dien_thoai': ['sdt', 'so_dien_thoai', 'đt', 'phone', 'tel']
+        }
         
-        # Loại bỏ stopwords nhưng giữ lại các từ có ý nghĩa
-        # Chỉ loại bỏ stopwords nếu từ đó thực sự là stopword và không phải từ có nghĩa
-        filtered_tokens = []
-        for word in tokens:
-            # Nếu từ chỉ có 1 ký tự, bỏ qua
-            if len(word) <= 1:
-                continue
-            # Nếu từ không phải stopword hoặc là từ có nghĩa, giữ lại
-            if word not in self.stop_words:
-                filtered_tokens.append(word)
+        for key, values in synonyms.items():
+            for synonym in values:
+                text = re.sub(r'\b' + re.escape(synonym) + r'\b', key, text)
         
-        # Đảm bảo luôn có ít nhất một token để tránh empty vocabulary
-        if not filtered_tokens and tokens:
-            filtered_tokens = tokens[:1]  # Giữ lại ít nhất một token
-            
-        return " ".join(filtered_tokens)
+        # Loại bỏ stopwords
+        tokens = text.split()
+        filtered_tokens = [token for token in tokens if token not in self.stop_words]
+        
+        return ' '.join(filtered_tokens)
     
-    def extract_field_name(self, field_code):
-        """Cải tiến trích xuất tên trường từ mã trường"""
-        # Kiểm tra cache
-        if field_code in self.field_name_cache:
-            return self.field_name_cache[field_code]
-            
-        # Xử lý các trường hợp đặc biệt của mã trường
-        if field_code.startswith('[') and field_code.endswith(']'):
-            # Tìm tên trường tương ứng trong form_history
-            for form in self.form_history:
-                if 'form_data' in form:
-                    for key in form['form_data'].keys():
-                        if key.endswith(':'):  # Trường hợp "Tên tôi là:"
-                            clean_key = key.rstrip(':')
-                            if self._calculate_field_similarity(field_code, key) > 0.8:
-                                self.field_name_cache[field_code] = clean_key
-                                return clean_key
+    def _normalize_field_name(self, field_name: str) -> str:
+        """Chuẩn hóa tên trường nâng cao"""
+        # Chuẩn hóa Unicode
+        field_name = unicodedata.normalize('NFC', field_name)
         
-        # Xử lý thông thường
-        name = re.sub(r'[\[\]_0-9]', '', field_code)
-        name = name.strip()
+        # Loại bỏ ký tự đặc biệt, giữ lại dấu tiếng Việt
+        field_name = re.sub(r'[^\w\sáàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]', ' ', field_name)
         
-        # Xử lý trường hợp có dấu hai chấm ở cuối
-        if name.endswith(':'):
-            name = name[:-1]
-            
-        # Cache kết quả
-        self.field_name_cache[field_code] = name
-        return name
-    def _calculate_field_similarity(self, field1, field2):
-        """Tính toán độ tương đồng giữa hai tên trường"""
-        name1 = self.preprocess_text(self.extract_field_name(field1))
-        name2 = self.preprocess_text(self.extract_field_name(field2))
+        # Thay thế khoảng trắng bằng dấu gạch dưới
+        field_name = re.sub(r'\s+', '_', field_name.strip())
         
-        # Nếu một trong hai chuỗi rỗng, trả về 0
-        if not name1 or not name2:
-            return 0
-            
-        # Tách thành các từ
-        words1 = set(name1.split())
-        words2 = set(name2.split())
-        
-        # Tính số từ chung
-        common_words = words1.intersection(words2)
-        
-        # Tính độ tương đồng dựa trên tỷ lệ từ chung
-        similarity = len(common_words) / max(len(words1), len(words2))
-        
-        return similarity
-    def build_models(self):
+        return field_name.lower()
+    
+    def _build_models(self):
         """Xây dựng các mô hình TF-IDF và Word2Vec"""
-        # Thu thập tất cả các giá trị trường để huấn luyện Word2Vec
-        all_field_values = []
-        field_values_dict = {}
+        # Thu thập tất cả các tên trường đã được tiền xử lý
+        processed_fields = []
+        field_names = []
         
         for form in self.form_history:
-            if 'form_data' in form:
-                form_data = form['form_data']
-                for field_code, value in form_data.items():
-                    if isinstance(value, str) and value.strip():
-                        # Tiền xử lý giá trị
-                        processed_value = self.preprocess_text(value)
-                        if processed_value:
-                            tokens = processed_value.split()
-                            all_field_values.append(tokens)
-                            
-                            # Lưu giá trị cho từng trường
-                            if field_code not in field_values_dict:
-                                field_values_dict[field_code] = []
-                            field_values_dict[field_code].append(processed_value)
+            if isinstance(form, dict) and 'form_data' in form:
+                for field_name in form['form_data'].keys():
+                    if field_name not in self.field_name_cache:
+                        processed = self._preprocess_text(field_name)
+                        self.field_name_cache[field_name] = processed
+                        processed_fields.append(processed)
+                        field_names.append(field_name)
         
-        # Huấn luyện mô hình Word2Vec nếu có đủ dữ liệu
-        if not self.word2vec_model and len(all_field_values) > 1:
-            try:
-                self.word2vec_model = Word2Vec(sentences=all_field_values, vector_size=100, window=5, min_count=1, workers=4)
-                print("Đã huấn luyện mô hình Word2Vec thành công")
-            except Exception as e:
-                print(f"Lỗi khi huấn luyện Word2Vec: {e}")
-        
-        # Xây dựng vector TF-IDF cho mỗi trường
-        for field_code, values in field_values_dict.items():
-            if len(values) > 1:  # Cần ít nhất 2 giá trị để tính toán similarity
-                try:
-                    # Kiểm tra xem các giá trị có chứa từ nào không sau khi tiền xử lý
-                    has_tokens = False
-                    for value in values:
-                        if value.strip():
-                            has_tokens = True
-                            break
-                    
-                    if not has_tokens:
-                        print(f"Cảnh báo: Trường {field_code} không có từ nào sau khi tiền xử lý, bỏ qua")
-                        continue
-                    
-                    # Cấu hình TfidfVectorizer để xử lý tốt hơn với tiếng Việt
-                    # min_df=1: chấp nhận các từ xuất hiện ít nhất 1 lần
-                    # ngram_range=(1,2): xem xét cả từ đơn và cụm từ 2 từ
-                    vectorizer = TfidfVectorizer(min_df=1, ngram_range=(1,2))
-                    tfidf_matrix = vectorizer.fit_transform(values)
-                    
-                    # Kiểm tra xem vocabulary có rỗng không
-                    if len(vectorizer.vocabulary_) > 0:
-                        self.field_vectors[field_code] = {
-                            'vectorizer': vectorizer,
-                            'matrix': tfidf_matrix,
-                            'values': values
-                        }
-                    
-                    # Tạo embedding cho tên trường
-                    field_name = self.extract_field_name(field_code)
-                    if field_name and self.word2vec_model:
-                        try:
-                            field_tokens = self.preprocess_text(field_name).split()
-                            if field_tokens:
-                                # Tính trung bình các vector từ
-                                field_vector = np.mean([self.word2vec_model.wv[token] 
-                                                      for token in field_tokens 
-                                                      if token in self.word2vec_model.wv], axis=0)
-                                if not np.isnan(field_vector).any():
-                                    self.field_embeddings[field_code] = field_vector
-                        except Exception as e:
-                            print(f"Lỗi khi tạo embedding cho trường {field_code}: {e}")
-                            
-                except Exception as e:
-                    print(f"Lỗi khi xây dựng vector TF-IDF cho trường {field_code}: {e}")
+        # Xây dựng TF-IDF vectorizer
+        if processed_fields:
+            self.vectorizer = TfidfVectorizer()
+            self.field_vectors = self.vectorizer.fit_transform(processed_fields)
+            self.field_names = field_names
+            
+            # Xây dựng Word2Vec model
+            sentences = [field.split() for field in processed_fields if field.split()]
+            if sentences:
+                self.word2vec_model = Word2Vec(
+                    sentences, 
+                    vector_size=100, 
+                    window=5, 
+                    min_count=1, 
+                    workers=4,
+                    epochs=20
+                )
+                
+                # Tạo embeddings cho mỗi trường
+                for field, processed in zip(field_names, processed_fields):
+                    tokens = processed.split()
+                    if tokens:
+                        # Tính trung bình các vector từ (chỉ lấy tokens tồn tại trong vocab)
+                        embeddings = []
+                        for token in tokens:
+                            if token in self.word2vec_model.wv:
+                                embeddings.append(self.word2vec_model.wv[token])
+                        
+                        if embeddings:  # Chỉ gán nếu có ít nhất 1 embedding
+                            self.field_embeddings[field] = np.mean(embeddings, axis=0)
     
-     
-    def match_fields(self, source_fields, target_fields):
-        """Cải tiến so khớp các trường dựa trên tên trường từ database"""
-        matches = {}
+    def _calculate_similarity(self, text1: str, text2: str) -> float:
+        """Tính toán độ tương đồng tổng hợp sử dụng nhiều phương pháp"""
+        # Chuẩn hóa văn bản
+        norm1 = self._normalize_field_name(text1)
+        norm2 = self._normalize_field_name(text2)
         
-        # Tải dữ liệu form từ database
-        form_data = self._load_form_history()
-        field_names_db = {}
-        field_values_db = {}
+        # 1. SequenceMatcher similarity
+        seq_sim = difflib.SequenceMatcher(None, norm1, norm2).ratio()
         
-        # Xây dựng từ điển ánh xạ field_code với field_name và giá trị từ database
-        for form in form_data:
-            if 'form_data' in form:
-                for field_code, value in form['form_data'].items():
-                    # Lấy tên trường thực tế từ form_history
-                    if field_code not in field_names_db:
-                        # Ưu tiên sử dụng tên trường trực tiếp từ form_history nếu có
-                        if field_code in form['form_data'] and isinstance(field_code, str):
-                            # Loại bỏ dấu hai chấm ở cuối nếu có
-                            clean_name = field_code.rstrip(':') if field_code.endswith(':') else field_code
-                            field_names_db[field_code] = clean_name
-                        else:
-                            field_names_db[field_code] = self.extract_field_name(field_code)
-                        field_values_db[field_code] = []
-                    if isinstance(value, str) and value.strip():
-                        field_values_db[field_code].append(value)
+        # 2. TF-IDF cosine similarity
+        tfidf_sim = 0.0
+        if self.vectorizer and self.field_vectors is not None:
+            try:
+                query_vec = self.vectorizer.transform([self._preprocess_text(text1)])
+                target_vec = self.vectorizer.transform([self._preprocess_text(text2)])
+                tfidf_sim = cosine_similarity(query_vec, target_vec)[0][0]
+            except Exception as e:
+                print(f"TF-IDF similarity error: {e}")
         
-        # Tạo từ điển ánh xạ tên trường cho source và target
-        source_names = {}
-        for field in source_fields:
-            if field in field_names_db:
-                source_names[field] = field_names_db[field]
-            else:
-                source_names[field] = self.extract_field_name(field)
+        # 3. Word2Vec similarity (nếu có embeddings)
+        w2v_sim = 0.0
+        if self.word2vec_model:
+            try:
+                tokens1 = self._preprocess_text(text1).split()
+                tokens2 = self._preprocess_text(text2).split()
                 
-        target_names = {}
-        for field in target_fields:
-            if field in field_names_db:
-                target_names[field] = field_names_db[field]
-            else:
-                target_names[field] = self.extract_field_name(field)
+                if tokens1 and tokens2:
+                    # Kiểm tra xem tất cả tokens có trong vocab không
+                    if all(token in self.word2vec_model.wv for token in tokens1) and \
+                       all(token in self.word2vec_model.wv for token in tokens2):
+                        w2v_sim = self.word2vec_model.wv.n_similarity(tokens1, tokens2)
+            except Exception as e:
+                print(f"Word2Vec similarity error: {e}")
         
-        # So khớp các trường
-        for source_field, source_name in source_names.items():
-            best_match = None
-            best_score = 0
+        # Kết hợp các điểm similarity với trọng số
+        combined_sim = 0.4 * seq_sim + 0.3 * tfidf_sim + 0.3 * w2v_sim
+        
+        return combined_sim
+    
+    def match_fields(self, form_model: List[str], form_data: Dict[str, str], threshold: float = 0.65) -> Dict[str, str]:
+        """
+        Ghép các trường giữa form_model và form_data sử dụng kết hợp nhiều phương pháp
+        """
+        matched_fields = {}
+        used_model_fields = set()
+        used_data_fields = set()
+        
+        # Tạo danh sách các cặp tiềm năng
+        potential_matches = []
+        
+        for model_field in form_model:
+            for data_field in form_data.keys():
+                similarity = self._calculate_similarity(model_field, data_field)
+                if similarity >= threshold:
+                    potential_matches.append((similarity, model_field, data_field))
+        
+        # Sắp xếp theo độ tương đồng giảm dần
+        potential_matches.sort(reverse=True, key=lambda x: x[0])
+        
+        # Chọn các cặp tốt nhất không trùng lặp
+        for similarity, model_field, data_field in potential_matches:
+            if model_field not in used_model_fields and data_field not in used_data_fields:
+                matched_fields[model_field] = data_field
+                used_model_fields.add(model_field)
+                used_data_fields.add(data_field)
+        
+        self.matched_fields = matched_fields
+        return matched_fields
+    
+    def find_most_similar_field(self, query: str, top_n: int = 3) -> List[Tuple[str, float]]:
+        """
+        Tìm các trường tương tự nhất với query sử dụng kết hợp TF-IDF và Word2Vec
+        """
+        if not query or not self.field_names or not self.vectorizer:
+            return []
             
-            for target_field, target_name in target_names.items():
-                # Tính điểm tương đồng dựa trên tên trường thực tế
-                name_similarity = 0
-                if source_name.lower() == target_name.lower():
-                    name_similarity = 1.0  # Tên trường giống nhau hoàn toàn
-                else:
-                    # Tính độ tương đồng dựa trên từ khóa chung
-                    common_keywords = self._get_common_keywords(source_name, target_name)
-                    if common_keywords:
-                        name_similarity = 0.5 * len(common_keywords) / max(len(source_name.split()), len(target_name.split()))
-                
-                # Tính điểm tương đồng dựa trên mã trường
-                code_similarity = self._calculate_field_similarity(source_field, target_field)
-                
-                # Kết hợp điểm tương đồng, ưu tiên tên trường hơn
-                similarity = name_similarity * 0.7 + code_similarity * 0.3
-                
-                # Tăng điểm nếu có giá trị tương tự trong database
-                if source_field in field_values_db and target_field in field_values_db:
-                    source_values = set(field_values_db[source_field])
-                    target_values = set(field_values_db[target_field])
-                    common_values = source_values.intersection(target_values)
-                    if common_values:
-                        similarity += 0.2 * (len(common_values) / max(len(source_values), len(target_values)))
-                
-                if similarity > best_score:
-                    best_score = similarity
-                    best_match = target_field
+        try:
+            # Tiền xử lý query
+            processed_query = self._preprocess_text(query)
             
-            # Chỉ lấy các kết quả có độ tương đồng cao
-            if best_match and best_score > 0.6:  # Giảm ngưỡng xuống 0.6 để tăng khả năng gợi ý
-                matches[source_field] = best_match
-        
-        return matches
-        
-        # Sử dụng Word2Vec để so khớp các trường
-        for source_field in source_fields:
-            if source_field not in self.field_embeddings:
-                continue
+            # 1. Tìm kiếm bằng TF-IDF
+            tfidf_results = []
+            if self.vectorizer and self.field_vectors is not None:
+                query_vec = self.vectorizer.transform([processed_query])
+                similarities = cosine_similarity(query_vec, self.field_vectors).flatten()
+                tfidf_results = [(self.field_names[i], float(similarities[i])) 
+                                for i in np.argsort(similarities)[-top_n:][::-1]
+                                if similarities[i] > 0]
+            
+            # 2. Tìm kiếm bằng Word2Vec (nếu có model)
+            w2v_results = []
+            if self.word2vec_model and self.field_embeddings:
+                query_tokens = processed_query.split()
+                if query_tokens:
+                    # Tính embedding cho query (chỉ lấy tokens tồn tại trong vocab)
+                    valid_tokens = [token for token in query_tokens if token in self.word2vec_model.wv]
+                    if valid_tokens:
+                        query_embedding = np.mean([self.word2vec_model.wv[token] for token in valid_tokens], axis=0)
+                        
+                        # Tính similarity với các trường đã biết
+                        similarities = {}
+                        for field, embedding in self.field_embeddings.items():
+                            if embedding is not None:  # Chỉ tính similarity nếu có embedding
+                                sim = cosine_similarity(
+                                    query_embedding.reshape(1, -1), 
+                                    embedding.reshape(1, -1)
+                                )[0][0]
+                                similarities[field] = sim
+                        
+                        # Lấy top_n kết quả
+                        w2v_results = sorted(
+                            [(field, sim) for field, sim in similarities.items()], 
+                            key=lambda x: x[1], 
+                            reverse=True
+                        )[:top_n]
+            
+            # Kết hợp và xếp hạng kết quả
+            combined_results = defaultdict(float)
+            
+            # Thêm điểm từ TF-IDF
+            for field, score in tfidf_results:
+                combined_results[field] += score * 0.5
                 
-            source_embedding = self.field_embeddings[source_field]
-            best_match = None
-            best_score = 0
+            # Thêm điểm từ Word2Vec
+            for field, score in w2v_results:
+                combined_results[field] += score * 0.5
             
-            for target_field in target_fields:
-                if target_field in self.field_embeddings:
-                    target_embedding = self.field_embeddings[target_field]
-                    # Tính cosine similarity giữa hai embedding
-                    similarity = cosine_similarity(
-                        source_embedding.reshape(1, -1),
-                        target_embedding.reshape(1, -1)
-                    )[0][0]
-                    
-                    if similarity > best_score:
-                        best_score = similarity
-                        best_match = target_field
+            # Sắp xếp và trả về kết quả
+            final_results = sorted(
+                [(field, score) for field, score in combined_results.items()],
+                key=lambda x: x[1],
+                reverse=True
+            )[:top_n]
             
-            # Chỉ lấy các kết quả có độ tương đồng cao
-            if best_match and best_score > 0.7:
-                matches[source_field] = best_match
-        
-        return matches
-    def _get_common_keywords(self, name1, name2):
-        """Tìm các từ khóa chung giữa hai tên trường với hỗ trợ tốt hơn cho tiếng Việt"""
-        # Kiểm tra đầu vào
-        if not name1 or not name2 or not isinstance(name1, str) or not isinstance(name2, str):
-            return set()
+            return final_results
             
-        # Tiền xử lý tên trường
-        # Loại bỏ dấu hai chấm ở cuối nếu có
-        name1 = name1.rstrip(':') if name1.endswith(':') else name1
-        name2 = name2.rstrip(':') if name2.endswith(':') else name2
+        except Exception as e:
+            print(f"Error finding similar fields: {e}")
+            return []
+    
+    def get_suggested_values(self, field_name: str, limit: int = 3) -> List[str]:
+        """
+        Lấy danh sách giá trị đề xuất cho một trường
+        """
+        # 1. Tìm kiếm trực tiếp
+        direct_values = self.field_value_mapping.get(field_name, [])
         
-        # Tiền xử lý và tách từ
-        words1 = set(self.preprocess_text(name1).split())
-        words2 = set(self.preprocess_text(name2).split())
+        # 2. Tìm kiếm từ các trường tương tự
+        similar_fields = self.find_most_similar_field(field_name, top_n=3)
+        similar_values = []
+        for similar_field, _ in similar_fields:
+            if similar_field != field_name:
+                similar_values.extend(self.field_value_mapping.get(similar_field, []))
         
-        # Tìm các từ chung
-        common_words = words1.intersection(words2)
+        # Kết hợp và sắp xếp kết quả
+        all_values = direct_values + similar_values
+        value_counts = defaultdict(int)
+        for val in all_values:
+            value_counts[val] += 1
         
-        # Loại bỏ các từ stop word
-        common_keywords = {word for word in common_words if word not in self.stop_words}
+        # Sắp xếp theo tần suất và độ dài
+        sorted_values = sorted(
+            value_counts.items(),
+            key=lambda x: (-x[1], len(x[0])),  # Tần suất giảm dần, độ dài tăng dần
+            reverse=False
+        )
         
-        # Nếu không có từ khóa chung, thử kiểm tra từng phần của từ (đặc biệt hữu ích cho tiếng Việt)
-        if not common_keywords and (len(words1) > 0 and len(words2) > 0):
-            # Tạo danh sách các từ đã được tách thành các phần nhỏ hơn
-            expanded_words1 = set()
-            expanded_words2 = set()
+        return [val[0] for val in sorted_values[:limit]]
+    
+    def update_form_history(self, new_form_data: Dict) -> None:
+        """
+        Cập nhật lịch sử form với dữ liệu mới
+        """
+        try:
+            # Thêm vào lịch sử
+            self.form_history.append({'form_data': new_form_data})
             
-            # Tách các từ thành các phần nhỏ hơn (3 ký tự trở lên)
-            for word in words1:
-                if len(word) >= 3:
-                    for i in range(len(word) - 2):
-                        expanded_words1.add(word[i:i+3])
+            # Cập nhật field_value_mapping
+            for field_name, value in new_form_data.items():
+                if value and str(value).strip():
+                    self.field_value_mapping[field_name].append(str(value))
             
-            for word in words2:
-                if len(word) >= 3:
-                    for i in range(len(word) - 2):
-                        expanded_words2.add(word[i:i+3])
+            # Xây dựng lại models
+            self._build_models()
             
-            # Tìm các phần chung
-            common_parts = expanded_words1.intersection(expanded_words2)
-            if common_parts:
-                # Nếu có các phần chung, thêm vào common_keywords
-                common_keywords = common_parts
-        
-        return common_keywords
-    def auto_fill_form(self, user_id, form_fields):
-        """Tự động điền form dựa trên lịch sử và trả về thông tin chi tiết"""
-        suggestions = {}
-        suggestion_details = {}
-        
-        # Tải dữ liệu form từ database
-        form_data = self._load_form_history()
-        if not form_data:
-            return {'suggestions': suggestions, 'details': suggestion_details}
-        
-        # Tạo từ điển để lưu trữ giá trị phổ biến nhất cho mỗi trường và ánh xạ tên trường
-        field_values = {}
-        field_frequencies = {}
-        field_names_map = {}  # Ánh xạ field_code -> field_name
-        
-        # Phân tích tất cả các form để tìm giá trị phổ biến nhất và xây dựng ánh xạ tên trường
-        for form in form_data:
-            if 'form_data' in form:
-                for field, value in form['form_data'].items():
-                    # Lưu tên trường thực tế từ form_history
-                    field_name = self.extract_field_name(field)
-                    field_names_map[field] = field_name
-                    
-                    if field not in field_values:
-                        field_values[field] = {}
-                        field_frequencies[field] = {}
-                    
-                    if value in field_values[field]:
-                        field_frequencies[field][value] += 1
-                    else:
-                        field_values[field][value] = True
-                        field_frequencies[field][value] = 1
-        
-        # Tìm các trường tương ứng và điền giá trị
-        for source_field in form_fields:
-            best_match = None
-            best_score = 0
-            best_value = None
-            best_frequency = 0
-            source_field_name = self.extract_field_name(source_field)
-            
-            # So sánh với tất cả các trường trong lịch sử
-            for target_field in field_values.keys():
-                target_field_name = field_names_map.get(target_field, self.extract_field_name(target_field))
-                
-                # Tính điểm tương đồng cơ bản dựa trên tên trường thực tế
-                name_similarity = 0
-                if source_field_name.lower() == target_field_name.lower():
-                    name_similarity = 1.0  # Tên trường giống nhau hoàn toàn
-                else:
-                    # Tính độ tương đồng dựa trên từ khóa chung
-                    common_keywords = self._get_common_keywords(source_field_name, target_field_name)
-                    if common_keywords:
-                        name_similarity = 0.5 * len(common_keywords) / max(len(source_field_name.split()), len(target_field_name.split()))
-                
-                # Tính điểm tương đồng dựa trên mã trường
-                code_similarity = self._calculate_field_similarity(source_field, target_field)
-                
-                # Kết hợp điểm tương đồng, ưu tiên tên trường hơn
-                similarity = name_similarity * 0.7 + code_similarity * 0.3
-                
-                if similarity > best_score:
-                    best_score = similarity
-                    best_match = target_field
-                    
-                    # Tìm giá trị phổ biến nhất cho trường này
-                    if target_field in field_frequencies:
-                        frequencies = field_frequencies[target_field]
-                        max_freq_value = max(frequencies.items(), key=lambda x: x[1])
-                        best_value = max_freq_value[0]
-                        best_frequency = max_freq_value[1]
-            
-            # Chỉ sử dụng kết quả có độ tương đồng đủ cao
-            if best_match and best_score > 0.6 and best_value:  # Giảm ngưỡng xuống 0.6 để tăng khả năng gợi ý
-                suggestions[source_field] = best_value
-                suggestion_details[source_field] = {
-                    'matched_field': best_match,
-                    'matched_field_name': field_names_map.get(best_match, self.extract_field_name(best_match)),
-                    'similarity_score': best_score,
-                    'frequency': best_frequency,
-                    'total_occurrences': sum(field_frequencies[best_match].values())
-                }
-                
-        return {
-            'suggestions': suggestions,
-            'details': suggestion_details
-        }
-
-# Singleton instance
-_field_matcher_instance = None
-
-def get_field_matcher():
-    """Trả về instance của FieldMatcher (Singleton pattern)"""
-    global _field_matcher_instance
-    if _field_matcher_instance is None:
-        _field_matcher_instance = FieldMatcher()
-    return _field_matcher_instance
-
-def auto_fill_form(user_id, target_fields):
-    """Hàm tiện ích để tự động điền biểu mẫu"""
-    matcher = get_field_matcher()
-    # Sử dụng user_id để lọc dữ liệu theo người dùng nếu cần
-    return matcher.auto_fill_form(user_id, target_fields)
+            # Lưu vào file
+            with open(self.form_history_path, 'w', encoding='utf-8') as f:
+                json.dump(self.form_history, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Error updating form history: {e}")
