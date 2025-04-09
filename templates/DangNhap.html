@@ -279,6 +279,48 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
         }
+        
+        .btn-google {
+            background: #ffffff;
+            color: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-google:hover {
+            background: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-google i {
+            color: #DB4437;
+            font-size: 1.2rem;
+        }
+        
+        .separator {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .separator::before,
+        .separator::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .separator span {
+            padding: 0 10px;
+            font-size: 0.9rem;
+        }
 
         .auth-btn:active {
             transform: translateY(0);
@@ -518,6 +560,14 @@
                     <button type="submit" class="auth-btn">
                         <i class="fas fa-sign-in-alt"></i> Đăng nhập
                     </button>
+                    
+                    <div class="separator">
+                        <span>hoặc</span>
+                    </div>
+                    
+                    <a href="{{ url_for('login_google') }}" class="btn btn-google btn-block">
+                        <i class="fab fa-google"></i> Đăng nhập bằng Google
+                    </a>
                     
                     <div class="auth-footer">
                         Chưa có tài khoản? <a href="{{ url_for('signup') }}">Đăng ký ngay</a>

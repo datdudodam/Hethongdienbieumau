@@ -1,11 +1,11 @@
 from flask import render_template, request, jsonify
 from utils.document_utils import load_document, extract_fields, get_doc_path, set_doc_path
-from utils.ai_utils import generate_suggestions, get_gpt_suggestions
+
 from models.data_model import load_db, save_db, load_form_history, save_form_history
 import os
 import uuid
 
-
+from utils.ai_utils import generate_personalized_suggestions,extract_context_from_form_text
 def register_form_routes(app):
     """
     Đăng ký các route cho biểu mẫu
@@ -19,10 +19,10 @@ def register_form_routes(app):
         text = load_document(doc_path)
         fields = extract_fields(text)
         db_data = load_db()
+       
         
-        suggestions = generate_suggestions(db_data) if db_data else {}
         
-        return render_template("index.html", fields=fields, suggestions=suggestions)
+        return render_template("index.html", fields=fields)
     @app.route('/save-and-generate-docx', methods=['POST'])
     def save_and_generate_docx():
         try:
@@ -102,15 +102,6 @@ def register_form_routes(app):
         suggestions = generate_suggestions(db_data, field_code)
 
         return jsonify({'field_code': field_code, 'suggestions': suggestions})
-    
-    @app.route('/get_gpt_suggestions', methods=['POST'])
-    def get_gpt_suggestions_route():
-        field_code = request.json.get('field_code')
-        if not field_code:
-            return jsonify({'error': 'Field code is required'}), 400
-
-        result, status_code = get_gpt_suggestions(field_code)
-        return jsonify(result), status_code
     
     @app.route('/form/<form_id>')
     def view_form(form_id):

@@ -183,7 +183,7 @@
                                 </button>
                                     <button 
                                         type="button" 
-                                        onclick="loadGptSuggestions('{{ field.field_code }}')" 
+                                        onclick="autoFillAllFieldsAI()" 
                                         class="suggestion-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-green-200 relative group"
                                         title="Gợi ý AI"
                                         aria-label="Gợi ý AI cho {{ field.field_name }}"
@@ -280,6 +280,7 @@
             const loadingIcon = button.querySelector('.auto-fill-loading');
             const fillIcon = button.querySelector('.auto-fill-icon');
             const errorDiv = document.getElementById(`error-${fieldName}`);
+            const suggestionsList = document.getElementById(`suggestions-${fieldName}`);
             
             // Lấy dữ liệu form hiện tại
             const formData = {};
@@ -331,256 +332,274 @@
                 button.disabled = false;
             });
         }
+                           // ✅ Đã sửa từ fiel
 
 
-        function autoFillAllFields(event) {
-            const button = event.target;
-            const originalText = button.innerHTML;
+            function autoFillAllFields() {
+    // Lấy danh sách tất cả các input text trong form
+                    const inputs = document.querySelectorAll('form input[type="text"]');
+                    const button = document.getElementById('auto-fill-all-button'); // nút bấm chính (nếu có)
+                    const loadingIcon = button?.querySelector('.auto-fill-loading');
+                    const fillIcon = button?.querySelector('.auto-fill-icon');
+
+                    // Hiện biểu tượng loading nếu có
+                    if (loadingIcon) loadingIcon.classList.remove('hidden');
+                    if (fillIcon) fillIcon.classList.add('hidden');
+                    if (button) button.disabled = true;
+
+                    fetch('/auto_fill_all_fields', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => { throw err; });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.fields && typeof data.fields === 'object') {
+                            for (const fieldName in data.fields) {
+                                const value = data.fields[fieldName];
+                                const input = document.getElementById(fieldName);
+                                const errorDiv = document.getElementById(`error-${fieldName}`);
+                                if (input && value) {
+                                    input.value = value;
+                                    showAutoFillDetails(input, {
+                                        value: value,
+                                        confidence: 0.9,
+                                        suggestions: [value],
+                                        field_name: fieldName,
+                                        field_code: fieldName,
+                                    });
+                                    showToast(`Đã tự động điền trường "${fieldName}"`, 'success');
+                                    if (errorDiv) errorDiv.classList.add('hidden');
+                                } else if (errorDiv) {
+                                    errorDiv.textContent = `Không có giá trị gợi ý cho "${fieldName}"`;
+                                    errorDiv.classList.remove('hidden');
+                                }
+                            }
+                        } else {
+                            showToast('Không tìm thấy gợi ý để điền tự động', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Lỗi autofill toàn bộ:', error);
+                        showToast(error.error || 'Có lỗi xảy ra khi tự động điền tất cả.', 'error');
+                    })
+                    .finally(() => {
+                        if (loadingIcon) loadingIcon.classList.add('hidden');
+                        if (fillIcon) fillIcon.classList.remove('hidden');
+                        if (button) button.disabled = false;
+                    });
+            }
+
+
+    function initializeEventListeners() {
+        document.querySelector('form')?.addEventListener('submit', handleFormSubmit);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeEventListeners();
+        
+        // Thêm hiệu ứng khi trang load
+        document.querySelectorAll('.form-input-group').forEach((group, index) => {
+            group.style.opacity = '0';
+            group.style.transform = 'translateY(10px)';
+            group.style.animation = `fadeInUp 0.3s ease forwards ${index * 0.1}s`;
+        });
+    });
+
+    document.addEventListener('mousedown', function(e) {
+        document.querySelectorAll("ul[id^='suggestions-']").forEach(suggestionsList => {
+            if (!suggestionsList.contains(e.target) && !e.target.closest('button[onclick^="loadSuggestions"]')) {
+                suggestionsList.classList.add('hidden');
+            }
+        });
+    });
+
+    function loadSuggestions(fieldCode) {
+        const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
+        const input = document.getElementById(fieldCode);
+        const button = input.nextElementSibling.querySelector('button[onclick^="loadSuggestions"]');
+        const loadingIcon = button.querySelector('.suggestion-loading');
+        const suggestionIcon = button.querySelector('.suggestion-icon');
+        const errorDiv = document.getElementById(`error-${fieldCode}`);
+        
+        const formData = {};
+        document.querySelectorAll('form input[type="text"]').forEach(input => {
+            if (input.value.trim()) {
+                formData[input.id] = input.value.trim();
+            }
+        });
+
+        loadingIcon.classList.remove('hidden');
+        suggestionIcon.classList.add('hidden');
+        button.disabled = true;
+        errorDiv.classList.add('hidden');
+
+        fetch('/get_suggestions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                field_code: fieldCode,
+                partial_form: formData
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            suggestionsList.innerHTML = '';
+            if (data.suggestions && data.suggestions.length > 0) {
+                // Tạo tiêu đề cho dropdown
+                const headerLi = document.createElement('li');
+                headerLi.className = 'px-4 py-2 bg-gray-100 text-gray-700 font-medium text-sm';
+                headerLi.textContent = 'Gợi ý thông minh dựa trên lịch sử';
+                headerLi.setAttribute('role', 'presentation');
+                suggestionsList.appendChild(headerLi);
+                
+                // Hiển thị các gợi ý
+                data.suggestions.forEach((suggestion, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200 flex items-center';
+                    
+                    // Thêm icon cho gợi ý
+                    const icon = document.createElement('span');
+                    icon.className = 'mr-2 text-blue-500';
+                    icon.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    li.appendChild(icon);
+                    
+                    // Thêm text gợi ý
+                    const text = document.createElement('span');
+                    text.textContent = suggestion;
+                    li.appendChild(text);
+                    
+                    li.setAttribute('role', 'option');
+                    li.setAttribute('tabindex', '0');
+                    li.onclick = () => {
+                        input.value = suggestion;
+                        suggestionsList.classList.add('hidden');
+                        input.focus();
+                        showToast(`Đã chọn "${suggestion}"`, 'success');
+                    };
+                    li.onkeypress = (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            input.value = suggestion;
+                            suggestionsList.classList.add('hidden');
+                            input.focus();
+                            showToast(`Đã chọn "${suggestion}"`, 'success');
+                        }
+                    };
+                    suggestionsList.appendChild(li);
+                });
+                
+                // Thêm nút đóng dropdown
+                const closeLi = document.createElement('li');
+                closeLi.className = 'px-4 py-2 text-center text-gray-500 hover:bg-gray-100 cursor-pointer text-sm';
+                closeLi.textContent = 'Đóng';
+                closeLi.onclick = () => {
+                    suggestionsList.classList.add('hidden');
+                };
+                suggestionsList.appendChild(closeLi);
+                
+                suggestionsList.classList.remove('hidden');
+                suggestionsList.setAttribute('role', 'listbox');
+                suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý');
+            } else {
+                errorDiv.textContent = 'Không có gợi ý nào cho trường này';
+                errorDiv.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            errorDiv.textContent = 'Có lỗi xảy ra khi tải gợi ý. Vui lòng thử lại.';
+            errorDiv.classList.remove('hidden');
+        })
+        .finally(() => {
+            loadingIcon.classList.add('hidden');
+            suggestionIcon.classList.remove('hidden');
+            button.disabled = false;
+        });
+    }
+    
+    function autoFillAllFieldsAI() {
+        const inputs = document.querySelectorAll('form input[type="text"]');
+        const formData = {};
+
+        // Lấy dữ liệu hiện tại từ form
+        inputs.forEach(input => {
+            if (input.value.trim()) {
+                formData[input.id] = input.value.trim();
+            }
+        });
+
+        // Tạo danh sách Promise để gọi AI_FILL cho từng field
+        const promises = Array.from(inputs).map(input => {
+            const fieldCode = input.id; // input.id = field_code
+
+            const button = input.closest('.form-input-group').querySelector('button[onclick*="autoFillField"]');
+            const loadingIcon = button.querySelector('.auto-fill-loading');
+            const fillIcon = button.querySelector('.auto-fill-icon');
+            const errorDiv = document.getElementById(`error-${fieldCode}`);
+
+            loadingIcon.classList.remove('hidden');
+            fillIcon.classList.add('hidden');
             button.disabled = true;
-            button.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang điền tự động...';
-            
-            // Lấy dữ liệu form hiện tại
-            const formData = {};
-            document.querySelectorAll('form input[type="text"]').forEach(input => {
-                if (input.value.trim()) {
-                    formData[input.id] = input.value.trim();
-                }
-            });
-            
-            fetch('/auto_fill_all', {
+            errorDiv.classList.add('hidden');
+
+            return fetch('/AI_FILL', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
-                    partial_form: formData
+                body: JSON.stringify({
+                    field_name: fieldCode,   // Backend đang dùng field_name để nhận field_code
+                    partial_form: formData   // Nếu AI cần ngữ cảnh form hiện tại
                 })
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    return response.json().then(err => { throw err; });
                 }
                 return response.json();
             })
             .then(data => {
-                if (data.suggestions) {
-                    let filledCount = 0;
-                    for (const [fieldCode, suggestion] of Object.entries(data.suggestions)) {
-                        const input = document.getElementById(fieldCode);
-                        if (input && !input.value.trim() && suggestion.value) {
-                            input.value = suggestion.value;
-                            showAutoFillDetails(input, suggestion);
-                            filledCount++;
-                        }
-                    }
-                    showToast(`Đã tự động điền ${filledCount} trường`, 'success');
+                if (data.value) {
+                    input.value = data.value;
+                    showAutoFillDetails(input, data);  // Hàm này bạn đã có rồi
+                    showToast(`Đã điền tự động "${data.field_name}" bằng AI`, 'success');
                 } else {
-                    showToast('Không tìm thấy dữ liệu để điền tự động', 'warning');
+                    errorDiv.textContent = data.error || 'Không tìm thấy dữ liệu phù hợp.';
+                    errorDiv.classList.remove('hidden');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showToast('Có lỗi xảy ra khi điền tự động. Vui lòng thử lại.', 'error');
+                console.error('Lỗi:', error);
+                errorDiv.textContent = error.error || 'Có lỗi xảy ra khi gọi AI.';
+                errorDiv.classList.remove('hidden');
             })
             .finally(() => {
+                loadingIcon.classList.add('hidden');
+                fillIcon.classList.remove('hidden');
                 button.disabled = false;
-                button.innerHTML = originalText;
             });
-        }
+        });
+
+        // Khi tất cả các yêu cầu hoàn tất
+        Promise.all(promises).then(() => {
+            showToast('Đã hoàn thành việc tự động điền bằng AI cho toàn bộ form', 'success');
+        });
+    }
 
         
-        // Các hàm JavaScript giữ nguyên như bản gốc
-        function viewFormDetails(formId) {
-            fetch(`/form/${formId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => {
-                            throw new Error(err.error || 'Có lỗi xảy ra');
-                        });
-                    }
-                    return response.text();
-                })
-                .then(html => {
-                    document.documentElement.innerHTML = html;
-                    initializeEventListeners();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast(error.message || 'Có lỗi xảy ra khi tải biểu mẫu', 'error');
-                });
-        }
-
-        function initializeEventListeners() {
-            document.querySelector('form')?.addEventListener('submit', handleFormSubmit);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeEventListeners();
-            
-            // Thêm hiệu ứng khi trang load
-            document.querySelectorAll('.form-input-group').forEach((group, index) => {
-                group.style.opacity = '0';
-                group.style.transform = 'translateY(10px)';
-                group.style.animation = `fadeInUp 0.3s ease forwards ${index * 0.1}s`;
-            });
-        });
-
-        document.addEventListener('mousedown', function(e) {
-            document.querySelectorAll("ul[id^='suggestions-']").forEach(suggestionsList => {
-                if (!suggestionsList.contains(e.target) && !e.target.closest('button[onclick^="loadSuggestions"]')) {
-                    suggestionsList.classList.add('hidden');
-                }
-            });
-        });
-    
-        function loadSuggestions(fieldCode) {
-            const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
-            const input = document.getElementById(fieldCode);
-            const button = input.nextElementSibling.querySelector('button[onclick^="loadSuggestions"]');
-            const loadingIcon = button.querySelector('.suggestion-loading');
-            const suggestionIcon = button.querySelector('.suggestion-icon');
-            const errorDiv = document.getElementById(`error-${fieldCode}`);
-            
-            const formData = {};
-            document.querySelectorAll('form input[type="text"]').forEach(input => {
-                if (input.value.trim()) {
-                    formData[input.id] = input.value.trim();
-                }
-            });
-    
-            loadingIcon.classList.remove('hidden');
-            suggestionIcon.classList.add('hidden');
-            button.disabled = true;
-            errorDiv.classList.add('hidden');
-    
-            fetch('/get_suggestions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    field_code: fieldCode,
-                    partial_form: formData
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                suggestionsList.innerHTML = '';
-                if (data.suggestions && data.suggestions.length > 0) {
-                    data.suggestions.forEach((suggestion, index) => {
-                        const li = document.createElement('li');
-                        li.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200';
-                        li.textContent = suggestion;
-                        li.setAttribute('role', 'option');
-                        li.setAttribute('tabindex', '0');
-                        li.onclick = () => {
-                            input.value = suggestion;
-                            suggestionsList.classList.add('hidden');
-                            input.focus();
-                        };
-                        li.onkeypress = (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                input.value = suggestion;
-                                suggestionsList.classList.add('hidden');
-                                input.focus();
-                            }
-                        };
-                        suggestionsList.appendChild(li);
-                    });
-                    suggestionsList.classList.remove('hidden');
-                    suggestionsList.setAttribute('role', 'listbox');
-                    suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý');
-                } else {
-                    errorDiv.textContent = 'Không có gợi ý nào cho trường này';
-                    errorDiv.classList.remove('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                errorDiv.textContent = 'Có lỗi xảy ra khi tải gợi ý. Vui lòng thử lại.';
-                errorDiv.classList.remove('hidden');
-            })
-            .finally(() => {
-                loadingIcon.classList.add('hidden');
-                suggestionIcon.classList.remove('hidden');
-                button.disabled = false;
-            });
-        }
-    
-        function loadGptSuggestions(fieldCode) {
-            const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
-            const input = document.getElementById(fieldCode);
-            const button = input.nextElementSibling.querySelector('button[onclick^="loadGptSuggestions"]');
-            const loadingIcon = button.querySelector('.gpt-suggestion-loading');
-            const suggestionIcon = button.querySelector('.gpt-suggestion-icon');
-            const errorDiv = document.getElementById(`error-${fieldCode}`);
-    
-            loadingIcon.classList.remove('hidden');
-            suggestionIcon.classList.add('hidden');
-            button.disabled = true;
-            errorDiv.classList.add('hidden');
-    
-            fetch('/get_gpt_suggestions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ field_code: fieldCode })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                suggestionsList.innerHTML = '';
-                if (data.suggestions && data.suggestions.length > 0) {
-                    data.suggestions.forEach((suggestion, index) => {
-                        const li = document.createElement('li');
-                        li.className = 'px-4 py-3 hover:bg-green-50 cursor-pointer transition-colors duration-200';
-                        li.textContent = suggestion;
-                        li.setAttribute('role', 'option');
-                        li.setAttribute('tabindex', '0');
-                        li.onclick = () => {
-                            input.value = suggestion;
-                            suggestionsList.classList.add('hidden');
-                            input.focus();
-                        };
-                        li.onkeypress = (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                input.value = suggestion;
-                                suggestionsList.classList.add('hidden');
-                                input.focus();
-                            }
-                        };
-                        suggestionsList.appendChild(li);
-                    });
-                    suggestionsList.classList.remove('hidden');
-                    suggestionsList.setAttribute('role', 'listbox');
-                    suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý từ AI');
-                } else {
-                    errorDiv.textContent = 'Không có gợi ý nào từ AI cho trường này';
-                    errorDiv.classList.remove('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                errorDiv.textContent = 'Có lỗi xảy ra khi tải gợi ý từ AI. Vui lòng thử lại.';
-                errorDiv.classList.remove('hidden');
-            })
-            .finally(() => {
-                loadingIcon.classList.add('hidden');
-                suggestionIcon.classList.remove('hidden');
-                button.disabled = false;
-            });
-        }
-    
         function generateDocx() { 
             const button = event.target.closest('button');
             const originalContent = button.innerHTML;

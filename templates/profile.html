@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ sơ người dùng | HỆ THỐNG ĐIỀN BIỂU MẪU TỰ ĐỘNG</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary-color: #3f37c9;
+            --accent-color: #4895ef;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+            --gray-color: #6c757d;
+            --success-color: #4bb543;
+            --error-color: #ff3333;
+            --warning-color: #ffcc00;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: var(--light-color);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .layout-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .nav-item i {
+            width: 1.5rem;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-right: 2rem;
+            border: 3px solid var(--accent-color);
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-info p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+        }
+
+        .profile-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-item {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-item:hover {
+            color: white;
+        }
+
+        .tab-item.active {
+            color: white;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .form-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-card h2 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: white;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-card h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(72, 149, 239, 0.2);
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success {
+            background: rgba(75, 181, 67, 0.2);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-error {
+            background: rgba(255, 51, 51, 0.2);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+
+        .google-account {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .google-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .google-icon i {
+            color: #DB4437;
+            font-size: 1.2rem;
+        }
+
+        .google-info {
+            flex: 1;
+        }
+
+        .google-info h3 {
+            font-size: 1rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .google-info p {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>HỆ THỐNG ĐIỀN BIỂU MẪU</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('index') }}" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Trang chủ</span>
+                </a>
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-user"></i>
+                    <span>Hồ sơ</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Biểu mẫu</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Đăng xuất</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    {% if current_user.profile_image %}
+                        <img src="{{ current_user.profile_image }}" alt="{{ current_user.fullname }}">
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ current_user.fullname }}&background=random&color=fff" alt="{{ current_user.fullname }}">
+                    {% endif %}
+                </div>
+                <div class="profile-info">
+                    <h1>{{ current_user.fullname }}</h1>
+                    <p>{{ current_user.email }}</p>
+                    <p>Tham gia: {{ current_user.created_at.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="profile-tabs">
+                <div class="tab-item active" data-tab="personal-info">Thông tin cá nhân</div>
+                <div class="tab-item" data-tab="security">Bảo mật</div>
+                <div class="tab-item" data-tab="connected-accounts">Tài khoản liên kết</div>
+            </div>
+
+            <div class="tab-content active" id="personal-info">
+                <div class="form-card">
+                    <h2>Thông tin cá nhân</h2>
+                    <form action="{{ url_for('update_profile') }}" method="POST">
+                        <div class="form-group">
+                            <label for="fullname">Họ và tên</label>
+                            <input type="text" id="fullname" name="fullname" class="form-control" value="{{ current_user.fullname }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" class="form-control" value="{{ current_user.email }}" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Số điện thoại</label>
+                            <input type="tel" id="phone" name="phone" class="form-control" value="{{ current_user.phone or '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Địa chỉ</label>
+                            <input type="text" id="address" name="address" class="form-control" value="{{ current_user.address or '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="bio">Giới thiệu</label>
+                            <textarea id="bio" name="bio" class="form-control" rows="4">{{ current_user.bio or '' }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="tab-content" id="security">
+                <div class="form-card">
+                    {% if current_user.password_hash %}
+                        <h2>Đổi mật khẩu</h2>
+                        <form action="{{ url_for('change_password') }}" method="POST">
+                            <div class="form-group">
+                                <label for="current_password">Mật khẩu hiện tại</label>
+                                <input type="password" id="current_password" name="current_password" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new_password">Mật khẩu mới</label>
+                                <input type="password" id="new_password" name="new_password" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirm_password">Xác nhận mật khẩu mới</label>
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+                        </form>
+                    {% else %}
+                        <h2>Thiết lập mật khẩu</h2>
+                        <p>Bạn đang đăng nhập bằng tài khoản Google. Thiết lập mật khẩu để có thể đăng nhập bằng email và mật khẩu.</p>
+                        <form action="{{ url_for('set_password') }}" method="POST">
+                            <div class="form-group">
+                                <label for="new_password">Mật khẩu mới</label>
+                                <input type="password" id="new_password" name="new_password" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirm_password">Xác nhận mật khẩu mới</label>
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Thiết lập mật khẩu</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="tab-content" id="connected-accounts">
+                <div class="form-card">
+                    <h2>Tài khoản liên kết</h2>
+                    {% if current_user.google_id %}
+                        <div class="google-account">
+                            <div class="google-icon">
+                                <i class="fab fa-google"></i>
+                            </div>
+                            <div class="google-info">
+                                <h3>Google</h3>
+                                <p>Tài khoản đã được liên kết với {{ current_user.email }}</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p>Bạn chưa liên kết với tài khoản Google nào.</p>
+                        <a href="{{ url_for('login_google') }}" class="btn btn-secondary">
+                            <i class="fab fa-google"></i> Liên kết với Google
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Xử lý chuyển tab
+        const tabItems = document.querySelectorAll('.tab-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // Xóa active class từ tất cả tab items
+                tabItems.forEach(tab => tab.classList.remove('active'));
+                // Thêm active class vào tab item được click
+                item.classList.add('active');
+
+                // Ẩn tất cả tab content
+                tabContents.forEach(content => content.classList.remove('active'));
+                // Hiển thị tab content tương ứng
+                const tabId = item.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

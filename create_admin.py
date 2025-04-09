@@ -57,10 +57,10 @@ with app.app_context():
         print(f'Đã tồn tại tài khoản admin: {admin.email}')
     else:
         # Tạo tài khoản admin mới
-        admin = User(fullname='Administrator', email='admin@example.com', role_id=admin_role.id)
+        admin = User(fullname='Administrator', email='dat@example.com', role_id=admin_role.id)
         admin.set_password('Admin@123')
         db.session.add(admin)
         db.session.commit()
         print('Đã tạo tài khoản admin thành công!')
-        print('Email: admin@example.com')
+        print('Email: dat@example.com')
         print('Mật khẩu: Admin@123')

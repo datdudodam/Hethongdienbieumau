@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime,timezone
 
 db = SQLAlchemy()
 
@@ -28,9 +28,19 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fullname = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    password_hash = db.Column(db.String(200), nullable=True)  # Nullable for Google login
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), default=2)  # Default to regular user role (2)
+    
+    # Google OAuth fields
+    google_id = db.Column(db.String(100), unique=True, nullable=True)
+    
+    
+    # Additional profile fields
+    phone = db.Column(db.String(20), nullable=True)
+    address = db.Column(db.String(200), nullable=True)
+    bio = db.Column(db.Text, nullable=True)
+    last_login = db.Column(db.DateTime, nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
