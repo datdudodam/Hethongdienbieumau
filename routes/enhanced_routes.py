@@ -1,99 +1,79 @@
-
-from flask import request, jsonify, session
-from typing import Dict, Any
+from flask import request, jsonify
+from flask_login import current_user
 from utils.field_matcher import EnhancedFieldMatcher
+from utils.document_utils import get_doc_path, load_document, extract_fields
 import json
-from models.data_model import load_db, save_db, load_form_history, save_form_history
+
+def get_field_name_from_code(fields, field_code: str) -> str:
+    """
+    Trả về field_name dựa trên field_code từ danh sách fields.
+    Nếu không tìm thấy thì trả lại chính field_code.
+    """
+    for field in fields:
+        if field.get('field_code') == field_code:
+            return field.get('field_name', field_code)
+    return field_code
 
 def register_enhanced_routes(app):
     """
     Đăng ký các route cho tính năng nâng cao
     """
-   
 
     @app.route('/auto_fill_field', methods=['POST'])
     def auto_fill_field():
         try:
             data = request.get_json()
-            # Truy xuất field_code từ request
-            field_code = data.get("field_name")  # Frontend đang gửi field_code với key là field_name
-            
+            field_code = data.get("field_name")
+
             if not field_code:
                 return jsonify({"error": "Field code is required"}), 400
-            
-            # Lấy document path hiện tại để trích xuất field_name
-            from utils.document_utils import get_doc_path, load_document, extract_fields
+
             doc_path = get_doc_path()
-            
             if not doc_path:
                 return jsonify({"error": "No document loaded"}), 400
-                
-            # Trích xuất tất cả các trường từ tài liệu
+
             text = load_document(doc_path)
             fields = extract_fields(text)
-            
-            # Tìm field_name tương ứng với field_code
-            field_name = None
-            for field in fields:
-                if field['field_code'] == field_code:
-                    field_name = field['field_name']
-                    break
-            
-            if not field_name:
-                # Nếu không tìm thấy field_name, sử dụng field_code làm field_name
-                field_name = field_code
-            
-            # Lấy user_id từ session nếu người dùng đã đăng nhập
-            from flask_login import current_user
+
+            field_name = get_field_name_from_code(fields, field_code)
+
             user_id = current_user.id if current_user.is_authenticated else None
-            
-            # Sử dụng file form_history.json thực tế
-            form_history_path = "form_history.json"
-            
-            # Tạo đối tượng EnhancedFieldMatcher với dữ liệu lịch sử thực tế
-            matcher = EnhancedFieldMatcher(form_history_path=form_history_path)
-            
-            # Lấy các gợi ý dựa trên field_name và user_id
+            matcher = EnhancedFieldMatcher(form_history_path="form_history.json")
+
             suggestions = matcher.get_suggested_values(field_name, user_id=user_id)
 
             if suggestions:
                 return jsonify({
                     "value": suggestions[0],
                     "suggestions": suggestions,
-                    "confidence": 0.9,
+                    "confidence": 0.9,  # Có thể thay đổi theo logic tin cậy
                     "field_name": field_name,
                     "field_code": field_code
                 })
 
-            return jsonify({"error": "Không tìm thấy giá trị phù hợp", "field_name": field_name}), 404
+            return jsonify({
+                "error": "Không tìm thấy giá trị phù hợp",
+                "field_name": field_name,
+                "field_code": field_code
+            }), 404
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-
     @app.route('/auto_fill_all_fields', methods=['POST'])
     def auto_fill_all_fields():
         try:
-            from utils.document_utils import get_doc_path, load_document, extract_fields
-            from flask_login import current_user
-
-            # Lấy document path
             doc_path = get_doc_path()
             if not doc_path:
                 return jsonify({"error": "No document loaded"}), 400
 
-            # Trích xuất nội dung và các trường
             text = load_document(doc_path)
             fields = extract_fields(text)
 
-            # Lấy user_id nếu có
             user_id = current_user.id if current_user.is_authenticated else None
+            matcher = EnhancedFieldMatcher(form_history_path="form_history.json")
 
-            # Load matcher từ lịch sử
-            form_history_path = "form_history.json"
-            matcher = EnhancedFieldMatcher(form_history_path=form_history_path)
-
-            filled_fields = {}  # 🔁 Trả về dưới dạng object
+            filled_fields = {}
 
             for field in fields:
                 field_code = field.get("field_code")
@@ -101,13 +81,9 @@ def register_enhanced_routes(app):
 
                 suggestions = matcher.get_suggested_values(field_name, user_id=user_id)
 
-                if suggestions:
-                    filled_fields[field_code] = suggestions[0]  # ⬅️ field_code là id input ở frontend
-                else:
-                    filled_fields[field_code] = None
+                filled_fields[field_code] = suggestions[0] if suggestions else None
 
             return jsonify({"fields": filled_fields})
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
-

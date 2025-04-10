@@ -5,7 +5,7 @@ from models.data_model import load_db, save_db, load_form_history, save_form_his
 import os
 import uuid
 
-from utils.ai_utils import generate_personalized_suggestions,extract_context_from_form_text
+
 def register_form_routes(app):
     """
     Đăng ký các route cho biểu mẫu
