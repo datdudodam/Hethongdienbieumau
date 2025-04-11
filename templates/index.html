@@ -156,7 +156,7 @@
                                         <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                                             Gợi ý cho {{ field.field_name }}
                                         </div>
-                                    </button>
+                                </button>
                                      <!-- Thêm nút điền tự động -->
                                     <button 
                                         type="button" 
@@ -332,79 +332,71 @@
                 button.disabled = false;
             });
         }
-                           // ✅ Đã sửa từ fiel
+        function autoFillAllFields() {
+            const inputs = document.querySelectorAll('form input[type="text"]');
+            const button = document.getElementById('auto-fill-all-button');
+            const loadingIcon = button?.querySelector('.auto-fill-loading');
+            const fillIcon = button?.querySelector('.auto-fill-icon');
 
+            if (loadingIcon) loadingIcon.classList.remove('hidden');
+            if (fillIcon) fillIcon.classList.add('hidden');
+            if (button) button.disabled = true;
 
-//             function autoFillFieldAI(fieldName) {
-//                 const input = document.getElementById(fieldName);
-//                 if (!input) {
-//                     console.error(`Không tìm thấy input với id = ${fieldName}`);
-//                 return;
-// }
-//                 const formGroup = input.closest('.form-input-group');
-
-//                 const button = formGroup.querySelector('button[onclick*="autoFillFieldAI"]');
-//                 const loadingIcon = button?.querySelector('.auto-fill-loading');
-//                 const fillIcon = button?.querySelector('.auto-fill-icon');
-//                 const errorDiv = document.getElementById(`error-${fieldName }`);
-
-//                 // Lấy dữ liệu hiện tại từ form
-//                 const formInputs = document.querySelectorAll('form input[type="text"]');
-//                 const formData = {};
-//                 formInputs.forEach(i => {
-//                     if (i.value.trim()) {
-//                         formData[i.id] = i.value.trim();
-//                     }
-//                 });
-
-//                 if (loadingIcon) loadingIcon.classList.remove('hidden');
-//                 if (fillIcon) fillIcon.classList.add('hidden');
-//                 if (button) button.disabled = true;
-//                 if (errorDiv) errorDiv.classList.add('hidden');
-
-//                 fetch('/AI_FILL', {
-//                     method: 'POST',
-//                     headers: {
-//                         'Content-Type': 'application/json',
-//                     },
-//                     body: JSON.stringify({
-//                         field_name: fieldName,
-//                         partial_form: formData
-//                     })
-//                 })
-//                 .then(response => {
-//                     if (!response.ok) {
-//                         return response.json().then(err => { throw err; });
-//                     }
-//                     return response.json();
-//                 })
-//                 .then(data => {
-//                     if (data.value) {
-//                         input.value = data.value;
-//                         showAutoFillDetails(input, data);
-//                         showToast(`Đã tự động điền "${data.field_name}" bằng AI`, 'success');
-//                     } else {
-//                         if (errorDiv) {
-//                             errorDiv.textContent = data.error || 'Không tìm thấy dữ liệu phù hợp.';
-//                             errorDiv.classList.remove('hidden');
-//                         }
-//                     }
-//                 })
-//                 .catch(error => {
-//                     console.error('Lỗi:', error);
-//                     if (errorDiv) {
-//                         errorDiv.textContent = error.error || 'Có lỗi xảy ra khi gọi AI.';
-//                         errorDiv.classList.remove('hidden');
-//                     }
-//                 })
-//                 .finally(() => {
-//                     if (loadingIcon) loadingIcon.classList.add('hidden');
-//                     if (fillIcon) fillIcon.classList.remove('hidden');
-//                     if (button) button.disabled = false;
-//                 });
-//             }
-
-
+            fetch('/auto_fill_all_fields', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.fields && typeof data.fields === 'object') {
+                    let filledCount = 0;
+                    for (const fieldName in data.fields) {
+                        const value = data.fields[fieldName];
+                        const input = document.getElementById(fieldName);
+                        const errorDiv = document.getElementById(`error-${fieldName}`);
+                        if (input && value) {
+                            input.value = value;
+                            showAutoFillDetails(input, {
+                                value: value,
+                                confidence: 0.9,
+                                suggestions: [value],
+                                field_name: fieldName,
+                                field_code: fieldName,
+                            });
+                            filledCount++;
+                            if (errorDiv) errorDiv.classList.add('hidden');
+                        } else if (errorDiv) {
+                            errorDiv.textContent = `Không có giá trị gợi ý cho "${fieldName}"`;
+                            errorDiv.classList.remove('hidden');
+                        }
+                    }
+                    
+                    if (filledCount > 0) {
+                        showToast(`Đã tự động điền ${filledCount} trường`, 'success');
+                    } else {
+                        showToast('Không có trường nào được điền tự động', 'info');
+                    }
+                } else {
+                    showToast('Không tìm thấy gợi ý để điền tự động', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi autofill toàn bộ:', error);
+                showToast(error.error || 'Có lỗi xảy ra khi tự động điền tất cả.', 'error');
+            })
+            .finally(() => {
+                if (loadingIcon) loadingIcon.classList.add('hidden');
+                if (fillIcon) fillIcon.classList.remove('hidden');
+                if (button) button.disabled = false;
+            });
+        }
 
 
     function initializeEventListeners() {

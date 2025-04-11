@@ -36,26 +36,23 @@ def register_enhanced_routes(app):
             fields = extract_fields(text)
 
             field_name = get_field_name_from_code(fields, field_code)
-
+            partial_form = data.get('partial_form', {})
             user_id = current_user.id if current_user.is_authenticated else None
             matcher = EnhancedFieldMatcher(form_history_path="form_history.json")
 
-            suggestions = matcher.get_suggested_values(field_name, user_id=user_id)
+            suggestions = matcher.match_fields(field_name, user_id=user_id)
 
             if suggestions:
+                suggestion = suggestions.get(field_name)
                 return jsonify({
-                    "value": suggestions[0],
-                    "suggestions": suggestions,
-                    "confidence": 0.9,  # Có thể thay đổi theo logic tin cậy
-                    "field_name": field_name,
-                    "field_code": field_code
+                    'field_name': field_name,
+                    'matched_field': suggestion.get('matched_field') if suggestion else None,
+                    'suggested_value': suggestion.get('value') if suggestion else None,
+                    'value': suggestion.get('value') if suggestion else None,  # Thêm trường value để hiển thị trên giao diện
+                    'all_suggestions': suggestions
                 })
-
-            return jsonify({
-                "error": "Không tìm thấy giá trị phù hợp",
-                "field_name": field_name,
-                "field_code": field_code
-            }), 404
+            else:
+                return jsonify({'message': 'No suggestion found'})
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -79,11 +76,17 @@ def register_enhanced_routes(app):
                 field_code = field.get("field_code")
                 field_name = field.get("field_name", field_code)
 
-                suggestions = matcher.get_suggested_values(field_name, user_id=user_id)
+                suggestions = matcher.match_fields(field_name, user_id=user_id)
 
-                filled_fields[field_code] = suggestions[0] if suggestions else None
+                # 🟢 Chỉ lấy giá trị value
+                value = None
+                if suggestions and field_name in suggestions:
+                    value = suggestions[field_name].get('value')
 
-            return jsonify({"fields": filled_fields})
+                filled_fields[field_code] = value  # Gán trực tiếp value đơn giản
+
+            return jsonify({"fields": filled_fields})  # ✅ frontend sẽ hiểu được
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+

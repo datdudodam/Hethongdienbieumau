@@ -1,7 +1,6 @@
 from flask import request, jsonify, session
 from typing import Dict, Any, Optional
-from utils.field_matcher import EnhancedFieldMatcher
-from utils.ai_utils import generate_personalized_suggestions,extract_context_from_form_text
+from utils.ai_matcher import AIFieldMatcher
 import json
 from models.data_model import load_db, save_db, load_form_history, save_form_history
 import logging
@@ -15,6 +14,7 @@ def GOI_Y_AI(app):
     """
     # Initialize components once at startup
     form_history_path = "form_history.json"
+    ai_matcher = AIFieldMatcher(form_history_path=form_history_path)
     
 
     @app.route('/AI_FILL', methods=['POST'])
@@ -59,18 +59,31 @@ def GOI_Y_AI(app):
             
             # Thêm xử lý lỗi và kiểm tra dữ liệu
             try:
-                # Gọi hàm generate_personalized_suggestions với xử lý lỗi
-                city_suggestions = generate_personalized_suggestions(form_history_data, user_id, field_name, context=extract_context_from_form_text(text))
+                # Trích xuất ngữ cảnh từ nội dung biểu mẫu
+                form_context = ai_matcher.extract_context_from_form_text(text)
+                
+                # Gọi hàm generate_personalized_suggestions từ AIFieldMatcher
+                suggestions_result = ai_matcher.generate_personalized_suggestions(
+                    field_code=field_code,
+                    user_id=user_id,
+                    context=form_context
+                )
                 
                 # Kiểm tra kết quả trả về
-                if city_suggestions is None:
-                    city_suggestions = {"suggestions": [], "default": ""}
+                if suggestions_result is None:
+                    suggestions_result = {
+                        "suggestions": [], 
+                        "default": "",
+                        "confidence": 0.5,
+                        "field_name": field_name,
+                        "field_code": field_code
+                    }
                     
-                # Đảm bảo city_suggestions có key "suggestions"
-                if "suggestions" not in city_suggestions:
-                    city_suggestions["suggestions"] = []
+                # Đảm bảo suggestions_result có key "suggestions"
+                if "suggestions" not in suggestions_result:
+                    suggestions_result["suggestions"] = []
                     
-                suggestions = city_suggestions["suggestions"]
+                suggestions = suggestions_result["suggestions"]
                 
                 # Xử lý trường hợp suggestions rỗng
                 if not suggestions:
@@ -79,20 +92,20 @@ def GOI_Y_AI(app):
                         "suggestions": [],
                         "confidence": 0.5,
                         "field_name": field_name,
-                        "field_code": field_name
+                        "field_code": field_code
                     })
                     
                 # Lấy giá trị mặc định an toàn
-                default_value = city_suggestions.get("default", "")
+                default_value = suggestions_result.get("default", "")
                 if not default_value and suggestions:
                     default_value = suggestions[0]
                     
                 return jsonify({
                     "value": default_value,
                     "suggestions": suggestions,
-                    "confidence": 0.9,
+                    "confidence": suggestions_result.get("confidence", 0.9),
                     "field_name": field_name,
-                    "field_code": field_name
+                    "field_code": field_code
                 })
             except Exception as inner_e:
                 logger.error(f"Error in generate_personalized_suggestions: {str(inner_e)}", exc_info=True)
