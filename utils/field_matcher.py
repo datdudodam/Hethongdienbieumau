@@ -17,27 +17,27 @@ import re
 from config.config import FORM_HISTORY_PATH
 
 # Đảm bảo các tài nguyên NLTK được tải xuống
-def ensure_nltk_resources():
-    resources = {
-        'punkt_tab': 'tokenizers/punkt_tab', 
-        'stopwords': 'corpora/stopwords', 
-        'omw-1.4': 'corpora/omw-1.4'
-    }
-    for resource, path in resources.items():
-        try:
-            nltk.data.find(path)
-            print(f"Resource {resource} already exists.")
-        except LookupError:
-            try:
-                print(f"Downloading {resource} resource...")
-                nltk.download(resource, quiet=True)
-                print(f"Downloaded {resource} successfully!")
-            except Exception as e:
-                print(f"Error downloading {resource}: {e}")
-                print(f"Please manually download {resource} using: nltk.download('{resource}')")
+# def ensure_nltk_resources():
+#     resources = {
+#         'punkt_tab': 'tokenizers/punkt_tab', 
+#         'stopwords': 'corpora/stopwords', 
+#         'omw-1.4': 'corpora/omw-1.4'
+#     }
+#     for resource, path in resources.items():
+#         try:
+#             nltk.data.find(path)
+#             print(f"Resource {resource} already exists.")
+#         except LookupError:
+#             try:
+#                 print(f"Downloading {resource} resource...")
+#                 nltk.download(resource, quiet=True)
+#                 print(f"Downloaded {resource} successfully!")
+#             except Exception as e:
+#                 print(f"Error downloading {resource}: {e}")
+#                 print(f"Please manually download {resource} using: nltk.download('{resource}')")
 
-# Tải các resource cần thiết
-ensure_nltk_resources()
+# # Tải các resource cần thiết
+# ensure_nltk_resources()
 
 class EnhancedFieldMatcher:
     def __init__(self, form_history_path: str):
@@ -54,11 +54,12 @@ class EnhancedFieldMatcher:
         self.field_names = []
         self.field_embeddings = {}
         self.matched_fields = {}
+        self.similarity_cache = {}  # Cache for similarity calculations
+        self.processed_text_cache = {}  # Cache for preprocessed text
         
         self.sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
         
         # Tải và xử lý dữ liệu lịch sử
-        
         self._build_field_value_mapping()
         self._build_models()
     def _load_user_preferences(self):
@@ -133,9 +134,19 @@ class EnhancedFieldMatcher:
 
 
     def _calculate_sbert_similarity(self, text1: str, text2: str) -> float:
+        # Create a unique cache key
+        cache_key = f"sbert_{text1}||{text2}"
+        if cache_key in self.similarity_cache:
+            return self.similarity_cache[cache_key]
+            
+        # Encode texts and calculate similarity
         vec1 = self.sbert_model.encode([text1])[0]
         vec2 = self.sbert_model.encode([text2])[0]
-        return cosine_similarity([vec1], [vec2])[0][0]
+        similarity = cosine_similarity([vec1], [vec2])[0][0]
+        
+        # Cache the result
+        self.similarity_cache[cache_key] = similarity
+        return similarity
     def _initialize_stopwords(self) -> Set[str]:
         """Khởi tạo stopwords cho cả tiếng Anh và tiếng Việt"""
         english_stopwords = set(stopwords.words('english'))
@@ -170,26 +181,33 @@ class EnhancedFieldMatcher:
                         self.field_value_mapping[field_name].append(val_str)
     
     def _preprocess_text(self, text: str) -> str:
-        """Tiền xử lý văn bản nâng cao cho tiếng Việt"""
+        """Tiền xử lý văn bản nâng cao cho tiếng Việt với caching"""
         if not text:
             return ""
             
+        # Check cache first
+        if text in self.processed_text_cache:
+            return self.processed_text_cache[text]
+            
         # Chuẩn hóa Unicode và chuyển đổi về chữ thường
-        text = unicodedata.normalize('NFC', text.lower())
+        normalized = unicodedata.normalize('NFC', text.lower())
         
         # Loại bỏ dấu câu và ký tự đặc biệt, giữ lại dấu tiếng Việt
-        text = re.sub(r'[^\w\sáàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]', ' ', text)
+        cleaned = re.sub(r'[^\w\sáàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]', ' ', normalized)
         
-        # Thay thế từ đồng nghĩa phổ biến
-        for target, synonyms in self.synonym_map.items():
-            for synonym in synonyms:
-                text = re.sub(r'\b' + re.escape(synonym) + r'\b', target, text)
+        # Thay thế từ đồng nghĩa phổ biến - sử dụng sorted để tối ưu
+        for target, synonyms in sorted(self.synonym_map.items(), key=lambda x: len(x[0]), reverse=True):
+            for synonym in sorted(synonyms, key=len, reverse=True):
+                cleaned = re.sub(r'\b' + re.escape(synonym) + r'\b', target, cleaned)
         
         # Loại bỏ stopwords
-        tokens = text.split()
+        tokens = cleaned.split()
         filtered_tokens = [token for token in tokens if token not in self.stop_words]
+        result = ' '.join(filtered_tokens)
         
-        return ' '.join(filtered_tokens)
+        # Cache the result
+        self.processed_text_cache[text] = result
+        return result
     
     def _normalize_field_name(self, field_name: str) -> str:
         """Chuẩn hóa tên trường nâng cao"""
@@ -260,17 +278,27 @@ class EnhancedFieldMatcher:
                             self.field_embeddings[field] = np.mean(embeddings, axis=0)
     
     def _calculate_similarity(self, text1: str, text2: str) -> float:
-        """Tính toán độ tương đồng tổng hợp sử dụng nhiều phương pháp"""
+        """Tính toán độ tương đồng tổng hợp sử dụng nhiều phương pháp với caching"""
+        # Check cache first - create a unique key for the pair
+        cache_key = f"{text1}||{text2}"
+        if cache_key in self.similarity_cache:
+            return self.similarity_cache[cache_key]
+            
         # Chuẩn hóa văn bản
         norm1 = self._normalize_field_name(text1)
         norm2 = self._normalize_field_name(text2)
-       
-        # 1. SequenceMatcher similarity
-        seq_sim = difflib.SequenceMatcher(None, norm1, norm2).ratio()
         
-        # 2. TF-IDF cosine similarity
+        # Quick check for exact matches after normalization
+        if norm1 == norm2:
+            self.similarity_cache[cache_key] = 1.0
+            return 1.0
+       
+        # 1. SequenceMatcher similarity - faster implementation
+        seq_sim = difflib.SequenceMatcher(None, norm1, norm2).quick_ratio()
+        
+        # 2. TF-IDF cosine similarity - only if needed
         tfidf_sim = 0.0
-        if self.vectorizer and self.field_vectors is not None:
+        if seq_sim < 0.8 and self.vectorizer and self.field_vectors is not None:
             try:
                 query_vec = self.vectorizer.transform([self._preprocess_text(text1)])
                 target_vec = self.vectorizer.transform([self._preprocess_text(text2)])
@@ -278,25 +306,33 @@ class EnhancedFieldMatcher:
             except Exception as e:
                 print(f"TF-IDF similarity error: {e}")
         
-        # 3. Word2Vec similarity (nếu có embeddings)
+        # 3. Word2Vec similarity - only if needed
         w2v_sim = 0.0
-        if self.word2vec_model:
+        if seq_sim < 0.8 and tfidf_sim < 0.8 and self.word2vec_model:
             try:
                 tokens1 = self._preprocess_text(text1).split()
                 tokens2 = self._preprocess_text(text2).split()
                 
                 if tokens1 and tokens2:
-                    # Kiểm tra xem tất cả tokens có trong vocab không
-                    if all(token in self.word2vec_model.wv for token in tokens1) and \
-                       all(token in self.word2vec_model.wv for token in tokens2):
-                        w2v_sim = self.word2vec_model.wv.n_similarity(tokens1, tokens2)
+                    # Only check tokens that are actually in the vocabulary
+                    valid_tokens1 = [t for t in tokens1 if t in self.word2vec_model.wv]
+                    valid_tokens2 = [t for t in tokens2 if t in self.word2vec_model.wv]
+                    
+                    if valid_tokens1 and valid_tokens2:
+                        w2v_sim = self.word2vec_model.wv.n_similarity(valid_tokens1, valid_tokens2)
             except Exception as e:
                 print(f"Word2Vec similarity error: {e}")
         
+        # 4. SBERT similarity - only if needed
+        sbert_sim = 0.0
+        if seq_sim < 0.8 and tfidf_sim < 0.8 and w2v_sim < 0.8:
+            sbert_sim = self._calculate_sbert_similarity(text1, text2)
+        
         # Kết hợp các điểm similarity với trọng số
-        sbert_sim = self._calculate_sbert_similarity(text1, text2)
         combined_sim = 0.25 * seq_sim + 0.25 * tfidf_sim + 0.2 * w2v_sim + 0.3 * sbert_sim
         
+        # Cache the result
+        self.similarity_cache[cache_key] = combined_sim
         return combined_sim
     def _boost_by_frequency(self, field_name: str, base_score: float) -> float:
         frequency = len(self.field_value_mapping.get(field_name, []))
@@ -306,46 +342,78 @@ class EnhancedFieldMatcher:
         self,
         form_model: Union[str, List[str]],
         threshold: float = 0.65,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        fast_mode: bool = False
     ) -> Dict[str, Dict[str, Any]]:
         """
         Ghép các trường giữa form_model và form_data sử dụng kết hợp nhiều phương pháp.
         Trả về dict gồm tên trường đã khớp, tên trường dữ liệu khớp, và giá trị tương ứng.
+        Tham số fast_mode=True sẽ tối ưu hóa cho trường hợp điền tất cả tự động.
         """
-        with open("form_history.json", "r", encoding="utf-8") as f:
-            history_data = json.load(f)
+        # Sử dụng cache cho history_data
+        if not hasattr(self, '_history_data_cache'):
+            try:
+                with open("form_history.json", "r", encoding="utf-8") as f:
+                    self._history_data_cache = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                self._history_data_cache = []
+        
+        history_data = self._history_data_cache
 
         if not history_data:
-            print("⚠️ Không có dữ liệu trong form_history.json")
+            if not fast_mode:
+                print("⚠️ Không có dữ liệu trong form_history.json")
             return {}
 
         # Chuyển form_model thành list nếu là chuỗi
         if isinstance(form_model, str):
             form_model = [form_model]
 
-        print(f"\n🧩 Danh sách trường cần ghép: {form_model}")
-        if user_id:
-            print(f"🔑 Chỉ xét các bản ghi của user_id: {user_id}")
+        if not fast_mode:
+            print(f"\n🧩 Danh sách trường cần ghép: {form_model}")
+            if user_id:
+                print(f"🔑 Chỉ xét các bản ghi của user_id: {user_id}")
 
-        user_records = [record for record in history_data if record.get("user_id") == user_id]
-        user_records = list(reversed(user_records))  # Duyệt từ mới nhất
+        # Cache user records for better performance
+        cache_key = f"user_records_{user_id}"
+        if hasattr(self, cache_key):
+            user_records = getattr(self, cache_key)
+        else:
+            user_records = [record for record in history_data if record.get("user_id") == user_id]
+            user_records = list(reversed(user_records))  # Duyệt từ mới nhất
+            setattr(self, cache_key, user_records)
 
         if not user_records:
-            print("⚠️ Không tìm thấy bản ghi nào thuộc user_id này.")
+            if not fast_mode:
+                print("⚠️ Không tìm thấy bản ghi nào thuộc user_id này.")
             return {}
 
-        for idx, record in enumerate(user_records):
+        # Tối ưu: Chỉ xét các bản ghi gần đây nhất trong fast_mode
+        records_to_check = user_records[:3] if fast_mode else user_records
+
+        for idx, record in enumerate(records_to_check):
             form_data = record.get("form_data", {})
 
-            print(f"\n📄 Đang kiểm tra bản ghi thứ {idx + 1}/{len(user_records)}: {len(form_data)} trường")
+            if not fast_mode:
+                print(f"\n📄 Đang kiểm tra bản ghi thứ {idx + 1}/{len(records_to_check)}: {len(form_data)} trường")
 
             matched_fields = {}
             used_model_fields = set()
             used_data_fields = set()
             potential_matches = []
 
+            # Tối ưu: Sử dụng exact match trước để tăng tốc
             for model_field in form_model:
+                normalized_model = self._normalize_field_name(model_field)
                 for data_field in form_data.keys():
+                    normalized_data = self._normalize_field_name(data_field)
+                    
+                    # Kiểm tra exact match trước
+                    if normalized_model == normalized_data:
+                        potential_matches.append((1.0, model_field, data_field))
+                        continue
+                        
+                    # Nếu không exact match, tính similarity
                     similarity = self._calculate_similarity(model_field, data_field)
                     similarity += self._boost_by_frequency(data_field, similarity)
                     similarity += self._exact_token_match_boost(model_field, data_field)
@@ -366,15 +434,17 @@ class EnhancedFieldMatcher:
                     used_data_fields.add(data_field)
 
             if matched_fields:
-                for model, match in matched_fields.items():
-                    print(f"   - {model} <-- {match['matched_field']} : {match['value']}")
+                if not fast_mode:
+                    for model, match in matched_fields.items():
+                        print(f"   - {model} <-- {match['matched_field']} : {match['value']}")
                 self.matched_fields = matched_fields
                 return matched_fields
 
-            else:
+            elif not fast_mode:
                 print("❌ Không tìm thấy kết quả trong bản ghi này. Tiếp tục tìm trong bản ghi khác...")
 
-        print("\n❌ Không tìm thấy kết quả phù hợp trong bất kỳ bản ghi nào của user_id này.")
+        if not fast_mode:
+            print("\n❌ Không tìm thấy kết quả phù hợp trong bất kỳ bản ghi nào của user_id này.")
         self.matched_fields = {}
         return self.matched_fields
 

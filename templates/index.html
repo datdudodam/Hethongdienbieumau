@@ -56,11 +56,11 @@
             transform: translateY(-1px);
         }
         
-        .suggestion-button {
+        .action-button {
             transition: all 0.2s ease;
         }
         
-        .suggestion-button:hover {
+        .action-button:hover {
             transform: translateY(-1px);
         }
         
@@ -84,14 +84,40 @@
             transition: opacity 0.2s ease, visibility 0.2s ease;
         }
         
+        .auto-fill-all-btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px -3px rgba(245, 158, 11, 0.4);
+        }
+        
+        .auto-fill-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px -3px rgba(245, 158, 11, 0.5);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
         @media (max-width: 640px) {
             .input-button-group {
                 flex-direction: column;
             }
             
-            .suggestion-button {
+            .action-button {
                 width: 100%;
                 margin-top: 8px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .button-group .action-button {
+                width: 100%;
+                margin-top: 0;
             }
         }
     </style>
@@ -110,6 +136,35 @@
             </div>
             
             <div class="p-6 sm:p-8 md:p-10">
+                <!-- Nút điền tất cả tự động được di chuyển lên trên cùng -->
+                <div class="mb-8 flex justify-between items-center flex-wrap gap-4">
+                    <button 
+                        type="button" 
+                        onclick="autoFillAllFields()" 
+                        class="auto-fill-all-btn px-6 py-3 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-yellow-200 font-medium"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Điền tất cả tự động
+                        <span class="auto-fill-loading hidden ml-2">
+                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                    
+                    <div class="text-sm text-gray-500">
+                        <p class="flex items-center">
+                            <svg class="w-4 h-4 mr-1 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Hệ thống sẽ tự động điền các trường có thể
+                        </p>
+                    </div>
+                </div>
+                
                 <form action="/submit" method="post" class="space-y-6">
                     {% for field in fields %}
                     <div class="form-input-group">
@@ -133,11 +188,12 @@
                                     >
                                 </div>
                                 
-                                <div class="flex gap-2 sm:gap-3 input-button-group">
+                                <div class="button-group">
+                                    <!-- Nhóm nút gợi ý -->
                                     <button 
                                         type="button" 
                                         onclick="loadSuggestions('{{ field.field_code }}')" 
-                                        class="suggestion-button px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-blue-200 relative group"
+                                        class="action-button px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-blue-200 relative group"
                                         title="Xem gợi ý"
                                         aria-label="Xem gợi ý cho {{ field.field_name }}"
                                     >
@@ -148,20 +204,21 @@
                                             </svg>
                                         </span>
                                         <span class="suggestion-icon flex items-center">
-                                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                             </svg>
-                                            <span class="hidden sm:inline">Gợi ý</span>
+                                            <span class="hidden sm:inline ml-1">Gợi ý</span>
                                         </span>
                                         <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                                             Gợi ý cho {{ field.field_name }}
                                         </div>
-                                </button>
-                                     <!-- Thêm nút điền tự động -->
+                                    </button>
+                                    
+                                    <!-- Nhóm nút tự động điền -->
                                     <button 
                                         type="button" 
                                         onclick="autoFillField('{{ field.field_code }}')" 
-                                        class="suggestion-button px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-yellow-200 relative group"
+                                        class="action-button px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-yellow-200 relative group"
                                         title="Điền tự động"
                                         aria-label="Điền tự động cho {{ field.field_name }}"
                                     >
@@ -172,60 +229,38 @@
                                             </svg>
                                         </span>
                                         <span class="auto-fill-icon flex items-center">
-                                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                             </svg>
-                                            <span class="hidden sm:inline">Tự động</span>
+                                            <span class="hidden sm:inline ml-1">Tự động</span>
                                         </span>
                                         <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                                             Điền tự động cho {{ field.field_name }}
                                         </div>
-                                </button>
-                                <button 
-                                type="button" 
-                                onclick="autoFillFieldAI('{{ field.field_code }}')" 
-                                class="suggestion-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-green-200 relative group"
-                                title="Hỗ trợ AI"
-                                aria-label="Điền tự động cho {{ field.field_name }}"
-                            >
-                                <span class="auto-fill-loading hidden">
-                                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                </span>
-                                <span class="auto-fill-icon flex items-center">
-                                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                    </svg>
-                                    <span class="hidden sm:inline">Hỗ trợ AI</span>
-                                </span>
-                                <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                                    Điền tự động cho {{ field.field_name }}
-                                </div>
-                        </button>
+                                    </button>
                                     
+                                    <!-- Nhóm nút AI -->
                                     <button 
                                         type="button" 
-                                        onclick="loadMlSuggestions('{{ field.field_code }}')" 
-                                        class="suggestion-button px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-purple-200 relative group"
-                                        title="Gợi ý thông minh"
-                                        aria-label="Gợi ý thông minh cho {{ field.field_name }}"
+                                        onclick="autoFillFieldAI('{{ field.field_code }}')" 
+                                        class="action-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-green-200 relative group"
+                                        title="Hỗ trợ AI"
+                                        aria-label="Điền tự động cho {{ field.field_name }}"
                                     >
-                                        <span class="ml-suggestion-loading hidden">
+                                        <span class="auto-fill-loading hidden">
                                             <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
                                         </span>
-                                        <span class="ml-suggestion-icon flex items-center">
-                                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <span class="auto-fill-icon flex items-center">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                                             </svg>
-                                            <span class="hidden sm:inline">Thông minh</span>
+                                            <span class="hidden sm:inline ml-1">AI</span>
                                         </span>
                                         <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                                            Gợi ý thông minh cho {{ field.field_name }}
+                                            Điền tự động bằng AI cho {{ field.field_name }}
                                         </div>
                                     </button>
                                 </div>
@@ -241,16 +276,6 @@
                     {% endfor %}
                     
                     <div class="pt-8">
-                        <button 
-                            type="button" 
-                            onclick="autoFillAllFields()" 
-                            class="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-yellow-200"
-                             >
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                            Điền tất cả tự động
-                        </button>
                         <button 
                             type="button" 
                             onclick="saveAndGenerateDocx()" 
@@ -334,7 +359,7 @@
         }
         function autoFillAllFields() {
             const inputs = document.querySelectorAll('form input[type="text"]');
-            const button = document.getElementById('auto-fill-all-button');
+            const button = document.querySelector('button[onclick="autoFillAllFields()"]');
             const loadingIcon = button?.querySelector('.auto-fill-loading');
             const fillIcon = button?.querySelector('.auto-fill-icon');
 
@@ -357,26 +382,30 @@
             .then(data => {
                 if (data.fields && typeof data.fields === 'object') {
                     let filledCount = 0;
+                    // Tối ưu: Xử lý tất cả các trường cùng một lúc để tăng hiệu suất
+                    const fieldsToFill = [];
+                    
                     for (const fieldName in data.fields) {
                         const value = data.fields[fieldName];
                         const input = document.getElementById(fieldName);
                         const errorDiv = document.getElementById(`error-${fieldName}`);
+                        
                         if (input && value) {
-                            input.value = value;
-                            showAutoFillDetails(input, {
-                                value: value,
-                                confidence: 0.9,
-                                suggestions: [value],
-                                field_name: fieldName,
-                                field_code: fieldName,
-                            });
-                            filledCount++;
+                            fieldsToFill.push({ input, value, fieldName });
                             if (errorDiv) errorDiv.classList.add('hidden');
-                        } else if (errorDiv) {
-                            errorDiv.textContent = `Không có giá trị gợi ý cho "${fieldName}"`;
-                            errorDiv.classList.remove('hidden');
                         }
                     }
+                    
+                    // Áp dụng các giá trị vào form
+                    fieldsToFill.forEach(({ input, value, fieldName }) => {
+                        input.value = value;
+                        // Hiệu ứng highlight cho trường được điền
+                        input.classList.add('bg-yellow-50');
+                        setTimeout(() => {
+                            input.classList.remove('bg-yellow-50');
+                        }, 2000);
+                        filledCount++;
+                    });
                     
                     if (filledCount > 0) {
                         showToast(`Đã tự động điền ${filledCount} trường`, 'success');
