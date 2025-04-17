@@ -5,7 +5,7 @@ import json
 from models.data_model import load_db, save_db, load_form_history, save_form_history
 import logging
 from flask_login import current_user
-from utils.document_utils import get_doc_path, load_document, extract_fields
+from utils.document_utils import get_doc_path, load_document, extract_all_fields,extract_fields
 logger = logging.getLogger(__name__)
 
 def GOI_Y_AI(app):
@@ -29,7 +29,7 @@ def GOI_Y_AI(app):
                 return jsonify({"error": "Field code is required"}), 400
             
             # Lấy document path hiện tại để trích xuất field_name
-            from utils.document_utils import get_doc_path, load_document, extract_fields
+            from utils.document_utils import get_doc_path, load_document, extract_all_fields
             doc_path = get_doc_path()
             
             if not doc_path:
@@ -37,7 +37,7 @@ def GOI_Y_AI(app):
                 
             # Trích xuất tất cả các trường từ tài liệu
             text = load_document(doc_path)
-            fields = extract_fields(text)
+            fields = extract_all_fields(doc_path)
             
             # Tìm field_name tương ứng với field_code
             field_name = None

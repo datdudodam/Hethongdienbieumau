@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from flask_login import current_user
 from utils.field_matcher import EnhancedFieldMatcher
-from utils.document_utils import get_doc_path, load_document, extract_fields
+from utils.document_utils import get_doc_path, load_document, extract_all_fields,extract_fields
 import json
 
 def get_field_name_from_code(fields, field_code: str) -> str:
@@ -33,7 +33,7 @@ def register_enhanced_routes(app):
                 return jsonify({"error": "No document loaded"}), 400
 
             text = load_document(doc_path)
-            fields = extract_fields(text)
+            fields = extract_all_fields(doc_path)
 
             field_name = get_field_name_from_code(fields, field_code)
             partial_form = data.get('partial_form', {})
@@ -70,7 +70,7 @@ def register_enhanced_routes(app):
                 return jsonify({"error": "No document loaded"}), 400
 
             text = load_document(doc_path)
-            fields = extract_fields(text)
+            fields = extract_all_fields(doc_path)
 
             user_id = current_user.id if current_user.is_authenticated else None
             matcher = EnhancedFieldMatcher(form_history_path="form_history.json")

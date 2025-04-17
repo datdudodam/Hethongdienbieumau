@@ -1,5 +1,5 @@
 from flask import render_template, request, jsonify
-from utils.document_utils import load_document, extract_fields, get_doc_path, set_doc_path
+from utils.document_utils import load_document, extract_all_fields, get_doc_path, set_doc_path
 
 from models.data_model import load_db, save_db, load_form_history, save_form_history
 import os
@@ -17,7 +17,7 @@ def register_form_routes(app):
             return jsonify({'error': 'No document uploaded'}), 400
             
         text = load_document(doc_path)
-        fields = extract_fields(text)
+        fields = extract_all_fields(doc_path)
         db_data = load_db()
        
         
@@ -38,7 +38,7 @@ def register_form_routes(app):
             # Lưu dữ liệu form (phần này giữ nguyên như cũ)
             form_id = str(uuid.uuid4())
             text = load_document(doc_path)
-            fields = extract_fields(text)
+            fields = extract_all_fields(doc_path)
             
             transformed_data = {
                 "form_id": form_id,
@@ -97,8 +97,8 @@ def register_form_routes(app):
     def view_form(form_id):
         try:
             form_history = load_form_history()
-            clean_form_id = form_id.replace('_test', '')
-            
+            clean_form_id = form_id.replace('_test', '').split('_')[0]
+            print("clean_form_id",clean_form_id)
             # Tìm form theo form_id
             form_data = None
             form_path = None
@@ -106,11 +106,12 @@ def register_form_routes(app):
             for form in form_history:
                 file_name = os.path.basename(form['path'])
                 file_id = file_name.split('_')[0]
-                
+                print("file_id",file_id)
                 if file_id == clean_form_id:
                     form_data = form.get('form_data')
                     form_path = form['path']
                     break
+
             
             if not form_data or not form_path:
                 return jsonify({'error': 'Không tìm thấy biểu mẫu'}), 404
@@ -118,7 +119,7 @@ def register_form_routes(app):
             # Set document path và load fields
             set_doc_path(form_path)
             text = load_document(form_path)
-            fields = extract_fields(text)
+            fields = extract_all_fields(form_path)
             
             # Gán giá trị trực tiếp từ form_data vào fields
             for field in fields:
@@ -127,12 +128,12 @@ def register_form_routes(app):
             
             # Get suggestions
             db_data = load_db()
-            suggestions = generate_suggestions(db_data) if db_data else {}
+            #suggestions = generate_suggestions(db_data) if db_data else {}
             
             return render_template(
                 "index.html",
                 fields=fields,
-                suggestions=suggestions,
+               # suggestions=suggestions,
                 form_data=form_data,
                 document_name=form_data.get('document_name', '')
             )
