@@ -43,7 +43,7 @@ class AIFieldMatcher:
             max_tokens=300
         )
 
-        context = response.choices[0].message.content.strip() if response and response.choices else ""
+        context = response.choices[0].message.content.strip() if response and response.choices and response.choices[0].message.content else ""
         self.context_cache[cache_key] = context
         return context
     
@@ -234,7 +234,7 @@ class AIFieldMatcher:
             recent_values = [entry[0] for entry in recent_entries]
             
             # Get field-specific historical values from field matcher
-            field_specific_values = self.field_matcher.get_suggested_values(key, limit=10, user_id=user_id)
+            field_specific_values = self.field_matcher.get_suggested_values(key, limit=10, user_id=int(user_id) if user_id else None)
             
             # Combine with our collected values
             combined_values = list(set(all_values + field_specific_values))
@@ -290,29 +290,29 @@ class AIFieldMatcher:
 
         return result if field_code is None else result.get(field_code, {"suggestions": [], "default": ""})
     
-    def update_form_history(self, new_form_data: Dict, user_id: Optional[str] = None) -> None:
-        """Update form history in both the field matcher and our local storage"""
-        # Update the field matcher's history
-        self.field_matcher.update_form_history(new_form_data, user_id)
+    # def update_form_history(self, new_form_data: Dict, user_id: Optional[str] = None) -> None:
+    #     """Update form history in both the field matcher and our local storage"""
+    #     # Update the field matcher's history
+    #     self.field_matcher.update_form_history(new_form_data, user_id)
         
-        # Also update our local JSON file
-        try:
-            if os.path.exists(FORM_HISTORY_PATH):
-                with open(FORM_HISTORY_PATH, 'r', encoding='utf-8') as f:
-                    history = json.load(f)
-            else:
-                history = []
+    #     # Also update our local JSON file
+    #     try:
+    #         if os.path.exists(FORM_HISTORY_PATH):
+    #             with open(FORM_HISTORY_PATH, 'r', encoding='utf-8') as f:
+    #                 history = json.load(f)
+    #         else:
+    #             history = []
                 
-            # Add timestamp to new entry
-            new_entry = {
-                "user_id": user_id,
-                "form_data": new_form_data,
-                "timestamp": datetime.datetime.now().isoformat()
-            }
-            history.append(new_entry)
+    #         # Add timestamp to new entry
+    #         new_entry = {
+    #             "user_id": user_id,
+    #             "form_data": new_form_data,
+    #             "timestamp": datetime.datetime.now().isoformat()
+    #         }
+    #         history.append(new_entry)
             
-            with open(FORM_HISTORY_PATH, 'w', encoding='utf-8') as f:
-                json.dump(history, f, ensure_ascii=False, indent=2)
+    #         with open(FORM_HISTORY_PATH, 'w', encoding='utf-8') as f:
+    #             json.dump(history, f, ensure_ascii=False, indent=2)
                 
-        except Exception as e:
-            print(f"Error updating form history file: {e}")
+    #     except Exception as e:
+    #         print(f"Error updating form history file: {e}")

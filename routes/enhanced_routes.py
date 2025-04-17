@@ -73,37 +73,24 @@ def register_enhanced_routes(app):
             fields = extract_fields(text)
 
             user_id = current_user.id if current_user.is_authenticated else None
-            
-            # Sử dụng singleton pattern để tránh khởi tạo lại matcher
-            if not hasattr(auto_fill_all_fields, 'matcher'):
-                auto_fill_all_fields.matcher = EnhancedFieldMatcher(form_history_path="form_history.json")
-            matcher = auto_fill_all_fields.matcher
+            matcher = EnhancedFieldMatcher(form_history_path="form_history.json")
 
             filled_fields = {}
-            
-            # Tối ưu: Xử lý tất cả các trường cùng một lúc
-            field_names = [field.get("field_name", field.get("field_code")) for field in fields]
-            
-            # Sử dụng fast_mode=True để tối ưu hiệu suất
-            all_suggestions = {}
-            for field_name in field_names:
-                suggestions = matcher.match_fields(field_name, user_id=user_id, fast_mode=True)
-                if suggestions:
-                    all_suggestions.update(suggestions)
 
-            # Áp dụng kết quả vào filled_fields
             for field in fields:
                 field_code = field.get("field_code")
                 field_name = field.get("field_name", field_code)
-                
-                value = None
-                if field_name in all_suggestions:
-                    value = all_suggestions[field_name].get('value')
-                
-                if value:  # Chỉ thêm các trường có giá trị
-                    filled_fields[field_code] = value
 
-            return jsonify({"fields": filled_fields})
+                suggestions = matcher.match_fields(field_name, user_id=user_id)
+
+                # 🟢 Chỉ lấy giá trị value
+                value = None
+                if suggestions and field_name in suggestions:
+                    value = suggestions[field_name][0].get('value') if suggestions[field_name] else None
+
+                filled_fields[field_code] = value  # Gán trực tiếp value đơn giản
+
+            return jsonify({"fields": filled_fields})  # ✅ frontend sẽ hiểu được
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
