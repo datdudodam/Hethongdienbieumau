@@ -43,19 +43,24 @@ def register_enhanced_routes(app):
             suggestions = matcher.match_fields(field_name, user_id=user_id)
 
             if suggestions:
-                suggestion = suggestions.get(field_name)
+                suggestionn = suggestions.get(field_name, [])
+                # Duyệt qua tất cả các gợi ý trong suggestionn
+                suggestion_list = [{
+                    'matched_field': suggestion.get('matched_field'),
+                    'value': suggestion.get('value'),
+                    'similarity': suggestion.get('similarity', 0)
+                } for suggestion in suggestionn]
+                    
                 return jsonify({
                     'field_name': field_name,
-                    'matched_field': suggestion.get('matched_field') if suggestion else None,
-                    'suggested_value': suggestion.get('value') if suggestion else None,
-                    'value': suggestion.get('value') if suggestion else None,  # Thêm trường value để hiển thị trên giao diện
-                    'all_suggestions': suggestions
+                    'all_suggestions': suggestion_list  # Trả về tất cả các gợi ý
                 })
             else:
                 return jsonify({'message': 'No suggestion found'})
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+
 
     @app.route('/auto_fill_all_fields', methods=['POST'])
     def auto_fill_all_fields():

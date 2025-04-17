@@ -64,8 +64,9 @@ def GOI_Y_AI(app):
                 
                 # Gọi hàm generate_personalized_suggestions từ AIFieldMatcher
                 suggestions_result = ai_matcher.generate_personalized_suggestions(
-                    field_code=field_code,
-                    user_id=user_id,
+                    db_data=load_form_history(),
+                    field_code=field_name,
+                    user_id=str(user_id) if user_id is not None else "",
                     context=form_context
                 )
                 

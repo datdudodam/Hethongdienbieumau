@@ -92,16 +92,6 @@ def register_form_routes(app):
             print(f"Error in save_and_generate_docx: {str(e)}")
             return jsonify({"error": "Có lỗi xảy ra khi xử lý yêu cầu"}), 500
     
-    @app.route('/get_suggestions', methods=['POST'])
-    def get_suggestions():
-        field_code = request.json.get('field_code')
-        if not field_code:
-            return jsonify({'error': 'Field code is required'}), 400
-
-        db_data = load_db()
-        suggestions = generate_suggestions(db_data, field_code)
-
-        return jsonify({'field_code': field_code, 'suggestions': suggestions})
     
     @app.route('/form/<form_id>')
     def view_form(form_id):

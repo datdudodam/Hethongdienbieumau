@@ -338,115 +338,115 @@ class EnhancedFieldMatcher:
         frequency = len(self.field_value_mapping.get(field_name, []))
         boost = min(frequency / 10, 1.0)  # Giới hạn boost không vượt quá 1.0
         return base_score + 0.05 * boost  # Tăng nhẹ điểm
+
+
     def match_fields(
-        self,
-        form_model: Union[str, List[str]],
-        threshold: float = 0.65,
-        user_id: Optional[str] = None,
-        fast_mode: bool = False
-    ) -> Dict[str, Dict[str, Any]]:
-        """
-        Ghép các trường giữa form_model và form_data sử dụng kết hợp nhiều phương pháp.
-        Trả về dict gồm tên trường đã khớp, tên trường dữ liệu khớp, và giá trị tương ứng.
-        Tham số fast_mode=True sẽ tối ưu hóa cho trường hợp điền tất cả tự động.
-        """
-        # Sử dụng cache cho history_data
-        if not hasattr(self, '_history_data_cache'):
-            try:
-                with open("form_history.json", "r", encoding="utf-8") as f:
-                    self._history_data_cache = json.load(f)
-            except (json.JSONDecodeError, IOError):
-                self._history_data_cache = []
-        
-        history_data = self._history_data_cache
+            self,
+            form_model: Union[str, List[str]],
+            threshold: float = 0.65,
+            user_id: Optional[str] = None,
+            fast_mode: bool = False
+        ) -> Dict[str, List[Dict[str, Any]]]:
+            """
+            Ghép các trường giữa form_model và form_data sử dụng kết hợp nhiều phương pháp.
+            Trả về dict gồm tên trường đã khớp, danh sách tối đa 3 kết quả khớp (trường dữ liệu và giá trị).
+            """
+            if not hasattr(self, '_history_data_cache'):
+                try:
+                    with open("form_history.json", "r", encoding="utf-8") as f:
+                        self._history_data_cache = json.load(f)
+                except (json.JSONDecodeError, IOError):
+                    self._history_data_cache = []
 
-        if not history_data:
-            if not fast_mode:
-                print("⚠️ Không có dữ liệu trong form_history.json")
-            return {}
+            history_data = self._history_data_cache
 
-        # Chuyển form_model thành list nếu là chuỗi
-        if isinstance(form_model, str):
-            form_model = [form_model]
-
-        if not fast_mode:
-            print(f"\n🧩 Danh sách trường cần ghép: {form_model}")
-            if user_id:
-                print(f"🔑 Chỉ xét các bản ghi của user_id: {user_id}")
-
-        # Cache user records for better performance
-        cache_key = f"user_records_{user_id}"
-        if hasattr(self, cache_key):
-            user_records = getattr(self, cache_key)
-        else:
-            user_records = [record for record in history_data if record.get("user_id") == user_id]
-            user_records = list(reversed(user_records))  # Duyệt từ mới nhất
-            setattr(self, cache_key, user_records)
-
-        if not user_records:
-            if not fast_mode:
-                print("⚠️ Không tìm thấy bản ghi nào thuộc user_id này.")
-            return {}
-
-        # Tối ưu: Chỉ xét các bản ghi gần đây nhất trong fast_mode
-        records_to_check = user_records[:3] if fast_mode else user_records
-
-        for idx, record in enumerate(records_to_check):
-            form_data = record.get("form_data", {})
-
-            if not fast_mode:
-                print(f"\n📄 Đang kiểm tra bản ghi thứ {idx + 1}/{len(records_to_check)}: {len(form_data)} trường")
-
-            matched_fields = {}
-            used_model_fields = set()
-            used_data_fields = set()
-            potential_matches = []
-
-            # Tối ưu: Sử dụng exact match trước để tăng tốc
-            for model_field in form_model:
-                normalized_model = self._normalize_field_name(model_field)
-                for data_field in form_data.keys():
-                    normalized_data = self._normalize_field_name(data_field)
-                    
-                    # Kiểm tra exact match trước
-                    if normalized_model == normalized_data:
-                        potential_matches.append((1.0, model_field, data_field))
-                        continue
-                        
-                    # Nếu không exact match, tính similarity
-                    similarity = self._calculate_similarity(model_field, data_field)
-                    similarity += self._boost_by_frequency(data_field, similarity)
-                    similarity += self._exact_token_match_boost(model_field, data_field)
-
-                    if similarity >= threshold:
-                        potential_matches.append((similarity, model_field, data_field))
-
-            # Sắp xếp theo độ tương đồng giảm dần
-            potential_matches.sort(reverse=True, key=lambda x: x[0])
-
-            for similarity, model_field, data_field in potential_matches:
-                if model_field not in used_model_fields and data_field not in used_data_fields:
-                    matched_fields[model_field] = {
-                        "matched_field": data_field,
-                        "value": form_data[data_field]
-                    }
-                    used_model_fields.add(model_field)
-                    used_data_fields.add(data_field)
-
-            if matched_fields:
+            if not history_data:
                 if not fast_mode:
-                    for model, match in matched_fields.items():
-                        print(f"   - {model} <-- {match['matched_field']} : {match['value']}")
-                self.matched_fields = matched_fields
-                return matched_fields
+                    print("⚠️ Không có dữ liệu trong form_history.json")
+                return {}
 
-            elif not fast_mode:
-                print("❌ Không tìm thấy kết quả trong bản ghi này. Tiếp tục tìm trong bản ghi khác...")
+            if isinstance(form_model, str):
+                form_model = [form_model]
 
-        if not fast_mode:
-            print("\n❌ Không tìm thấy kết quả phù hợp trong bất kỳ bản ghi nào của user_id này.")
-        self.matched_fields = {}
-        return self.matched_fields
+            if not fast_mode:
+                print(f"\n🧩 Danh sách trường cần ghép: {form_model}")
+                if user_id:
+                    print(f"🔑 Chỉ xét các bản ghi của user_id: {user_id}")
+
+            cache_key = f"user_records_{user_id}"
+            if hasattr(self, cache_key):
+                user_records = getattr(self, cache_key)
+            else:
+                # Chuyển đổi user_id thành chuỗi để đảm bảo so sánh chính xác
+                str_user_id = str(user_id) if user_id is not None else None
+                user_records = [record for record in history_data if str(record.get("user_id")) == str_user_id]
+                user_records = list(reversed(user_records))
+                setattr(self, cache_key, user_records)
+
+            if not user_records:
+                if not fast_mode:
+                    print("⚠️ Không tìm thấy bản ghi nào thuộc user_id này.")
+                return {}
+
+            records_to_check = user_records[:3] if fast_mode else user_records
+
+            all_matches = defaultdict(list)
+            seen_matches = set()
+
+            for idx, record in enumerate(records_to_check):
+                form_data = record.get("form_data", {})
+
+                if not fast_mode:
+                    print(f"\n📄 Đang kiểm tra bản ghi thứ {idx + 1}/{len(records_to_check)}: {len(form_data)} trường")
+
+                for model_field in form_model:
+                    if len(all_matches[model_field]) >= 4:
+                        continue
+
+                    normalized_model = self._normalize_field_name(model_field)
+
+                    potential_matches = []
+
+                    for data_field in form_data.keys():
+                        normalized_data = self._normalize_field_name(data_field)
+                        value = form_data[data_field]
+                        key = (model_field, data_field, value)
+                        if key in seen_matches:
+                            continue
+
+                        if normalized_model == normalized_data:
+                            similarity = 1.0
+                        else:
+                            similarity = self._calculate_similarity(model_field, data_field)
+                            similarity += self._boost_by_frequency(data_field, similarity)
+                            similarity += self._exact_token_match_boost(model_field, data_field)
+
+                        if similarity >= threshold:
+                            potential_matches.append((similarity, model_field, data_field, value))
+                            seen_matches.add(key)
+
+                    potential_matches.sort(reverse=True, key=lambda x: x[0])
+                   
+                    for sim, m_field, d_field, value in potential_matches:
+                        # Kiểm tra nếu chưa đủ 3 kết quả VÀ giá trị chưa bị trùng
+                        existing_values = {match["value"] for match in all_matches[m_field]}
+                        if len(all_matches[m_field]) < 5 and value not in existing_values:
+                            all_matches[m_field].append({
+                                "matched_field": d_field,
+                                "value": value,
+                                "similarity": round(sim, 4)
+                            })
+
+
+            if not fast_mode:
+                for model, matches in all_matches.items():
+                    print(f"\n🔍 Kết quả cho '{model}':")
+                    for match in matches:
+                        print(f"   - {match['matched_field']} ({match['similarity']}): {match['value']}")
+
+            self.matched_fields = all_matches
+            return all_matches
+
 
 
     def _exact_token_match_boost(self, model_field: str, data_field: str) -> float:

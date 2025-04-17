@@ -17,6 +17,7 @@ services:
       - ./instance:/app/instance
       - ./form_data.json:/app/form_data.json
       - ./form_history.json:/app/form_history.json
+      - ./flask_session:/app/flask_session
     env_file:
       - .env
     environment:
@@ -29,7 +30,7 @@ services:
       - SQLALCHEMY_DATABASE_URI=sqlite:///database.db
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/", "|", "|", "wget", "-q", "--spider", "http://localhost:5000/", "|", "|", "exit", "1"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/", "||" ,"exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 5
