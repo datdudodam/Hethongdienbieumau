@@ -1,0 +1,176 @@
+/**
+ * Responsive CSS for updatelan5
+ * Cung cấp các media queries và điều chỉnh responsive cho giao diện người dùng
+ */
+
+/* Base responsive settings */
+:root {
+    --mobile-sidebar-width: 100%;
+    --tablet-sidebar-width: 250px;
+    --desktop-sidebar-width: 280px;
+}
+
+/* Small devices (mobile phones, less than 576px) */
+@media (max-width: 575.98px) {
+    /* Sidebar adjustments */
+    .sidebar {
+        width: var(--mobile-sidebar-width);
+        transform: translateX(-100%);
+        z-index: 1000;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    /* Main content adjustments */
+    .main-content,
+    .content-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
+    /* Typography adjustments */
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    h2 {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Form adjustments */
+    .form-input-group {
+        flex-direction: column !important;
+    }
+    
+    .input-button-group {
+        flex-direction: column !important;
+    }
+    
+    .action-button {
+        width: 100% !important;
+        margin-top: 8px !important;
+    }
+    
+    .button-group {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+    
+    /* Card adjustments */
+    .card-container {
+        padding: 1rem !important;
+    }
+    
+    /* User profile adjustments */
+    .user-profile-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    /* Table adjustments */
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+/* Medium devices (tablets, 576px and up) */
+@media (min-width: 576px) and (max-width: 991.98px) {
+    /* Sidebar adjustments */
+    .sidebar {
+        width: var(--tablet-sidebar-width);
+    }
+    
+    /* Main content adjustments */
+    .main-content,
+    .content-wrapper {
+        margin-left: var(--tablet-sidebar-width);
+    }
+    
+    /* Card adjustments */
+    .card-container {
+        padding: 1.5rem !important;
+    }
+    
+    /* Form adjustments */
+    .form-input-group {
+        flex-wrap: wrap;
+    }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    /* Sidebar adjustments */
+    .sidebar {
+        width: var(--desktop-sidebar-width);
+    }
+    
+    /* Main content adjustments */
+    .main-content,
+    .content-wrapper {
+        margin-left: var(--desktop-sidebar-width);
+    }
+}
+
+/* Hamburger menu for mobile */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1001;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 991.98px) {
+    .menu-toggle {
+        display: block;
+    }
+}
+
+/* Responsive utilities */
+.d-none {
+    display: none !important;
+}
+
+.d-block {
+    display: block !important;
+}
+
+@media (max-width: 575.98px) {
+    .d-sm-none {
+        display: none !important;
+    }
+    
+    .d-sm-block {
+        display: block !important;
+    }
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+    .d-md-none {
+        display: none !important;
+    }
+    
+    .d-md-block {
+        display: block !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .d-lg-none {
+        display: none !important;
+    }
+    
+    .d-lg-block {
+        display: block !important;
+    }
+}

@@ -40,7 +40,7 @@ Session(app)
 # Cấu hình Google OAuth
 app.config['GOOGLE_CLIENT_ID'] = "30787395526-jqgac7lj9usbv356ho35cahvcokq7868.apps.googleusercontent.com"
 app.config['GOOGLE_CLIENT_SECRET'] ="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"
-app.config['GOOGLE_REDIRECT_URI'] = "http://localhost:5000/auth/google/callback"
+app.config['GOOGLE_REDIRECT_URI'] = "http://localhost:55003/login/google/callback"
 
 # Khởi tạo database với Flask app
 db.init_app(app)
@@ -66,7 +66,7 @@ def load_user(user_id):
 register_routes(app)
 
 def run_app():
-    app.run(host='0.0.0.0', debug=DEBUG)
+    app.run(host="0.0.0.0", port=55003)
 
 if __name__ == '__main__':
     run_app()

@@ -67,20 +67,24 @@ COPY . .
 
 # Tạo thư mục cần thiết và phân quyền
 RUN mkdir -p uploads instance flask_session && \
+    mkdir -p /app/hf_cache && \
     chown -R appuser:appuser /app && \
-    chmod -R 755 uploads instance flask_session
+    chmod -R 755 uploads instance flask_session /app/hf_cache
 
 # Biến môi trường bí mật
 ARG OPENAI_API_KEY
 ENV OPENAI_API_KEY=${OPENAI_API_KEY:-your-api-key-here}
 ARG SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+ENV TRANSFORMERS_CACHE=/app/hf_cache
+ENV HF_HOME=/app/hf_cache
 
 # Mở port 5000 để phù hợp với docker-compose.yml
-EXPOSE 5000
+EXPOSE 55003
 
 # Chạy app với user không phải root
 USER appuser
 
 # Chạy ứng dụng Flask
-CMD ["python", "app.py"]
+CMD ["python", "app.py", "run", "--host=0.0.0.0", "--port=55003"]
+

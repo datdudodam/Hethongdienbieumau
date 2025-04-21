@@ -16,7 +16,7 @@ from sentence_transformers import SentenceTransformer
 import re
 from config.config import FORM_HISTORY_PATH
 
-# Đảm bảo các tài nguyên NLTK được tải xuống
+# #Đảm bảo các tài nguyên NLTK được tải xuống
 # def ensure_nltk_resources():
 #     resources = {
 #         'punkt_tab': 'tokenizers/punkt_tab', 

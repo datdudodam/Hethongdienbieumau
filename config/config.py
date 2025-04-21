@@ -11,6 +11,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "form_data.json")
 FORM_HISTORY_PATH = os.path.join(BASE_DIR, "form_history.json")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+TEMPLATE_FORMS_PATH = os.path.join(BASE_DIR, "data", "template_forms.json")
 
 # Đảm bảo thư mục uploads tồn tại
 if not os.path.exists(UPLOADS_DIR):
