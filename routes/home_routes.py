@@ -6,10 +6,11 @@ def register_home_routes(app):
     """
     Đăng ký các route cho trang chủ và tải lên tài liệu
     """
-    @app.route('/')
+    @app.route('/',methods=['GET', 'POST'])
+    def home():
+        return render_template('home.html')
+    @app.route('/dashboard')
     def index():
-        
-        
         if not current_user.is_authenticated:
             return redirect('/login')
         return render_template("TrangChu.html")

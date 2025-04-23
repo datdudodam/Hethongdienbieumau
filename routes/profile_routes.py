@@ -89,3 +89,33 @@ def register_profile_routes(app):
         db.session.commit()
         flash('Thiết lập mật khẩu thành công!', 'success')
         return redirect(url_for('profile'))
+    
+    @app.route('/upgrade')
+    @login_required
+    def upgrade():
+        """Nâng cấp lên gói Thường"""
+        import datetime
+        now = datetime.datetime.now()
+        current_user.subscription_type = 'standard'
+        current_user.subscription_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # Gói Thường có hạn 1 tháng kể từ đầu tháng
+        current_user.subscription_end = (current_user.subscription_start + datetime.timedelta(days=31)).replace(day=1) - datetime.timedelta(seconds=1)
+        current_user.monthly_download_count = 0
+        db.session.commit()
+        flash('Nâng cấp gói Thường thành công!', 'success')
+        return redirect(url_for('profile'))
+    
+    @app.route('/upgrade_vip')
+    @login_required
+    def upgrade_vip():
+        """Nâng cấp lên gói VIP"""
+        import datetime
+        now = datetime.datetime.now()
+        current_user.subscription_type = 'vip'
+        current_user.subscription_start = now
+        # Gói VIP không giới hạn thời gian hoặc có thể set hạn dùng dài hơn
+        current_user.subscription_end = None
+        current_user.monthly_download_count = 0
+        db.session.commit()
+        flash('Nâng cấp gói VIP thành công!', 'success')
+        return redirect(url_for('profile'))

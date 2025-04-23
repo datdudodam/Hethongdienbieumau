@@ -1,0 +1,520 @@
+{% extends 'base.html' %}
+
+{% block title %}Cấu Hình Website{% endblock %}
+
+{% block meta_description %}Trang quản lý cấu hình website, bao gồm metadata, SEO và giao diện{% endblock %}
+{% block meta_keywords %}cấu hình website, metadata, SEO, giao diện, quản lý{% endblock %}
+
+{% block content %}
+<div class="config-container">
+    <h1 class="config-title">Cấu Hình Website</h1>
+    
+    <div class="config-grid">
+        <!-- Cấu hình Metadata -->
+        <div class="config-card">
+            <div class="config-card-header">
+                <i class="fas fa-tags config-icon"></i>
+                <h2 class="config-card-title">Cấu Hình Metadata</h2>
+            </div>
+            <p class="config-card-description">Quản lý thông tin cơ bản của website như tiêu đề, mô tả, từ khóa và favicon.</p>
+            <div class="config-form-group">
+                <div class="form-field">
+                    <label class="form-label">Tiêu đề website</label>
+                    <input type="text" class="form-input" value="Hệ Thống Nhập Liệu Thông Minh" disabled>
+                    <small class="form-hint">Hiển thị trên thanh tiêu đề trình duyệt</small>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Mô tả website</label>
+                    <textarea class="form-textarea" rows="3" disabled>Hệ thống nhập liệu thông minh hỗ trợ AI, giúp bạn nhập thông tin nhanh chóng và chính xác.</textarea>
+                    <small class="form-hint">Hiển thị trong kết quả tìm kiếm</small>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Từ khóa</label>
+                    <input type="text" class="form-input" value="nhập liệu, AI, tự động, biểu mẫu, thông minh, quản lý" disabled>
+                    <small class="form-hint">Các từ khóa chính của website</small>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Favicon</label>
+                    <div class="file-preview">
+                        <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="Favicon" class="file-thumbnail">
+                        <span class="file-name">favicon.png</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cấu hình SEO -->
+        <div class="config-card">
+            <div class="config-card-header">
+                <i class="fas fa-search config-icon"></i>
+                <h2 class="config-card-title">Cấu Hình SEO</h2>
+            </div>
+            <p class="config-card-description">Quản lý các thẻ SEO và cấu hình cho công cụ tìm kiếm.</p>
+            <div class="config-form-group">
+                <div class="form-field">
+                    <label class="form-label">Meta Title</label>
+                    <input type="text" class="form-input" value="Hệ Thống Nhập Liệu Thông Minh" disabled>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Meta Description</label>
+                    <textarea class="form-textarea" rows="3" disabled>Nhập thông tin một cách thông minh với sự hỗ trợ của AI và gợi ý tự động.</textarea>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Open Graph Image</label>
+                    <div class="file-preview">
+                        <img src="{{ url_for('static', filename='images/og-image.png') }}" alt="OG Image" class="file-thumbnail-lg">
+                        <span class="file-name">og-image.png</span>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Robots.txt</label>
+                    <div class="code-block">
+                        <pre>User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /uploads/
+Disallow: /flask_session/
+Disallow: /login/google/callback
+
+# Sitemap
+Sitemap: http://localhost:55003/sitemap.xml</pre>
+                    </div>
+                    <small class="form-hint">Hướng dẫn cho các bot tìm kiếm</small>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Sitemap.xml</label>
+                    <div class="file-link">
+                        <i class="fas fa-file-code file-icon"></i>
+                        <a href="/sitemap.xml" target="_blank" class="file-link-text">Xem Sitemap</a>
+                    </div>
+                    <small class="form-hint">Danh sách các URL của website</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cấu hình Giao diện -->
+        <div class="config-card">
+            <div class="config-card-header">
+                <i class="fas fa-palette config-icon"></i>
+                <h2 class="config-card-title">Cấu Hình Giao Diện</h2>
+            </div>
+            <p class="config-card-description">Quản lý màu sắc, font chữ và bố cục của website.</p>
+            <div class="config-form-group">
+                <div class="form-field">
+                    <label class="form-label">Màu chủ đạo</label>
+                    <div class="color-preview">
+                        <div class="color-swatch bg-primary"></div>
+                        <span class="color-value">#3b82f6</span>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Font chữ</label>
+                    <div class="font-preview">
+                        <span class="font-sample">Inter</span>
+                        <span class="font-source">Google Fonts</span>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Bố cục trang</label>
+                    <div class="layout-options">
+                        <div class="layout-option">
+                            <div class="layout-preview">
+                                <div class="layout-header"></div>
+                                <div class="layout-content-wide"></div>
+                                <div class="layout-footer"></div>
+                            </div>
+                        </div>
+                        <div class="layout-option">
+                            <div class="layout-preview">
+                                <div class="layout-header"></div>
+                                <div class="layout-content-centered"></div>
+                                <div class="layout-footer"></div>
+                            </div>
+                        </div>
+                        <div class="layout-option active">
+                            <div class="layout-preview">
+                                <div class="layout-header"></div>
+                                <div class="layout-content-split">
+                                    <div class="layout-sidebar"></div>
+                                    <div class="layout-main"></div>
+                                </div>
+                                <div class="layout-footer"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Chế độ hiển thị</label>
+                    <div class="display-mode-options">
+                        <label class="mode-option">
+                            <input type="radio" name="display-mode" checked>
+                            <span class="mode-label">Sáng</span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="display-mode">
+                            <span class="mode-label">Tối</span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="display-mode">
+                            <span class="mode-label">Tự động</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="config-footer">
+        <p class="config-note">Các cấu hình này hiện chỉ hiển thị để tham khảo. Để thay đổi, vui lòng liên hệ quản trị viên.</p>
+        <a href="{{ url_for('index') }}" class="back-button">
+            <i class="fas fa-arrow-left button-icon"></i>
+            <span>Quay lại Trang chủ</span>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary: #3b82f6;
+        --primary-hover: #2563eb;
+        --bg: #ffffff;
+        --bg-secondary: #f8fafc;
+        --text: #1e293b;
+        --text-secondary: #64748b;
+        --text-light: #94a3b8;
+        --border: #e2e8f0;
+        --border-dark: #cbd5e1;
+        --radius: 0.5rem;
+        --radius-sm: 0.25rem;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --transition: all 0.2s ease;
+    }
+
+    .config-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .config-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--text);
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .config-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .config-card {
+        background: var(--bg);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        transition: var(--transition);
+    }
+
+    .config-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .config-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .config-icon {
+        font-size: 1.25rem;
+        color: var(--primary);
+        margin-right: 0.75rem;
+    }
+
+    .config-card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .config-card-description {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+
+    .config-form-group {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .form-field {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input, .form-textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background-color: var(--bg-secondary);
+        color: var(--text);
+        transition: var(--transition);
+    }
+
+    .form-input:focus, .form-textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-input:disabled, .form-textarea:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .form-textarea {
+        min-height: 80px;
+        resize: vertical;
+    }
+
+    .form-hint {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .file-preview {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .file-thumbnail {
+        width: 2rem;
+        height: 2rem;
+        object-fit: contain;
+    }
+
+    .file-thumbnail-lg {
+        width: 4rem;
+        height: 4rem;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+    }
+
+    .file-name {
+        color: var(--text-secondary);
+    }
+
+    .code-block {
+        background: var(--bg-secondary);
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+    }
+
+    .file-link {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .file-icon {
+        color: var(--primary);
+        font-size: 1.25rem;
+    }
+
+    .file-link-text {
+        color: var(--primary);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .file-link-text:hover {
+        text-decoration: underline;
+    }
+
+    .color-preview {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .color-swatch {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+    }
+
+    .bg-primary {
+        background: var(--primary);
+    }
+
+    .color-value {
+        color: var(--text-secondary);
+    }
+
+    .font-preview {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .font-sample {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.125rem;
+    }
+
+    .font-source {
+        color: var(--text-secondary);
+    }
+
+    .layout-options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .layout-option {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0.25rem;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .layout-option:hover {
+        border-color: var(--primary);
+    }
+
+    .layout-option.active {
+        border-color: var(--primary);
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .layout-preview {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .layout-header, .layout-footer {
+        height: 0.25rem;
+        background: var(--primary);
+        border-radius: 0.125rem;
+    }
+
+    .layout-content-wide, .layout-content-centered, .layout-content-split {
+        height: 1rem;
+        background: var(--bg-secondary);
+        border-radius: 0.125rem;
+    }
+
+    .layout-content-centered {
+        width: 75%;
+        margin: 0 auto;
+    }
+
+    .layout-content-split {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .layout-sidebar {
+        width: 33.33%;
+        height: 100%;
+        background: var(--bg-secondary);
+        border-radius: 0.125rem;
+    }
+
+    .layout-main {
+        flex: 1;
+        height: 100%;
+        background: var(--bg-secondary);
+        border-radius: 0.125rem;
+    }
+
+    .display-mode-options {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .mode-option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+
+    .mode-option input[type="radio"] {
+        accent-color: var(--primary);
+    }
+
+    .mode-label {
+        color: var(--text);
+    }
+
+    .config-footer {
+        text-align: center;
+        margin-top: 2rem;
+    }
+
+    .config-note {
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--primary);
+        color: white;
+        border-radius: var(--radius);
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .back-button:hover {
+        background: var(--primary-hover);
+    }
+
+    .button-icon {
+        font-size: 0.875rem;
+    }
+
+    @media (max-width: 768px) {
+        .config-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .layout-options {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .display-mode-options {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+</style>
+{% endblock %} 

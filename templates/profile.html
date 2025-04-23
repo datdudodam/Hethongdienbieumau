@@ -20,6 +20,9 @@
             --success-color: #4bb543;
             --error-color: #ff3333;
             --warning-color: #ffcc00;
+            --vip-color: #FFD700;
+            --standard-color: #10b981;
+            --free-color: #64748b;
         }
         
         * {
@@ -235,6 +238,10 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
 
         .btn-primary {
@@ -255,10 +262,26 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #3a9a33;
+        }
+
         .alert {
             padding: 1rem;
             border-radius: 0.5rem;
             margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .alert i {
+            font-size: 1.2rem;
         }
 
         .alert-success {
@@ -271,6 +294,12 @@
             background: rgba(255, 51, 51, 0.2);
             border: 1px solid var(--error-color);
             color: var(--error-color);
+        }
+
+        .alert-warning {
+            background: rgba(255, 204, 0, 0.2);
+            border: 1px solid var(--warning-color);
+            color: var(--warning-color);
         }
 
         .google-account {
@@ -310,6 +339,63 @@
         .google-info p {
             font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.7);
+        }
+
+        .account-status-card {
+            background: rgba(72, 149, 239, 0.08);
+            border: 1.5px solid var(--accent-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .account-status-info {
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .account-status-info h2 {
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+            color: var(--accent-color);
+        }
+
+        .account-status-type {
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .account-status-details {
+            font-size: 1rem;
+            color: var(--gray-color);
+        }
+
+        .account-status-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 180px;
+            align-items: flex-end;
+        }
+
+        .subscription-vip {
+            color: var(--vip-color);
+            font-weight: 600;
+        }
+
+        .subscription-standard {
+            color: var(--standard-color);
+            font-weight: 600;
+        }
+
+        .subscription-free {
+            color: var(--free-color);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -359,11 +445,68 @@
                 {% if messages %}
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category }}">
+                            <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}exclamation-triangle{% endif %}"></i>
                             {{ message }}
                         </div>
                     {% endfor %}
                 {% endif %}
             {% endwith %}
+
+            <!-- Account Status Section -->
+            <div class="account-status-card">
+                <div class="account-status-info">
+                    <h2>Trạng thái tài khoản</h2>
+                    <div class="account-status-type">
+                        Gói hiện tại: 
+                        <span class="subscription-{{ current_user.subscription_type }}">
+                            {% if current_user.subscription_type == 'vip' %}
+                                VIP
+                            {% elif current_user.subscription_type == 'standard' %}
+                                Thường
+                            {% else %}
+                                Miễn phí
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="account-status-details">
+                        {% if current_user.subscription_type == 'vip' %}
+                            <p>Không giới hạn lượt tải</p>
+                            <p>Hạn gói: {{ current_user.subscription_end.strftime('%d/%m/%Y') if current_user.subscription_end else 'Vĩnh viễn' }}</p>
+                        {% elif current_user.subscription_type == 'standard' %}
+                            <p>Lượt tải còn lại tháng này: <b>{{ 100 - (current_user.monthly_download_count or 0) }}</b>/100</p>
+                            <p>Hạn gói: {{ current_user.subscription_end.strftime('%d/%m/%Y') if current_user.subscription_end else '' }}</p>
+                        {% else %}
+                            <p>Lượt tải miễn phí còn lại: <b>{{ current_user.free_downloads_left or 0 }}</b>/5</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="account-status-actions">
+                    {% if current_user.subscription_type == 'free' %}
+                        <a href="{{ url_for('upgrade') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-up"></i> Nâng cấp gói Thường
+                        </a>
+                        <a href="{{ url_for('upgrade_vip') }}" class="btn btn-success">
+                            <i class="fas fa-crown"></i> Nâng cấp VIP
+                        </a>
+                    {% elif current_user.subscription_type == 'standard' %}
+                        <a href="{{ url_for('upgrade_vip') }}" class="btn btn-success">
+                            <i class="fas fa-crown"></i> Nâng cấp VIP
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if current_user.subscription_type == 'free' and (current_user.free_downloads_left or 0) == 0 %}
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Bạn đã hết lượt tải miễn phí. Vui lòng nâng cấp gói để tiếp tục sử dụng dịch vụ không giới hạn!
+                </div>
+            {% elif current_user.subscription_type == 'standard' and (current_user.monthly_download_count or 0) >= 100 %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Bạn đã hết lượt tải trong tháng. Vui lòng nâng cấp lên VIP hoặc chờ sang tháng mới.
+                </div>
+            {% endif %}
 
             <div class="profile-tabs">
                 <div class="tab-item active" data-tab="personal-info">Thông tin cá nhân</div>
@@ -395,7 +538,9 @@
                             <label for="bio">Giới thiệu</label>
                             <textarea id="bio" name="bio" class="form-control" rows="4">{{ current_user.bio or '' }}</textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Cập nhật thông tin
+                        </button>
                     </form>
                 </div>
             </div>
@@ -417,7 +562,9 @@
                                 <label for="confirm_password">Xác nhận mật khẩu mới</label>
                                 <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
                             </div>
-                            <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-key"></i> Đổi mật khẩu
+                            </button>
                         </form>
                     {% else %}
                         <h2>Thiết lập mật khẩu</h2>
@@ -431,7 +578,9 @@
                                 <label for="confirm_password">Xác nhận mật khẩu mới</label>
                                 <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
                             </div>
-                            <button type="submit" class="btn btn-primary">Thiết lập mật khẩu</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-key"></i> Thiết lập mật khẩu
+                            </button>
                         </form>
                     {% endif %}
                 </div>
@@ -463,22 +612,33 @@
 
     <script>
         // Xử lý chuyển tab
-        const tabItems = document.querySelectorAll('.tab-item');
-        const tabContents = document.querySelectorAll('.tab-content');
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabItems = document.querySelectorAll('.tab-item');
+            const tabContents = document.querySelectorAll('.tab-content');
 
-        tabItems.forEach(item => {
-            item.addEventListener('click', () => {
-                // Xóa active class từ tất cả tab items
-                tabItems.forEach(tab => tab.classList.remove('active'));
-                // Thêm active class vào tab item được click
-                item.classList.add('active');
+            tabItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    // Xóa active class từ tất cả tab items
+                    tabItems.forEach(tab => tab.classList.remove('active'));
+                    // Thêm active class vào tab item được click
+                    item.classList.add('active');
 
-                // Ẩn tất cả tab content
-                tabContents.forEach(content => content.classList.remove('active'));
-                // Hiển thị tab content tương ứng
-                const tabId = item.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
+                    // Ẩn tất cả tab content
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    // Hiển thị tab content tương ứng
+                    const tabId = item.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
             });
+
+            // Kiểm tra URL hash để mở tab tương ứng
+            if (window.location.hash) {
+                const tabId = window.location.hash.substring(1);
+                const tabItem = document.querySelector(`.tab-item[data-tab="${tabId}"]`);
+                if (tabItem) {
+                    tabItem.click();
+                }
+            }
         });
     </script>
 </body>

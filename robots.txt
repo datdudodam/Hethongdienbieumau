@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /uploads/
+Disallow: /flask_session/
+Disallow: /login/google/callback
+
+# Sitemap
+Sitemap: http://localhost:55003/sitemap.xml

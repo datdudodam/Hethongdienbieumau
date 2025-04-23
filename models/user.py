@@ -41,6 +41,13 @@ class User(UserMixin, db.Model):
     address = db.Column(db.String(200), nullable=True)
     bio = db.Column(db.Text, nullable=True)
     last_login = db.Column(db.DateTime, nullable=True)
+    
+    # Subscription and download tracking fields
+    free_downloads_left = db.Column(db.Integer, default=5)  # 5 free downloads for new users
+    subscription_type = db.Column(db.String(20), default='free')  # 'free', 'standard', 'vip'
+    subscription_start = db.Column(db.DateTime, nullable=True)
+    subscription_end = db.Column(db.DateTime, nullable=True)
+    monthly_download_count = db.Column(db.Integer, default=0)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

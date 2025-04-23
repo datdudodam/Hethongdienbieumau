@@ -1,0 +1,29 @@
+<!-- Meta tags for SEO and social sharing -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="{% block meta_description %}Hệ thống nhập liệu thông minh hỗ trợ AI, giúp bạn nhập thông tin nhanh chóng và chính xác.{% endblock %}">
+<meta name="keywords" content="{% block meta_keywords %}nhập liệu, AI, tự động, biểu mẫu, thông minh, quản lý{% endblock %}">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="{% block og_url %}https://yourdomain.com{{ request.path }}{% endblock %}">
+<meta property="og:title" content="{% block og_title %}Hệ Thống Nhập Liệu Thông Minh{% endblock %}">
+<meta property="og:description" content="{% block og_description %}Nhập thông tin một cách thông minh với sự hỗ trợ của AI và gợi ý tự động.{% endblock %}">
+<meta property="og:image" content="{{ url_for('static', filename='images/og-image.png') }}">
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="{% block twitter_url %}https://yourdomain.com{{ request.path }}{% endblock %}">
+<meta property="twitter:title" content="{% block twitter_title %}Hệ Thống Nhập Liệu Thông Minh{% endblock %}">
+<meta property="twitter:description" content="{% block twitter_description %}Nhập thông tin một cách thông minh với sự hỗ trợ của AI và gợi ý tự động.{% endblock %}">
+<meta property="twitter:image" content="{{ url_for('static', filename='images/og-image.png') }}">
+
+<!-- Favicon and Apple Touch Icon -->
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="{% block canonical_url %}https://yourdomain.com{{ request.path }}{% endblock %}">
+
+<!-- Theme Color for Browser -->
+<meta name="theme-color" content="#3b82f6">

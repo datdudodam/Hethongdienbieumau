@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HỆ THỐNG ĐIỀN BIỂU MẪU TỰ ĐỘNG | Đăng nhập</title>
+    <title>Đăng Nhập - Hệ Thống Điền Biểu Mẫu Tự Động</title>
+    <meta name="description" content="Đăng nhập vào hệ thống điền biểu mẫu tự động với sự hỗ trợ của AI.">
+    <meta name="keywords" content="đăng nhập, tài khoản, biểu mẫu, tự động, AI, nhập liệu">
+    <meta property="og:title" content="Đăng Nhập - Hệ Thống Điền Biểu Mẫu Tự Động">
+    <meta property="og:description" content="Đăng nhập vào hệ thống điền biểu mẫu tự động với sự hỗ trợ của AI.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/login">
+    <meta property="og:image" content="/static/images/og-image.png">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -63,6 +71,38 @@
         @keyframes rotate {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* Thêm style cho nút Fillout */
+        .fillout-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            text-decoration: none;
+            z-index: 10;
+        }
+
+        .fillout-btn:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--accent-color) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        .fillout-btn i {
+            font-size: 1.1rem;
         }
 
         .container {
@@ -643,10 +683,22 @@
                 height: 45px;
                 font-size: 1.1rem;
             }
+            
+            .fillout-btn {
+                top: 10px;
+                left: 10px;
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Thêm nút Fillout với liên kết về trang chủ -->
+    <a href="{{ url_for('home') }}" class="fillout-btn">
+        <i class="fas fa-home"></i> Fillout
+    </a>
+    
     <div class="container">
         <h1 class="main-title floating">HỆ THỐNG ĐIỀN BIỂU MẪU TỰ ĐỘNG</h1>
         <div class="auth-container">

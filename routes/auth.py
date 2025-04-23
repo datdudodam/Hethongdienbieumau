@@ -10,7 +10,7 @@ def register_auth_routes(app):
 def dangNhap_Dangky(app):
     """ Đăng ký và Đăng nhập
     """
-
+    
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated:

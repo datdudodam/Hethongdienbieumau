@@ -8,6 +8,7 @@ from .oauth import register_oauth_routes
 from .profile_routes import register_profile_routes
 from .goiy_openai import GOI_Y_AI
 from .ai_feedback import register_ai_feedback_routes
+from .web_config_routes import register_web_config_routes
 def register_routes(app):
     register_home_routes(app)
     register_form_routes(app)
@@ -20,3 +21,4 @@ def register_routes(app):
     register_admin_routes(app)
     register_oauth_routes(app)
     register_profile_routes(app)
+    register_web_config_routes(app)
