@@ -47,7 +47,12 @@ db.init_app(app)
 
 # Đảm bảo có một app context khi truy vấn DB
 with app.app_context():
+    # Import WebConfig model trước khi tạo bảng để đảm bảo nó được đăng ký với SQLAlchemy
+    from models.web_config import WebConfig
+    
+    # Tạo tất cả các bảng sau khi đã import tất cả các model
     db.create_all()
+    
     # Khởi tạo các vai trò
     from models.user import Role
     Role.insert_roles()
@@ -62,6 +67,47 @@ def load_user(user_id):
     with app.app_context():
         # Use query.get instead of session.get to ensure the object stays attached to the session
         return db.session.get(User, int(user_id))
+
+# Register context processor to make config values available to all templates
+@app.context_processor
+def inject_config():
+    # Import here to avoid circular imports
+    from models.web_config import WebConfig
+    import datetime
+    
+    # Get basic configuration values that are used across the site
+    return {
+        # Metadata
+        'site_title': WebConfig.get_value('site_title', 'Hệ Thống Nhập Liệu Thông Minh'),
+        'site_description': WebConfig.get_value('site_description', 'Hệ thống nhập liệu thông minh hỗ trợ AI'),
+        'site_logo': WebConfig.get_value('site_logo', '/static/images/favicon.png'),
+        
+        # SEO
+        'meta_title': WebConfig.get_value('meta_title', 'Hệ Thống Nhập Liệu Thông Minh'),
+        'meta_description': WebConfig.get_value('meta_description', 'Nhập thông tin một cách thông minh với sự hỗ trợ của AI và gợi ý tự động.'),
+        'og_image': WebConfig.get_value('og_image', '/static/images/og-image.png'),
+        
+        # UI
+        'primary_color': WebConfig.get_value('primary_color', '#3b82f6'),
+        'font_family': WebConfig.get_value('font_family', 'Inter'),
+        'layout_type': WebConfig.get_value('layout_type', 'sidebar'),
+        'display_mode': WebConfig.get_value('display_mode', 'light'),
+        
+        # Contact Information
+        'contact_phone': WebConfig.get_value('contact_phone', '0123 456 789'),
+        'contact_email': WebConfig.get_value('contact_email', 'contact@example.com'),
+        'contact_address': WebConfig.get_value('contact_address', '123 Đường ABC, Quận XYZ, TP. HCM'),
+       
+        # Current Year for Copyright
+        'current_year': datetime.datetime.now().year,
+        
+        # CSS Variables for dynamic styling
+        'css_variables': {
+            '--primary-color': WebConfig.get_value('primary_color', '#3b82f6'),
+            '--primary-hover': WebConfig.get_value('primary_hover', '#2563eb'),
+            '--font-family': WebConfig.get_value('font_family', 'Inter') + ', sans-serif'
+        }
+    }
 # Đăng ký các route
 register_routes(app)
 

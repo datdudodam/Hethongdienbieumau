@@ -1,0 +1,57 @@
+/* Config Variables CSS - Định nghĩa các biến cấu hình toàn cục */
+:root {
+    /* Metadata */
+    --site-title: "{{ site_title|default('Hệ Thống Nhập Liệu Thông Minh') }}";
+    --site-description: "{{ site_description|default('Hệ thống nhập liệu thông minh hỗ trợ AI') }}";
+    --site-logo: url("{{ site_logo|default('/static/images/favicon.png') }}");
+    
+    /* SEO */
+    --meta-title: "{{ meta_title|default('Hệ Thống Nhập Liệu Thông Minh') }}";
+    --meta-description: "{{ meta_description|default('Nhập thông tin một cách thông minh với sự hỗ trợ của AI và gợi ý tự động.') }}";
+    --og-image: url("{{ og_image|default('/static/images/og-image.png') }}");
+    
+    /* UI */
+    --primary-color: {{ primary_color|default('#3b82f6') }};
+    --primary-hover: {{ adjust_color(primary_color|default('#3b82f6'), -20)|default('#2563eb') }};
+    --font-family: "{{ font_family|default('Inter') }}", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    
+    /* Contact Info */
+    --contact-phone: "{{ contact_phone|default('0123 456 789') }}";
+    --contact-email: "{{ contact_email|default('contact@example.com') }}";
+    --contact-address: "{{ contact_address|default('123 Đường ABC, Quận XYZ, TP. HCM') }}";
+    
+    /* Layout */
+    --layout-type: "{{ layout_type|default('sidebar') }}";
+    --display-mode: "{{ display_mode|default('light') }}";
+    
+    /* Copyright */
+    --current-year: "{{ current_year|default('2023') }}";
+}
+
+/* Apply dark mode if configured */
+{% if display_mode == 'dark' %}
+:root {
+    --bg-color: #1e293b;
+    --bg-secondary: #0f172a;
+    --text-color: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-light: #94a3b8;
+    --border-color: #334155;
+    --border-dark: #475569;
+}
+{% endif %}
+
+/* Apply layout styles */
+{% if layout_type == 'centered' %}
+.container, .main-content {
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+{% elif layout_type == 'wide' %}
+.container, .main-content {
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+{% endif %}

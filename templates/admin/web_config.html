@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cấu Hình Website</title>
+    <meta name="description" content="Trang quản lý cấu hình website, bao gồm metadata, SEO và giao diện">
+    <meta name="keywords" content="cấu hình website, metadata, SEO, giao diện, quản lý">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --border-dark: #cbd5e1;
+            --radius: 0.5rem;
+            --radius-sm: 0.25rem;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text);
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg);
+            box-shadow: var(--shadow);
+            padding: 1.5rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h2 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-menu a:hover, 
+        .sidebar-menu a.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        .sidebar-menu i {
+            margin-right: 0.75rem;
+            width: 1.25rem;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .config-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .config-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 2rem;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .config-card {
+            background: var(--bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .config-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .config-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .config-icon {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-right: 0.75rem;
+        }
+
+        .config-card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .config-card-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .config-form-group {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-secondary);
+            color: var(--text);
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-input:disabled, .form-textarea:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-hint {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .file-thumbnail {
+            width: 2rem;
+            height: 2rem;
+            object-fit: contain;
+        }
+
+        .file-thumbnail-lg {
+            width: 4rem;
+            height: 4rem;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+        }
+
+        .file-name {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .code-block {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            margin: 0;
+        }
+
+        .file-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .file-icon {
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+
+        .file-link-text {
+            color: var(--primary);
+            text-decoration: none;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .file-link-text:hover {
+            text-decoration: underline;
+        }
+
+        .color-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .color-swatch {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+        }
+
+        .bg-primary {
+            background: var(--primary);
+        }
+
+        .color-value {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .font-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .font-sample {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+        }
+
+        .font-source {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .layout-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        .layout-option {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .layout-option:hover {
+            border-color: var(--primary);
+        }
+
+        .layout-option.active {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .layout-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .layout-header, .layout-footer {
+            height: 0.25rem;
+            background: var(--primary);
+            border-radius: 0.125rem;
+        }
+
+        .layout-content-wide, .layout-content-centered, .layout-content-split {
+            height: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 0.125rem;
+        }
+
+        .layout-content-centered {
+            width: 75%;
+            margin: 0 auto;
+        }
+
+        .layout-content-split {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .layout-sidebar {
+            width: 33.33%;
+            height: 100%;
+            background: var(--bg-secondary);
+            border-radius: 0.125rem;
+        }
+
+        .layout-main {
+            flex: 1;
+            height: 100%;
+            background: var(--bg-secondary);
+            border-radius: 0.125rem;
+        }
+
+        .display-mode-options {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .mode-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .mode-option input[type="radio"] {
+            accent-color: var(--primary);
+        }
+
+        .mode-label {
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .config-footer {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .config-note {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border-radius: var(--radius);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .back-button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .button-icon {
+            font-size: 0.875rem;
+        }
+
+        .access-denied {
+            max-width: 600px;
+            margin: 2rem auto;
+            text-align: center;
+        }
+
+        .access-denied a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .access-denied a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+            .main-content {
+                margin-left: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+                padding: 1rem 0;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 1.5rem;
+            }
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+            .layout-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .display-mode-options {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 1rem;
+            }
+            .config-title {
+                font-size: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            .layout-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+                <li><a href="{{ url_for('admin_users') }}"><i class="fas fa-users"></i> <span>Quản lý người dùng</span></a></li>
+                <li><a href="{{ url_for('admin_forms') }}" ><i class="fas fa-file-alt"></i> <span>Quản lý biểu mẫu</span></a></li>
+                <li><a href="{{ url_for('admin_form_history') }}" ><i class="fas fa-history"></i> <span>Lịch sử biểu mẫu</span></a></li>
+                <li><a href="{{ url_for('web_config') }}" class="active"><i class="fas fa-cog"></i> <span>Cấu hình website</span></a></li>
+                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
+                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="config-container">
+                <h1 class="config-title">Cấu Hình Website</h1>
+                
+                {% if current_user.role_id == 1 %}
+                <div class="config-grid">
+                    <!-- Cấu hình Metadata -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <i class="fas fa-tags config-icon"></i>
+                            <h2 class="config-card-title">Cấu Hình Metadata</h2>
+                        </div>
+                        <p class="config-card-description">Quản lý thông tin cơ bản của website như tiêu đề, mô tả, từ khóa và favicon.</p>
+                        <form method="POST" action="{{ url_for('web_config') }}" enctype="multipart/form-data">
+                            <input type="hidden" name="metadata_form" value="1">
+                            <div class="config-form-group">
+                                <div class="form-field">
+                                    <label class="form-label">Tiêu đề website</label>
+                                    <input type="text" class="form-input" name="site_title" value="{{ config.metadata.site_title }}">
+                                    <small class="form-hint">Hiển thị trên thanh tiêu đề trình duyệt</small>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Mô tả website</label>
+                                    <textarea class="form-textarea" name="site_description" rows="3">{{ config.metadata.site_description }}</textarea>
+                                    <small class="form-hint">Hiển thị trong kết quả tìm kiếm</small>
+                                </div>
+                                
+                                <div class="form-field">
+                                    <label class="form-label">LOGO</label>
+                                    <div class="file-preview">
+                                        <img src="{{ config.metadata.site_logo }}" alt="Logo" class="file-thumbnail">
+                                        <span class="file-name">{{ config.metadata.site_logo.split('/')[-1] }}</span>
+                                    </div>
+                                    <input type="file" name="site_logo" class="form-input" style="margin-top: 10px;">
+                                    <small class="form-hint">Tải lên logo mới (nếu cần)</small>
+                                </div>
+                                
+                                <div class="form-field" style="margin-top: 20px;">
+                                    <button type="submit" class="back-button" style="background-color: var(--primary);">
+                                        <i class="fas fa-save button-icon"></i> Lưu cấu hình
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Cấu hình SEO -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <i class="fas fa-search config-icon"></i>
+                            <h2 class="config-card-title">Cấu Hình SEO</h2>
+                        </div>
+                        <p class="config-card-description">Quản lý các thẻ SEO và cấu hình cho công cụ tìm kiếm.</p>
+                        <form method="POST" action="{{ url_for('web_config') }}" enctype="multipart/form-data">
+                            <input type="hidden" name="seo_form" value="1">
+                            <div class="config-form-group">
+                                <div class="form-field">
+                                    <label class="form-label">Meta Title</label>
+                                    <input type="text" class="form-input" name="meta_title" value="{{ config.seo.meta_title }}">
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Meta Description</label>
+                                    <textarea class="form-textarea" name="meta_description" rows="3">{{ config.seo.meta_description }}</textarea>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Open Graph Image</label>
+                                    <div class="file-preview">
+                                        <img src="{{ config.seo.og_image }}" alt="OG Image" class="file-thumbnail-lg">
+                                        <span class="file-name">{{ config.seo.og_image.split('/')[-1] }}</span>
+                                    </div>
+                                    <input type="file" name="og_image" class="form-input" style="margin-top: 10px;">
+                                    <small class="form-hint">Tải lên ảnh Open Graph mới (nếu cần)</small>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Robots.txt</label>
+                                    <textarea class="form-textarea code-block" name="robots_txt" rows="8">{{ config.seo.robots_txt }}</textarea>
+                                    <small class="form-hint">Hướng dẫn cho các bot tìm kiếm</small>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Sitemap.xml</label>
+                                    <div class="file-link">
+                                        <i class="fas fa-file-code file-icon"></i>
+                                        <a href="/sitemap.xml" target="_blank" class="file-link-text">Xem Sitemap</a>
+                                    </div>
+                                    <small class="form-hint">Danh sách các URL của website</small>
+                                </div>
+                                <div class="form-field" style="margin-top: 20px;">
+                                    <button type="submit" class="back-button" style="background-color: var(--primary);">
+                                        <i class="fas fa-save button-icon"></i> Lưu cấu hình SEO
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                   <!-- Cấu hình Thông tin Liên hệ -->
+                <div class="config-card">
+                    <div class="config-card-header">
+                        <i class="fas fa-address-book config-icon"></i>
+                        <h2 class="config-card-title">Thông Tin Liên Hệ</h2>
+                    </div>
+                    <p class="config-card-description">Quản lý thông tin liên hệ hiển thị trên website.</p>
+                    <form method="POST" action="{{ url_for('web_config') }}">
+                        <input type="hidden" name="contact_form" value="1">
+                        <div class="config-form-group">
+                            <div class="form-field">
+                                <label class="form-label">Số điện thoại</label>
+                                <input type="text" class="form-input" name="contact_phone" value="{{ config.contact.contact_phone }}">
+                                <small class="form-hint">Số điện thoại hỗ trợ khách hàng</small>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label">Email liên hệ</label>
+                                <input type="email" class="form-input" name="contact_email" value="{{ config.contact.contact_email }}">
+                                <small class="form-hint">Email chính thức của công ty</small>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label">Địa chỉ</label>
+                                <textarea class="form-textarea" name="contact_address" rows="3">{{ config.contact.contact_address }}</textarea>
+                                <small class="form-hint">Địa chỉ trụ sở chính</small>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label">Giờ làm việc</label>
+                                <input type="text" class="form-input" name="working_hours" value="{{ config.contact.working_hours }}">
+                                <small class="form-hint">Ví dụ: Thứ 2 - Thứ 6: 8h00 - 17h00</small>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label">Fanpage Facebook</label>
+                                <input type="url" class="form-input" name="facebook_url" value="{{ config.contact.facebook_url }}">
+                                <small class="form-hint">Link Fanpage Facebook</small>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label">Zalo Official</label>
+                                <input type="url" class="form-input" name="zalo_url" value="{{ config.contact.zalo_url }}">
+                                <small class="form-hint">Link Zalo Official Account</small>
+                            </div>
+                            <div class="form-field" style="margin-top: 20px;">
+                                <button type="submit" class="back-button" style="background-color: var(--primary);">
+                                    <i class="fas fa-save button-icon"></i> Lưu thông tin liên hệ
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                    
+                    <!-- Cấu hình Giao diện -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <i class="fas fa-palette config-icon"></i>
+                            <h2 class="config-card-title">Cấu Hình Giao Diện</h2>
+                        </div>
+                        <p class="config-card-description">Quản lý màu sắc, font chữ và bố cục của website.</p>
+                        <form method="POST" action="{{ url_for('web_config') }}">
+                            <input type="hidden" name="ui_form" value="1">
+                            <div class="config-form-group">
+                                <div class="form-field">
+                                    <label class="form-label">Màu chủ đạo</label>
+                                    <input type="color" name="primary_color" value="{{ config.ui.primary_color }}" style="width: 50px; height: 30px; vertical-align: middle;">
+                                    <input type="text" class="form-input" name="primary_color" value="{{ config.ui.primary_color }}" style="width: 120px; display: inline-block; margin-left: 10px;">
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Font chữ</label>
+                                    <select class="form-input" name="font_family">
+                                        <option value="Inter" {% if config.ui.font_family == 'Inter' %}selected{% endif %}>Inter</option>
+                                        <option value="Roboto" {% if config.ui.font_family == 'Roboto' %}selected{% endif %}>Roboto</option>
+                                        <option value="Open Sans" {% if config.ui.font_family == 'Open Sans' %}selected{% endif %}>Open Sans</option>
+                                        <option value="Montserrat" {% if config.ui.font_family == 'Montserrat' %}selected{% endif %}>Montserrat</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Bố cục trang</label>
+                                    <div class="layout-options">
+                                        <div class="layout-option {% if config.ui.layout_type == 'wide' %}active{% endif %}" onclick="document.getElementById('layout_type').value = 'wide';">
+                                            <div class="layout-preview">
+                                                <div class="layout-header"></div>
+                                                <div class="layout-content-wide"></div>
+                                                <div class="layout-footer"></div>
+                                            </div>
+                                        </div>
+                                        <div class="layout-option {% if config.ui.layout_type == 'centered' %}active{% endif %}" onclick="document.getElementById('layout_type').value = 'centered';">
+                                            <div class="layout-preview">
+                                                <div class="layout-header"></div>
+                                                <div class="layout-content-centered"></div>
+                                                <div class="layout-footer"></div>
+                                            </div>
+                                        </div>
+                                        <div class="layout-option {% if config.ui.layout_type == 'sidebar' %}active{% endif %}" onclick="document.getElementById('layout_type').value = 'sidebar';">
+                                            <div class="layout-preview">
+                                                <div class="layout-header"></div>
+                                                <div class="layout-content-split">
+                                                    <div class="layout-sidebar"></div>
+                                                    <div class="layout-main"></div>
+                                                </div>
+                                                <div class="layout-footer"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="layout_type" name="layout_type" value="{{ config.ui.layout_type }}">
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Chế độ hiển thị</label>
+                                    <div class="display-mode-options">
+                                        <label class="mode-option">
+                                            <input type="radio" name="display_mode" value="light" {% if config.ui.display_mode == 'light' %}checked{% endif %}>
+                                            <span class="mode-label">Sáng</span>
+                                        </label>
+                                        <label class="mode-option">
+                                            <input type="radio" name="display_mode" value="dark" {% if config.ui.display_mode == 'dark' %}checked{% endif %}>
+                                            <span class="mode-label">Tối</span>
+                                        </label>
+                                       
+                                    </div>
+                                </div>
+                                <div class="form-field" style="margin-top: 20px;">
+                                    <button type="submit" class="back-button" style="background-color: var(--primary);">
+                                        <i class="fas fa-save button-icon"></i> Lưu cấu hình giao diện
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+               
+                {% else %}
+                <div class="config-card access-denied">
+                    <div class="config-card-header">
+                        <i class="fas fa-lock config-icon"></i>
+                        <h2 class="config-card-title">Quyền truy cập bị giới hạn</h2>
+                    </div>
+                    <p class="config-card-description">Bạn không có quyền truy cập vào trang cấu hình hệ thống. Chỉ quản trị viên mới có thể thực hiện các thay đổi cấu hình website.</p>
+                    <p>Bạn có thể quay lại <a href="{{ url_for('profile') }}">trang hồ sơ cá nhân</a> để cập nhật thông tin của mình.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/web_config.js') }}"></script>
+</body>
+</html>
