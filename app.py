@@ -87,11 +87,7 @@ def inject_config():
         'meta_description': WebConfig.get_value('meta_description', 'Nhập thông tin một cách thông minh với sự hỗ trợ của AI và gợi ý tự động.'),
         'og_image': WebConfig.get_value('og_image', '/static/images/og-image.png'),
         
-        # UI
-        'primary_color': WebConfig.get_value('primary_color', '#3b82f6'),
-        'font_family': WebConfig.get_value('font_family', 'Inter'),
-        'layout_type': WebConfig.get_value('layout_type', 'sidebar'),
-        'display_mode': WebConfig.get_value('display_mode', 'light'),
+       
         
         # Contact Information
         'contact_phone': WebConfig.get_value('contact_phone', '0123 456 789'),
@@ -102,11 +98,7 @@ def inject_config():
         'current_year': datetime.datetime.now().year,
         
         # CSS Variables for dynamic styling
-        'css_variables': {
-            '--primary-color': WebConfig.get_value('primary_color', '#3b82f6'),
-            '--primary-hover': WebConfig.get_value('primary_hover', '#2563eb'),
-            '--font-family': WebConfig.get_value('font_family', 'Inter') + ', sans-serif'
-        }
+        
     }
 # Đăng ký các route
 register_routes(app)

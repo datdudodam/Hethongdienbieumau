@@ -3,10 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết Biểu mẫu - Hệ thống Quản lý Biểu mẫu</title>
+    <title>{{ site_title }}</title>
+    <meta name="description" content="{{ site_description }}">
+    <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
+    <meta property="og:title" content=" {{ site_title }}">
+    <meta property="og:description" content="{{ site_description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/dashboard">
+    <meta property="og:image" content="{{ og_image }}">
+    <link rel="icon" type="image/png" href="{{ site_logo }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family={{ font_family|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
     <style>
         :root {
             --primary-color: #3b82f6;

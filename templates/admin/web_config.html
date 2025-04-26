@@ -2,11 +2,23 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cấu Hình Website</title>
-    <meta name="description" content="Trang quản lý cấu hình website, bao gồm metadata, SEO và giao diện">
-    <meta name="keywords" content="cấu hình website, metadata, SEO, giao diện, quản lý">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ site_title }}</title>
+  <meta name="description" content="{{ site_description }}">
+  <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
+  <meta property="og:title" content=" {{ site_title }}">
+  <meta property="og:description" content="{{ site_description }}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yourdomain.com/dashboard">
+  <meta property="og:image" content="{{ og_image }}">
+  <link rel="icon" type="image/png" href="{{ site_logo }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family={{ font_family|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
     <style>
         :root {
             --primary: #3b82f6;
@@ -568,54 +580,7 @@
                         </form>
                     </div>
                     
-                    <!-- Cấu hình SEO -->
-                    <div class="config-card">
-                        <div class="config-card-header">
-                            <i class="fas fa-search config-icon"></i>
-                            <h2 class="config-card-title">Cấu Hình SEO</h2>
-                        </div>
-                        <p class="config-card-description">Quản lý các thẻ SEO và cấu hình cho công cụ tìm kiếm.</p>
-                        <form method="POST" action="{{ url_for('web_config') }}" enctype="multipart/form-data">
-                            <input type="hidden" name="seo_form" value="1">
-                            <div class="config-form-group">
-                                <div class="form-field">
-                                    <label class="form-label">Meta Title</label>
-                                    <input type="text" class="form-input" name="meta_title" value="{{ config.seo.meta_title }}">
-                                </div>
-                                <div class="form-field">
-                                    <label class="form-label">Meta Description</label>
-                                    <textarea class="form-textarea" name="meta_description" rows="3">{{ config.seo.meta_description }}</textarea>
-                                </div>
-                                <div class="form-field">
-                                    <label class="form-label">Open Graph Image</label>
-                                    <div class="file-preview">
-                                        <img src="{{ config.seo.og_image }}" alt="OG Image" class="file-thumbnail-lg">
-                                        <span class="file-name">{{ config.seo.og_image.split('/')[-1] }}</span>
-                                    </div>
-                                    <input type="file" name="og_image" class="form-input" style="margin-top: 10px;">
-                                    <small class="form-hint">Tải lên ảnh Open Graph mới (nếu cần)</small>
-                                </div>
-                                <div class="form-field">
-                                    <label class="form-label">Robots.txt</label>
-                                    <textarea class="form-textarea code-block" name="robots_txt" rows="8">{{ config.seo.robots_txt }}</textarea>
-                                    <small class="form-hint">Hướng dẫn cho các bot tìm kiếm</small>
-                                </div>
-                                <div class="form-field">
-                                    <label class="form-label">Sitemap.xml</label>
-                                    <div class="file-link">
-                                        <i class="fas fa-file-code file-icon"></i>
-                                        <a href="/sitemap.xml" target="_blank" class="file-link-text">Xem Sitemap</a>
-                                    </div>
-                                    <small class="form-hint">Danh sách các URL của website</small>
-                                </div>
-                                <div class="form-field" style="margin-top: 20px;">
-                                    <button type="submit" class="back-button" style="background-color: var(--primary);">
-                                        <i class="fas fa-save button-icon"></i> Lưu cấu hình SEO
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+                 
                    <!-- Cấu hình Thông tin Liên hệ -->
                 <div class="config-card">
                     <div class="config-card-header">
