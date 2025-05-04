@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /api-docs
 Disallow: /admin/
 Disallow: /uploads/
 Disallow: /flask_session/

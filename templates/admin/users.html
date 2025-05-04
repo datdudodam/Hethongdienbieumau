@@ -63,12 +63,20 @@
             padding: 0 20px 20px;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
         }
 
         .sidebar-header h2 {
             color: var(--primary-color);
             margin: 0;
             font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .sidebar-header i {
+            margin-right: 10px;
+            font-size: 1.4rem;
         }
 
         .sidebar-menu {
@@ -380,6 +388,7 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
+                <i class="fas fa-shield-alt"></i>
                 <h2>Admin Panel</h2>
             </div>
             <ul class="sidebar-menu">

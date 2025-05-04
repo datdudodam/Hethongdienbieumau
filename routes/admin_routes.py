@@ -264,9 +264,45 @@ def register_admin_routes(app):
     @admin_required
     def admin_form_history():
         """Xem lịch sử biểu mẫu"""
+        search_query = request.args.get('search_query', '')
+        user_filter = request.args.get('user_filter', '')
+        
         history_data = load_form_history()
-        # Thêm thông tin user_name vào mỗi bản ghi
+        filtered_data = []
+        
+        # Thêm thông tin user_name vào mỗi bản ghi và lọc dữ liệu
         for record in history_data:
             user = User.query.get(record.get('user_id'))
             record['user_name'] = user.fullname if user else 'Unknown'
-        return render_template('admin/form_history.html', history=history_data)
+            
+            # Lọc theo người dùng nếu có
+            if user_filter and str(record.get('user_id')) != user_filter:
+                continue
+                
+            # Lọc theo từ khóa tìm kiếm nếu có
+            if search_query:
+                # Tìm trong tên người dùng
+                if search_query.lower() in record['user_name'].lower():
+                    filtered_data.append(record)
+                    continue
+                    
+                # Tìm trong tên biểu mẫu
+                if record.get('form_data') and record['form_data'].get('document_name') and search_query.lower() in record['form_data'].get('document_name', '').lower():
+                    filtered_data.append(record)
+                    continue
+                    
+                # Tìm trong ID biểu mẫu
+                if search_query.lower() in str(record.get('form_id', '')).lower():
+                    filtered_data.append(record)
+                    continue
+                    
+                # Không tìm thấy từ khóa trong bản ghi này
+                continue
+            else:
+                # Nếu không có từ khóa tìm kiếm, thêm vào danh sách lọc
+                filtered_data.append(record)
+        
+        # Lấy danh sách người dùng để hiển thị trong dropdown
+        users = User.query.all()
+        
+        return render_template('admin/form_history.html', history=filtered_data, users=users)

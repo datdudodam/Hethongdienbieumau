@@ -18,23 +18,25 @@ def register_profile_routes(app):
     def update_profile():
         """ Cập nhật thông tin hồ sơ người dùng """
         fullname = request.form.get('fullname')
-        phone = request.form.get('phone')
-        address = request.form.get('address')
-        bio = request.form.get('bio')
         
         if not fullname:
             flash('Họ và tên không được để trống', 'error')
             return redirect(url_for('profile'))
         
-        # Cập nhật thông tin người dùng
-        current_user.fullname = fullname
-        current_user.phone = phone
-        current_user.address = address
-        current_user.bio = bio
+        # Lấy user từ session để đảm bảo phiên bản hợp lệ
+        user = db.session.get(User, current_user.id)
+        if not user:
+            flash('Không tìm thấy người dùng', 'error')
+            return redirect(url_for('profile'))
         
+        user.fullname = fullname
         db.session.commit()
+        
         flash('Cập nhật thông tin thành công!', 'success')
         return redirect(url_for('profile'))
+
+
+
     
     @app.route('/profile/change-password', methods=['POST'])
     @login_required

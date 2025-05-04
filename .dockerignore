@@ -1,47 +1,80 @@
-__pycache__
-*.pyc
-*.pyo
-*.pyd
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .Python
 env/
 venv/
 ENV/
 .env
 .venv
-.git
-.gitignore
-.pytest_cache/
-.coverage
-htmlcov/
-*.mp4
-dist/
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 *.egg-info/
-.DS_Store
+.installed.cfg
+*.egg
 
-# Thêm các file không cần thiết khác
-*.log
-*.swp
-*.swo
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
 .idea/
 .vscode/
-__pycache__/
-*/__pycache__/
-*/*/__pycache__/
-*/*/*/__pycache__/
-*/*/*/*/__pycache__/
+*.swp
+*.swo
 
-# Thêm các file tạm thời
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+*.log
+*.sqlite
+*.db
+*.mp4
 *.tmp
 *.bak
 *.backup
-
-# Thêm các file cụ thể của dự án không cần thiết
-1.txt
-2.txt
-3.txt
-*.mp4
+flask_session/*
+.git
+.gitignore
 
 # Đảm bảo không loại trừ các file quan trọng
 !form_data.json
 !form_history.json
+!instance/.gitkeep
+!uploads/.gitkeep
+!flask_session/.gitkeep

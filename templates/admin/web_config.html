@@ -2,23 +2,23 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ site_title }}</title>
-  <meta name="description" content="{{ site_description }}">
-  <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
-  <meta property="og:title" content=" {{ site_title }}">
-  <meta property="og:description" content="{{ site_description }}">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://yourdomain.com/dashboard">
-  <meta property="og:image" content="{{ og_image }}">
-  <link rel="icon" type="image/png" href="{{ site_logo }}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family={{ font_family|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_title }}</title>
+    <meta name="description" content="{{ site_description }}">
+    <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
+    <meta property="og:title" content=" {{ site_title }}">
+    <meta property="og:description" content="{{ site_description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/dashboard">
+    <meta property="og:image" content="{{ og_image }}">
+    <link rel="icon" type="image/png" href="{{ site_logo }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family={{ font_family|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
     <style>
         :root {
             --primary: #3b82f6;
@@ -63,16 +63,23 @@
         }
 
         .sidebar-header {
-            padding: 0 1.5rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 1rem;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
         }
 
         .sidebar-header h2 {
-            color: var(--primary);
+            color: var(--primary-color);
             margin: 0;
             font-size: 1.5rem;
             font-weight: 600;
+        }
+
+        .sidebar-header i {
+            margin-right: 10px;
+            font-size: 1.4rem;
         }
 
         .sidebar-menu {
@@ -520,6 +527,7 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
+                <i class="fas fa-shield-alt"></i>
                 <h2>Admin Panel</h2>
             </div>
             <ul class="sidebar-menu">
@@ -606,21 +614,7 @@
                                 <textarea class="form-textarea" name="contact_address" rows="3">{{ config.contact.contact_address }}</textarea>
                                 <small class="form-hint">Địa chỉ trụ sở chính</small>
                             </div>
-                            <div class="form-field">
-                                <label class="form-label">Giờ làm việc</label>
-                                <input type="text" class="form-input" name="working_hours" value="{{ config.contact.working_hours }}">
-                                <small class="form-hint">Ví dụ: Thứ 2 - Thứ 6: 8h00 - 17h00</small>
-                            </div>
-                            <div class="form-field">
-                                <label class="form-label">Fanpage Facebook</label>
-                                <input type="url" class="form-input" name="facebook_url" value="{{ config.contact.facebook_url }}">
-                                <small class="form-hint">Link Fanpage Facebook</small>
-                            </div>
-                            <div class="form-field">
-                                <label class="form-label">Zalo Official</label>
-                                <input type="url" class="form-input" name="zalo_url" value="{{ config.contact.zalo_url }}">
-                                <small class="form-hint">Link Zalo Official Account</small>
-                            </div>
+                           
                             <div class="form-field" style="margin-top: 20px;">
                                 <button type="submit" class="back-button" style="background-color: var(--primary);">
                                     <i class="fas fa-save button-icon"></i> Lưu thông tin liên hệ

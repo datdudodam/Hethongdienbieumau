@@ -63,13 +63,22 @@
             padding: 0 20px 20px;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
         }
 
         .sidebar-header h2 {
             color: var(--primary-color);
             margin: 0;
             font-size: 1.5rem;
+            font-weight: 600;
         }
+
+        .sidebar-header i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+
 
         .sidebar-menu {
             list-style: none;
@@ -396,6 +405,63 @@
                 overflow-x: auto;
             }
         }
+        .search-box {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--button-radius);
+            font-family: 'Poppins', sans-serif;
+            transition: var(--transition-normal);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--glow-color);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        .filter-dropdown {
+            position: relative;
+            min-width: 180px;
+        }
+
+        .filter-dropdown select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--button-radius);
+            font-family: 'Poppins', sans-serif;
+            appearance: none;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .filter-dropdown select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--glow-color);
+        }
+
+        .filter-dropdown i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -403,6 +469,7 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
+                <i class="fas fa-shield-alt"></i>
                 <h2>Admin Panel</h2>
             </div>
             <ul class="sidebar-menu">
@@ -435,6 +502,23 @@
             <div class="page-header">
                 <h1>Quản lý biểu mẫu</h1>
             </div>
+            <form id="searchForm" action="{{ url_for('admin_form_history') }}" method="GET" class="search-filter">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="search_query" placeholder="Tìm kiếm lịch sử..." value="{{ request.args.get('search_query', '') }}">
+                </div>
+                <div class="filter-dropdown">
+                    <select name="user_filter" id="userFilter">
+                        <option value="">Tất cả người dùng</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}" {% if request.args.get('user_filter')|string == user.id|string %}selected{% endif %}>{{ user.fullname }} (ID: {{ user.id }})</option>
+                        {% endfor %}
+                    </select>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <button type="submit" class="btn btn-sm"><i class="fas fa-filter"></i> Lọc</button>
+                <a href="{{ url_for('admin_form_history') }}" class="btn btn-outline btn-sm"><i class="fas fa-sync-alt"></i> Đặt lại</a>
+            </form>
 
             <div class="card">
                 <div class="card-header">
@@ -446,7 +530,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Tiêu đề</th>
-                                <th>Trạng thái</th>
+                                
                                 <th>Ngày tạo</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -456,15 +540,6 @@
                             <tr>
                                 <td>{{ form.form_id }}</td>
                                 <td>{{ form.form_data.document_name }}</td>
-                                <td>
-                                    {% if form.status == 'completed' %}
-                                    <span class="badge badge-success">Hoàn thành</span>
-                                    {% elif form.status == 'pending' %}
-                                    <span class="badge badge-warning">Đang xử lý</span>
-                                    {% else %}
-                                    <span class="badge badge-danger">Lỗi</span>
-                                    {% endif %}
-                                </td>
                                 <td>{{ form.timestamp if form.timestamp else 'N/A' }}</td>
                                 <td class="actions">
                                     <a href="{{ url_for('admin_view_form', form_id=form.form_id) }}" class="btn btn-sm"><i class="fas fa-eye"></i> Xem</a>

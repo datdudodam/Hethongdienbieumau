@@ -526,18 +526,6 @@
                             <label for="email">Email</label>
                             <input type="email" id="email" class="form-control" value="{{ current_user.email }}" disabled>
                         </div>
-                        <div class="form-group">
-                            <label for="phone">Số điện thoại</label>
-                            <input type="tel" id="phone" name="phone" class="form-control" value="{{ current_user.phone or '' }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="address">Địa chỉ</label>
-                            <input type="text" id="address" name="address" class="form-control" value="{{ current_user.address or '' }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="bio">Giới thiệu</label>
-                            <textarea id="bio" name="bio" class="form-control" rows="4">{{ current_user.bio or '' }}</textarea>
-                        </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Cập nhật thông tin
                         </button>
