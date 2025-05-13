@@ -10,19 +10,29 @@ def register_auth_routes(app):
 def dangNhap_Dangky(app):
     """ Đăng ký và Đăng nhập
     """
-    
+    @app.route('/GoiThuong.html')
+    def serve_goi_thuong():
+         return render_template('GoiThuong.html')
     @app.route('/login', methods=['GET', 'POST'])
     def login():
+        # Lấy tham số redirect từ URL nếu có
+        redirect_url = request.args.get('redirect')
+        
         if current_user.is_authenticated:
             # Nếu người dùng đã đăng nhập và là admin, chuyển hướng đến trang admin
             if current_user.role_id == 1:  # 1 là role_id của admin
                 return redirect(url_for('admin_dashboard'))
+            # Nếu có tham số redirect, chuyển hướng đến URL đó
+            if redirect_url:
+                return redirect(redirect_url)
             return redirect(url_for('index'))
 
         if request.method == 'POST':
             email = request.form.get('email')
             password = request.form.get('password')
             remember = request.form.get('remember') == 'on'
+            # Lấy tham số redirect từ form nếu có
+            form_redirect = request.form.get('redirect')
 
             user = User.query.filter_by(email=email).first()
             
@@ -32,11 +42,17 @@ def dangNhap_Dangky(app):
                 # Kiểm tra vai trò người dùng và chuyển hướng phù hợp
                 if user.role_id == 1:  # 1 là role_id của admin
                     return redirect(url_for('admin_dashboard'))
+                # Nếu có tham số redirect từ form, ưu tiên sử dụng nó
+                if form_redirect:
+                    return redirect(form_redirect)
+                # Nếu có tham số redirect từ URL, sử dụng nó
+                if redirect_url:
+                    return redirect(redirect_url)
                 return redirect(url_for('index'))
             else:
                 flash('Email hoặc mật khẩu không chính xác', 'error')
 
-        return render_template('DangNhap.html')
+        return render_template('DangNhap.html', redirect_url=redirect_url)
 
     @app.route('/signup', methods=['GET', 'POST'])
     def signup():

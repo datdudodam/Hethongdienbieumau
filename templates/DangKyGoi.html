@@ -244,7 +244,7 @@
                 </div>
             </div>
             <div class="pricing-card-footer">
-                <a href="/upgrade" class="btn btn-highlight">Nâng Cấp</a>
+                <a href="/GoiThuong.html?plan=pro" class="btn btn-highlight">Nâng Cấp</a>
                 <span class="/login">* Yêu cầu đăng nhập</span>
             </div>
         </div>
@@ -275,7 +275,7 @@
                 </div>
             </div>
             <div class="pricing-card-footer">
-                <a href="/upgrade_vip" class="btn btn-primary">Nâng Cấp</a>
+                <a href="/GoiThuong.html?plan=vip" class="btn btn-primary">Nâng Cấp</a>
                 <span class="/login">* Yêu cầu đăng nhập</span>
             </div>
         </div>
@@ -290,15 +290,15 @@
                     if (!isLoggedIn()) {
                         e.preventDefault();
                         alert('Vui lòng đăng nhập trước khi đăng ký gói dịch vụ.');
-                        window.location.href = '/login?redirect=' + encodeURIComponent(this.getAttribute('href'));
+                        window.location.href = '/login?redirect=/GoiThuong.html';
                     }
                 });
             });
             
             // Hàm kiểm tra đăng nhập (cần thay thế bằng logic thực tế)
             function isLoggedIn() {
-                // Trong thực tế, kiểm tra cookie, localStorage hoặc gọi API
-                return false; // Mặc định trả về false để demo
+                // Kiểm tra xem có cookie hoặc localStorage token đăng nhập không
+                return document.cookie.includes('session=') || localStorage.getItem('user_token');
             }
         });
     </script>

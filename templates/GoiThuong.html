@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fillout Subscription</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+  * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background-color: #f4f4f4;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.container {
+  display: flex;
+  width: 100%;
+  max-width: 1100px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.left-panel {
+  background-color: #1a1a1a;
+  color: white;
+  padding: 40px 30px;
+  width: 50%;
+}
+
+.left-panel h2 {
+  font-size: 20px;
+  color: #999;
+}
+
+.left-panel h1 {
+  font-size: 42px;
+  margin: 10px 0 30px;
+}
+
+.left-panel h1 span {
+  font-size: 16px;
+  color: #aaa;
+}
+
+.plan-box {
+  background-color: #2a2a2a;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.plan-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.plan-header img {
+  width: 40px;
+  height: 40px;
+}
+
+.annual-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.annual-option input[type="checkbox"] {
+  transform: scale(1.2);
+  margin-right: 10px;
+}
+
+.discount-label {
+  background-color: #00d084;
+  color: black;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.totals {
+  margin-top: 20px;
+  border-top: 1px solid #444;
+  padding-top: 20px;
+}
+
+.subtotal,
+.total-due {
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.promo-code-section {
+  margin: 15px 0;
+}
+
+#promoInput {
+  display: none;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  border: none;
+  font-size: 14px;
+}
+
+#togglePromo {
+  padding: 8px 12px;
+  border: none;
+  background-color: #333;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* RIGHT PANEL */
+.right-panel {
+  background-color: #fff;
+  color: #333;
+  padding: 40px 30px;
+  width: 50%;
+}
+
+.right-panel form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.right-panel input[type="email"] {
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.payment-methods label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.payment-methods input[type="radio"] {
+  transform: scale(1.1);
+}
+
+.subscribe-btn {
+  background-color: #2979ff;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.terms {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.right-panel small {
+  font-size: 12px;
+  color: #999;
+  margin-top: 10px;
+}
+
+.right-panel a {
+  color: #666;
+  text-decoration: none;
+  margin: 0 5px;
+}
+
+.right-panel a:hover {
+  text-decoration: underline;
+}
+
+/* ✅ Responsive */
+@media (max-width: 900px) {
+  .container {
+    flex-direction: column;
+    max-width: 95%;
+  }
+
+  .left-panel,
+  .right-panel {
+    width: 100%;
+  }
+}
+.card-info {
+  display: none;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.card-info label {
+  margin: 10px 0 5px;
+  font-weight: bold;
+}
+
+.card-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.card-row input {
+  flex: 1;
+  padding: 10px;
+}
+
+.card-row img {
+  height: 20px;
+}
+
+.card-subrow {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.card-subrow input {
+  flex: 1;
+  padding: 10px;
+}
+
+.card-info input,
+.card-info select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+
+</style>
+  
+</head>
+<body>
+    <div class="container">
+      <!-- LEFT SECTION -->
+      <div class="left-panel">
+        <h2>Đăng ký Pro Plan</h2>
+        <h1>49,00 US$ <span>/ mỗi tháng</span></h1>
+  
+        <div class="plan-box">
+          <div class="plan-header">
+            <img src="https://fillout.com/favicon.ico" alt="Fillout Logo">
+            <div>
+              <strong>Pro Plan</strong><br>
+              <small>See fillout.com/pricing for details of what is included on the Pro plan.<br>
+                Thanh toán hàng tháng</small>
+            </div>
+          </div>
+          <div class="annual-option">
+            <label>
+              <input type="checkbox" id="toggle-annual">
+              <span class="discount-label">Tiết kiệm 108 US$</span>
+              <span>với thanh toán hàng năm</span>
+            </label>
+            <div class="price-annual">480,00 US$/năm</div>
+          </div>
+        </div>
+  
+        <div class="totals">
+          <div class="subtotal">Tổng phụ <span>49,00 US$</span></div>
+  
+          <div class="promo-code-section">
+            <button id="togglePromo" type="button">Thêm mã khuyến mãi</button>
+            <input type="text" id="promoInput" placeholder="Nhập mã khuyến mãi">
+          </div>
+  
+          <div class="total-due">
+            Tổng tiền phải trả hôm nay <span>49,00 US$</span>
+          </div>
+        </div>
+      </div>
+  
+      <!-- RIGHT SECTION -->
+      <div class="right-panel">
+        <form>
+          <label for="email">Thông tin liên hệ</label>
+          <input type="email" id="email" placeholder="Email" required>
+  
+          <label>Phương thức thanh toán</label>
+          <div class="payment-methods">
+            <label><input type="radio" name="payment" value="card" checked> 💳 Thẻ</label>
+            <label><input type="radio" name="payment" value="cash"> 💵 Cash App Pay</label>
+          </div>
+  
+          <!-- Di chuyển card-details RA NGOÀI label -->
+          <div id="card-details" class="card-info">
+            <label>Thông tin thẻ</label>
+            <div class="card-row">
+              <input type="text" placeholder="1234 1234 1234 1234">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" title="Visa">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" title="Mastercard">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" alt="Amex" title="Amex">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Discover_Card_logo.svg" alt="Discover" title="Discover">
+            </div>
+  
+            <div class="card-subrow">
+              <input type="text" placeholder="MM / YY">
+              <input type="text" placeholder="CVC">
+            </div>
+  
+            <label>Tên chủ thẻ</label>
+            <input type="text" placeholder="Họ và tên">
+  
+            <label>Quốc gia hoặc khu vực</label>
+            <select>
+              <option selected>Việt Nam</option>
+              <option>Hoa Kỳ</option>
+              <option>Nhật Bản</option>
+              <option>Hàn Quốc</option>
+              <option>Khác</option>
+            </select>
+          </div>
+  
+          <button type="submit" class="subscribe-btn">Đăng ký</button>
+  
+          <p class="terms">
+            Khi xác nhận gói đăng ký, bạn cho phép Fillout tính phí cho các khoản thanh toán trong tương lai căn cứ theo các điều khoản của họ. Bạn luôn có thể hủy đăng ký.
+          </p>
+          <small>Được cung cấp bởi <strong>stripe</strong><br>
+            <a href="#">Điều khoản</a> · <a href="#">Quyền riêng tư</a></small>
+        </form>
+      </div>
+    </div>
+  
+    <script>
+      // Toggle mã khuyến mãi
+      document.getElementById("togglePromo").addEventListener("click", function () {
+        const promoInput = document.getElementById("promoInput");
+        promoInput.style.display = promoInput.style.display === "block" ? "none" : "block";
+      });
+  
+      // Toggle card details
+      const cardDetails = document.getElementById("card-details");
+      const paymentRadios = document.querySelectorAll('input[name="payment"]');
+  
+      function updateCardForm() {
+        const selected = document.querySelector('input[name="payment"]:checked');
+        if (selected.value === "card") {
+          cardDetails.style.display = "block";
+        } else {
+          cardDetails.style.display = "none";
+        }
+      }
+  
+      paymentRadios.forEach(radio => {
+        radio.addEventListener("change", updateCardForm);
+      });
+  
+      // Set initial visibility
+      updateCardForm();
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const plans = {
+            free: { price: 0, name: "Gói Miễn Phí" },
+            pro: { price: 99000, name: "Gói Thường" },
+            vip: { price: 199000, name: "Gói VIP" }
+          };
+      
+          const params = new URLSearchParams(window.location.search);
+          const selectedPlanKey = params.get("plan") || "pro"; // fallback mặc định: gói Thường
+          const plan = plans[selectedPlanKey];
+      
+          // Cập nhật UI
+          if (plan) {
+            // Đổi tên gói
+            document.querySelector(".plan-header strong").textContent = plan.name;
+      
+            // Đổi giá
+            document.querySelector(".left-panel h1").innerHTML = `${(plan.price / 1000).toFixed(3).replace('.', ',')} VNĐ <span>/ mỗi tháng</span>`;
+            document.querySelector(".subtotal span").textContent = `${(plan.price / 1000).toFixed(3).replace('.', ',')} VNĐ`;
+            document.querySelector(".total-due span").textContent = `${(plan.price / 1000).toFixed(3).replace('.', ',')} VNĐ`;
+      
+            // Ẩn khối thanh toán nếu là miễn phí
+            if (plan.price === 0) {
+              document.querySelector(".right-panel form").style.display = "none";
+              const msg = document.createElement('p');
+              msg.style.marginTop = '30px';
+              msg.style.fontWeight = 'bold';
+              msg.style.color = 'green';
+              msg.textContent = 'Gói miễn phí không yêu cầu thanh toán. Bạn đã có thể sử dụng ngay.';
+              document.querySelector(".right-panel").appendChild(msg);
+            }
+          }
+        });
+      </script>
+  </body>
+  </html>

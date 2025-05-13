@@ -732,6 +732,9 @@
                 </div>
                 
                 <form action="/login" method="POST">
+                    {% if redirect_url %}
+                    <input type="hidden" name="redirect" value="{{ redirect_url }}">
+                    {% endif %}
                     <div class="form-group">
                         <i class="fas fa-envelope input-icon"></i>
                         <input type="email" name="email" placeholder="Email" required>
