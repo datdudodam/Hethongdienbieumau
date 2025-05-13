@@ -43,7 +43,6 @@ class EnhancedFieldMatcher:
     def __init__(self, form_history_path: str):
         self.form_history_path = form_history_path
         self.user_preferences = defaultdict(dict)
-        self._load_user_preferences()  # (user_id, field, value) -> frequency
         self.synonym_map = self._build_synonym_map()
         self.stop_words = self._initialize_stopwords()
         self.field_name_cache = {}
@@ -59,12 +58,16 @@ class EnhancedFieldMatcher:
         
         self.sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
         
-        # Tải và xử lý dữ liệu lịch sử
+        # Tải dữ liệu lịch sử từ file
+        self.form_history = self._load_form_history()
+        
+        # Xử lý dữ liệu lịch sử
+        self._load_user_preferences()  # (user_id, field, value) -> frequency
         self._build_field_value_mapping()
         self._build_models()
     def _load_user_preferences(self):
         """Tải preferences của từng user dựa trên lịch sử"""
-        for form in self.form_history_path:
+        for form in self.form_history:
             if isinstance(form, dict) and 'user_id' in form:
                 user_id = form['user_id']
                 if 'form_data' in form:
@@ -160,18 +163,26 @@ class EnhancedFieldMatcher:
     
     def _load_form_history(self) -> List[Dict]:
         """Tải lịch sử biểu mẫu từ file JSON"""
-        if os.path.exists(self.form_history_path):
-            try:
-                with open(self.form_history_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, IOError) as e:
-                print(f"Error loading form history: {e}")
+        try:
+            if os.path.exists(self.form_history_path):
+                try:
+                    with open(self.form_history_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        print(f"Loaded form history with {len(data)} entries")
+                        return data
+                except (json.JSONDecodeError, IOError) as e:
+                    print(f"Error loading form history: {e}")
+                    return []
+            else:
+                print(f"Form history file not found at: {self.form_history_path}")
                 return []
-        return []
+        except Exception as e:
+            print(f"Unexpected error loading form history: {str(e)}")
+            return []
     
     def _build_field_value_mapping(self):
         """Xây dựng ánh xạ giữa tên trường và các giá trị đã điền"""
-        for form in self.form_history_path:
+        for form in self.form_history:
             if isinstance(form, dict) and 'form_data' in form:
                 form_data = form['form_data']
                 # Bỏ qua các trường đặc biệt

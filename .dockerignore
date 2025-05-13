@@ -1,14 +1,9 @@
-# Python
+# Python cache files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
-venv/
-ENV/
-.env
-.venv
 build/
 develop-eggs/
 dist/
@@ -20,61 +15,46 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Environments
-.env
-.venv
-env/
+# Virtual environment
 venv/
+env/
 ENV/
-env.bak/
-venv.bak/
 
-# IDE
+# Database files
+instance/
+*.db
+*.sqlite
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Local development files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# OS specific
+# OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Project specific
-*.log
-*.sqlite
-*.db
-*.mp4
-*.tmp
-*.bak
-*.backup
-flask_session/*
-.git
-.gitignore
+# Docker files
+.dockerignore
+Dockerfile
+docker-compose.yml
 
-# Đảm bảo không loại trừ các file quan trọng
-!form_data.json
-!form_history.json
-!instance/.gitkeep
-!uploads/.gitkeep
-!flask_session/.gitkeep
+# Git files
+.git/
+.gitignore

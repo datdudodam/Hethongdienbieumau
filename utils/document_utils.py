@@ -4,6 +4,7 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 from config.config import UPLOADS_DIR
+from flask import session
 
 
 # Biến toàn cục để lưu đường dẫn tài liệu hiện tại
@@ -48,7 +49,7 @@ def extract_fields(text):
 
 def upload_document(file):
     """
-    Xử lý tải lên tài liệu
+    Xử lý tải lên tài liệu và kiểm tra giới hạn upload của người dùng
     """
     global doc_path
     
@@ -58,25 +59,71 @@ def upload_document(file):
     if not file.filename.endswith('.docx'):
         return {"error": "Only DOCX files are allowed"}, 400
     
+    # Kiểm tra giới hạn upload của người dùng
+    from flask_login import current_user
+    if current_user.is_authenticated:
+        # Kiểm tra loại gói đăng ký
+        if current_user.subscription_type == 'free':
+            # Kiểm tra số lần upload còn lại
+            if current_user.free_downloads_left <= 0:
+                return {"error": "Bạn đã sử dụng hết lượt upload miễn phí. Vui lòng nâng cấp lên gói VIP để tiếp tục sử dụng.", "upgrade_required": True}, 403
+            
+            # Giảm số lần upload còn lại
+            from models.user import db
+            current_user.free_downloads_left -= 1
+            db.session.commit()
+        elif current_user.subscription_type == 'standard':
+            # Kiểm tra số lần upload trong tháng
+            if current_user.monthly_download_count >= 100:
+                return {"error": "Bạn đã sử dụng hết 100 lượt upload trong tháng. Vui lòng nâng cấp lên gói VIP để không giới hạn số lần upload.", "upgrade_required": True}, 403
+            
+            # Tăng số lần upload trong tháng
+            from models.user import db
+            current_user.monthly_download_count += 1
+            db.session.commit()
+        # Gói VIP không giới hạn số lần upload
+    
     filename = secure_filename(str(uuid.uuid4()) + '_' + file.filename)
     filepath = os.path.join(UPLOADS_DIR, filename)
     file.save(filepath)
     
-    doc_path = filepath
+    # Lưu đường dẫn vào cả session và biến toàn cục
+    set_doc_path(filepath)
+    
+    # Trả về thông tin về số lần upload còn lại nếu là gói miễn phí
+    if current_user.is_authenticated and current_user.subscription_type == 'free':
+        return {
+            "message": "File uploaded successfully", 
+            "filename": filename,
+            "free_downloads_left": current_user.free_downloads_left
+        }, 200
     
     return {"message": "File uploaded successfully", "filename": filename}, 200
 
 def get_doc_path():
     """
-    Trả về đường dẫn tài liệu hiện tại
+    Trả về đường dẫn tài liệu hiện tại từ session hoặc biến toàn cục
     """
-    return doc_path
+    try:
+        # Ưu tiên lấy từ session nếu có
+        if 'doc_path' in session:
+            return session['doc_path']
+        return doc_path
+    except Exception as e:
+        print(f"Error in get_doc_path: {str(e)}")
+        return doc_path
 
 def set_doc_path(path):
     """
-    Thiết lập đường dẫn tài liệu hiện tại
+    Thiết lập đường dẫn tài liệu hiện tại vào session và biến toàn cục
     """
     global doc_path
+    try:
+        # Lưu vào cả session và biến toàn cục
+        session['doc_path'] = path
+    except Exception as e:
+        print(f"Error setting doc_path in session: {str(e)}")
+    # Vẫn lưu vào biến toàn cục để đảm bảo tương thích ngược
     doc_path = path
 def extract_table_fields(doc_path):
     """

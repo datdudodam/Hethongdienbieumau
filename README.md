@@ -1,122 +1,95 @@
-# UpdateLan5
+# Hệ Thống Nhập Liệu Thông Minh
 
-Ứng dụng quản lý biểu mẫu và tạo tài liệu
+## Giới thiệu
 
-## Cài đặt
-
-### Cài đặt từ file wheel
-
-```bash
-pip install dist/updatelan5-1.0.0-py3-none-any.whl
-```
-
-### Cài đặt từ mã nguồn
-
-```bash
-pip install dist/updatelan5-1.0.0.tar.gz
-```
-
-hoặc
-
-```bash
-pip install -e .
-```
-
-### Cài đặt và chạy với Docker
-
-#### Chuẩn bị môi trường
-
-1. Sao chép file `.env.example` thành `.env` và cấu hình các biến môi trường:
-
-```bash
-cp .env.example .env
-# Chỉnh sửa file .env với thông tin thực tế
-```
-
-#### Sử dụng Dockerfile
-
-```bash
-# Build Docker image
-docker build -t updatelan5:latest .
-
-# Chạy container
-docker run -p 5000:5000 --env-file .env -v "$(pwd)/uploads:/app/uploads" -v "$(pwd)/instance:/app/instance" --name updatelan5-app updatelan5:latest
-```
-
-#### Sử dụng Docker Compose (Khuyến nghị)
-
-```bash
-# Khởi động ứng dụng và build image
-docker-compose up --build
-
-# Chạy ở chế độ nền
-docker-compose up -d
-
-# Xem logs
-docker-compose logs -f
-
-# Dừng ứng dụng
-docker-compose down
-
-# Xóa volumes (cẩn thận, sẽ mất dữ liệu)
-docker-compose down -v
-```
-
-#### Kiểm tra trạng thái
-
-```bash
-# Kiểm tra container đang chạy
-docker ps
-
-# Xem logs của container
-docker logs updatelan5-app
-```
-
-Sau khi khởi động, ứng dụng sẽ chạy tại địa chỉ http://localhost:5000
-
-#### Xử lý lỗi phổ biến khi sử dụng Docker
-
-1. **Lỗi kết nối cơ sở dữ liệu**
-   - Đảm bảo thư mục `instance` đã được tạo và có quyền ghi
-   - Kiểm tra volume mount trong docker-compose.yml
-
-2. **Lỗi API OpenAI**
-   - Kiểm tra OPENAI_API_KEY trong file .env đã được cấu hình đúng
-   - Đảm bảo biến môi trường được truyền vào container
-
-3. **Lỗi khi build Docker image**
-   - Xóa các container và image cũ: `docker-compose down --rmi all`
-   - Xóa cache: `docker builder prune -a`
-   - Build lại: `docker-compose up --build`
-
-4. **Lỗi thư mục uploads**
-   - Đảm bảo thư mục `uploads` đã được tạo và có quyền ghi
-   - Kiểm tra volume mount trong docker-compose.yml
-
-5. **Lỗi cài đặt thư viện Python**
-   - Nếu gặp lỗi khi cài đặt các thư viện Python, hãy thử tăng thời gian timeout trong Dockerfile
-   - Sử dụng proxy nếu bạn đang ở sau firewall
-
-6. **Lỗi kết nối mạng trong container**
-   - Kiểm tra cấu hình mạng của Docker
-   - Đảm bảo container có thể truy cập internet
-
-## Sử dụng
-
-Sau khi cài đặt, bạn có thể chạy ứng dụng bằng lệnh:
-
-```bash
-updatelan5
-```
-
-hoặc chạy trực tiếp từ mã nguồn:
-
-```bash
-python app.py
-```
+Hệ thống nhập liệu thông minh hỗ trợ AI, giúp người dùng nhập thông tin một cách thông minh với sự hỗ trợ của AI và gợi ý tự động.
 
 ## Yêu cầu hệ thống
 
-- Python 3.8 trở lên
-- Các thư viện phụ thuộc được liệt kê trong file requirements.txt
-- Docker (nếu sử dụng phương pháp cài đặt Docker)
+- Docker và Docker Compose
+- PowerShell (cho Windows) hoặc Terminal (cho Linux/Mac)
+
+## Cài đặt và chạy ứng dụng với Docker
+
+### 1. Chuẩn bị file .env
+
+Đảm bảo bạn đã tạo file `.env` với các biến môi trường cần thiết:
+
+```
+# Cấu hình Flask
+FLASK_APP=app.py
+FLASK_ENV=production
+
+# Cấu hình bảo mật
+SECRET_KEY=your_secret_key_here
+
+# Cấu hình OpenAI
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Cấu hình cơ sở dữ liệu
+SQLALCHEMY_DATABASE_URI=sqlite:///database.db
+
+# Cấu hình Google OAuth (nếu sử dụng)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:55003/login/google/callback
+```
+
+### 2. Build Docker image
+
+#### Sử dụng PowerShell script (Windows)
+
+```powershell
+.\docker-build.ps1
+```
+
+#### Hoặc sử dụng lệnh Docker trực tiếp
+
+```bash
+docker build -t updatelan5:latest .
+```
+
+### 3. Chạy ứng dụng
+
+#### Sử dụng Docker Compose (khuyến nghị)
+
+```bash
+docker-compose up -d
+```
+
+#### Hoặc sử dụng Docker run
+
+```bash
+docker run -p 55003:55003 --env-file .env --name updatelan5-app updatelan5:latest
+```
+
+### 4. Truy cập ứng dụng
+
+Mở trình duyệt và truy cập địa chỉ: [http://localhost:55003](http://localhost:55003)
+
+## Xử lý sự cố
+
+### Kiểm tra logs
+
+```bash
+docker logs updatelan5-app
+```
+
+### Khởi động lại container
+
+```bash
+docker restart updatelan5-app
+```
+
+### Dừng và xóa container
+
+```bash
+docker stop updatelan5-app
+docker rm updatelan5-app
+```
+
+## Lưu ý bảo mật
+
+- Không bao giờ commit file `.env` chứa các khóa bí mật vào repository
+- Các biến môi trường nhạy cảm nên được truyền vào container thông qua file `.env` hoặc biến môi trường khi chạy container
+- Không sử dụng ARG trong Dockerfile để lưu trữ các thông tin nhạy cảm

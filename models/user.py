@@ -13,16 +13,28 @@ class Role(db.Model):
     
     @staticmethod
     def insert_roles():
-        roles = {
-            'admin': 'Quản trị viên hệ thống',
-            'user': 'Người dùng thông thường'
-        }
-        for r in roles:
-            role = Role.query.filter_by(name=r).first()
-            if role is None:
-                role = Role(name=r, description=roles[r])
-                db.session.add(role)
-        db.session.commit()
+        try:
+            # Kiểm tra xem bảng role đã tồn tại chưa
+            inspector = db.inspect(db.engine)
+            if not inspector.has_table('role'):
+                # Nếu bảng chưa tồn tại, tạo bảng trước
+                db.create_all()
+                print("Đã tạo bảng role")
+            
+            roles = {
+                'admin': 'Quản trị viên hệ thống',
+                'user': 'Người dùng thông thường'
+            }
+            for name, desc in roles.items():
+                role = Role.query.filter_by(name=name).first()
+                if role is None:
+                    role = Role(name=name, description=desc)
+                    db.session.add(role)
+            db.session.commit()
+            print("Đã khởi tạo vai trò thành công")
+        except Exception as e:
+            print(f"Lỗi khi khởi tạo vai trò: {e}")
+            db.session.rollback()
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)

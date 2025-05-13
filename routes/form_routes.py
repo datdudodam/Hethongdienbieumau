@@ -4,7 +4,7 @@ from utils.document_utils import load_document, extract_all_fields, get_doc_path
 from models.data_model import load_db, save_db, load_form_history, save_form_history
 import os
 import uuid
-
+import datetime
 
 def register_form_routes(app):
     """
@@ -15,20 +15,30 @@ def register_form_routes(app):
         doc_path = get_doc_path()
         if not doc_path:
             return jsonify({'error': 'No document uploaded'}), 400
-            
         text = load_document(doc_path)
         fields = extract_all_fields(doc_path)
         db_data = load_db()
-       
-        
-        
         return render_template("index.html", fields=fields)
     @app.route('/save-and-generate-docx', methods=['POST'])
     def save_and_generate_docx():
         try:
             form_data = request.form.to_dict()
-            if not form_data:
-                return jsonify({"error": "Không có dữ liệu được gửi"}), 400
+            # Nếu không có dữ liệu form, thử lấy từ JSON nếu request là JSON
+            if not form_data and request.is_json:
+                try:
+                    json_data = request.get_json()
+                    if json_data and isinstance(json_data, dict):
+                        form_data = {k: v for k, v in json_data.items() if k != 'filename'}
+                except Exception as e:
+                    print(f"Error parsing JSON: {str(e)}")
+            
+            # Nếu vẫn không có dữ liệu, thử lấy từ DB
+            if not form_data or not any(form_data.values()):
+                db_data = load_db()
+                if db_data and len(db_data) > 0:
+                    form_data = db_data[-1]['data']
+                else:
+                    return jsonify({"error": "Không có dữ liệu được gửi và không tìm thấy dữ liệu trong DB"}), 400
 
             # Lấy document path hiện tại
             doc_path = get_doc_path()
@@ -86,7 +96,36 @@ def register_form_routes(app):
             # Tạo và trả về file docx
             custom_filename = form_data.get('document_name', None)
             from utils.docx_generator import generate_docx
-            return generate_docx(form_data, doc_path, custom_filename)
+            from flask import make_response
+            
+            # Gọi hàm tạo tài liệu
+            result, status_code = generate_docx(form_data, doc_path, custom_filename)
+            if status_code != 200:
+                return jsonify(result), status_code
+                
+            # Xử lý kết quả thành công
+            doc_data = result.get("doc_data")
+            ascii_filename = result.get("ascii_filename")
+            utf8_filename = result.get("utf8_filename")
+            temp_doc_path = result.get("temp_doc_path")
+            
+            # Tạo response
+            response = make_response(doc_data)
+            response.headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            response.headers.set('Content-Disposition', f'attachment; filename="{ascii_filename}"; filename*=UTF-8\'\'{utf8_filename}')
+            response.headers.set('Content-Length', str(len(doc_data)))
+            response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+            response.headers.set('Pragma', 'no-cache')
+            response.headers.set('Expires', '0')
+            
+            # Xóa file tạm sau khi gửi
+            try:
+                if os.path.exists(temp_doc_path):
+                    os.remove(temp_doc_path)
+            except Exception as cleanup_error:
+                print(f"Warning: Could not remove temporary file: {str(cleanup_error)}")
+            
+            return response
 
         except Exception as e:
             print(f"Error in save_and_generate_docx: {str(e)}")

@@ -11,8 +11,8 @@ import os
 # Khởi tạo ứng dụng Flask
 app = Flask(__name__)
 
-# Cấu hình cơ sở dữ liệu (Thay thế bằng URI thật của bạn)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'  # Hoặc PostgreSQL/MySQL URI
+# Cấu hình cơ sở dữ liệu từ biến môi trường
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'postgresql://postgres:postgres@db:5432/updatelan5')  # Kết nối PostgreSQL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Use a fixed secret key for development to ensure session persistence
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-for-session-persistence') # Thêm secret key cho session
@@ -51,11 +51,18 @@ with app.app_context():
     from models.web_config import WebConfig
     
     # Tạo tất cả các bảng sau khi đã import tất cả các model
-    db.create_all()
-    
-    # Khởi tạo các vai trò
-    from models.user import Role
-    Role.insert_roles()
+    try:
+        # Kiểm tra xem bảng đã tồn tại chưa trước khi tạo
+        inspector = db.inspect(db.engine)
+        if not inspector.has_table('role'):
+            db.create_all()
+            # Khởi tạo các vai trò
+            from models.user import Role
+            Role.insert_roles()
+        else:
+            print("Bảng đã tồn tại, bỏ qua việc tạo bảng và khởi tạo vai trò")
+    except Exception as e:
+        print(f"Lỗi khi kiểm tra hoặc tạo bảng: {e}")
 
 # Cấu hình Flask-Login
 login_manager = LoginManager() 

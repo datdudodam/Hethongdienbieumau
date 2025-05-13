@@ -405,18 +405,34 @@
                 overflow-x: auto;
             }
         }
+        /* Search and Filter Styles */
+        .search-panel {
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .search-filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 5px;
+        }
+        
         .search-box {
             flex: 1;
             position: relative;
+            min-width: 250px;
         }
 
         .search-box input {
             width: 100%;
-            padding: 10px 15px 10px 40px;
+            padding: 12px 15px 12px 40px;
             border: 1px solid var(--border-color);
             border-radius: var(--button-radius);
             font-family: 'Poppins', sans-serif;
             transition: var(--transition-normal);
+            font-size: 0.95rem;
         }
 
         .search-box input:focus {
@@ -430,22 +446,38 @@
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-secondary);
+            color: #94a3b8;
         }
+        
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
         .filter-dropdown {
             position: relative;
-            min-width: 180px;
+            min-width: 200px;
+        }
+        
+        .filter-dropdown label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 500;
         }
 
         .filter-dropdown select {
             width: 100%;
-            padding: 10px 15px;
+            padding: 12px 15px;
             border: 1px solid var(--border-color);
             border-radius: var(--button-radius);
             font-family: 'Poppins', sans-serif;
             appearance: none;
             background-color: white;
             cursor: pointer;
+            font-size: 0.95rem;
         }
 
         .filter-dropdown select:focus {
@@ -457,10 +489,119 @@
         .filter-dropdown i {
             position: absolute;
             right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
+            bottom: 12px;
             pointer-events: none;
-            color: var(--text-secondary);
+            color: #94a3b8;
+        }
+        
+        .close-panel {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: var(--transition-normal);
+        }
+        
+        .close-panel:hover {
+            color: var(--text-color);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* Table Improvements */
+        .card-tools {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .badge-primary {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        #formsTable {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        
+        #formsTable th {
+            background-color: #f8fafc;
+            padding: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        #formsTable td {
+            padding: 15px;
+            vertical-align: middle;
+        }
+        
+        #formsTable tr {
+            transition: var(--transition-normal);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        #formsTable tr:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        
+        .form-id {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .form-title {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .user-info, .date-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .user-info i, .date-info i {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+        
+        .no-results {
+            padding: 30px;
+            text-align: center;
+            color: #64748b;
+        }
+        
+        .no-results i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
         }
     </style>
 </head>
@@ -501,6 +642,47 @@
 
             <div class="page-header">
                 <h1>Quản lý biểu mẫu</h1>
+                <div class="header-actions">
+                    <button class="btn btn-sm" onclick="toggleSearchPanel()"><i class="fas fa-search"></i> Tìm kiếm</button>
+                </div>
+            </div>
+            
+            <!-- Search Panel -->
+            <div id="searchPanel" class="card search-panel" style="display: none;">
+                <div class="card-header">
+                    <h2>Tìm kiếm & Lọc</h2>
+                    <button class="close-panel" onclick="toggleSearchPanel()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="search-filter-container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Tìm kiếm biểu mẫu..." onkeyup="filterForms()">
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-dropdown">
+                            <label for="userFilter">Người dùng:</label>
+                            <select id="userFilter" onchange="filterForms()">
+                                <option value="">Tất cả người dùng</option>
+                                {% for form in forms %}
+                                    {% if form.user_name %}
+                                        <option value="{{ form.user_name }}">{{ form.user_name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="filter-dropdown">
+                            <label for="dateFilter">Sắp xếp theo:</label>
+                            <select id="dateFilter" onchange="filterForms()">
+                                <option value="newest">Mới nhất</option>
+                                <option value="oldest">Cũ nhất</option>
+                                <option value="name_asc">Tên (A-Z)</option>
+                                <option value="name_desc">Tên (Z-A)</option>
+                            </select>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
             <form id="searchForm" action="{{ url_for('admin_form_history') }}" method="GET" class="search-filter">
                 <div class="search-box">
@@ -604,7 +786,7 @@
         // Modal functions
         function openEditFormModal(formId, title, status) {
             document.getElementById('edit_title').value = title;
-            document.getElementById('edit_status').value = status;
+            document.getElementById('edit_status').value = status || 'completed';
             document.getElementById('editFormForm').action = `/admin/forms/edit/${formId}`;
             document.getElementById('editFormModal').classList.add('active');
         }
@@ -625,6 +807,111 @@
                 event.target.classList.remove('active');
             }
         }
+        
+        // Search panel toggle
+        function toggleSearchPanel() {
+            const panel = document.getElementById('searchPanel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                // Animate height
+                setTimeout(() => {
+                    panel.style.maxHeight = panel.scrollHeight + 'px';
+                }, 10);
+            } else {
+                panel.style.maxHeight = '0';
+                setTimeout(() => {
+                    panel.style.display = 'none';
+                }, 300);
+            }
+        }
+        
+        // Filter forms function
+        function filterForms() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const userFilter = document.getElementById('userFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            const rows = document.querySelectorAll('#formsTable tbody tr');
+            
+            let visibleCount = 0;
+            
+            // First collect and sort if needed
+            let rowsArray = Array.from(rows);
+            
+            if (dateFilter === 'newest') {
+                rowsArray.sort((a, b) => {
+                    const dateA = new Date(a.getAttribute('data-date') || 0);
+                    const dateB = new Date(b.getAttribute('data-date') || 0);
+                    return dateB - dateA;
+                });
+            } else if (dateFilter === 'oldest') {
+                rowsArray.sort((a, b) => {
+                    const dateA = new Date(a.getAttribute('data-date') || 0);
+                    const dateB = new Date(b.getAttribute('data-date') || 0);
+                    return dateA - dateB;
+                });
+            } else if (dateFilter === 'name_asc') {
+                rowsArray.sort((a, b) => {
+                    const titleA = a.getAttribute('data-title').toLowerCase();
+                    const titleB = b.getAttribute('data-title').toLowerCase();
+                    return titleA.localeCompare(titleB);
+                });
+            } else if (dateFilter === 'name_desc') {
+                rowsArray.sort((a, b) => {
+                    const titleA = a.getAttribute('data-title').toLowerCase();
+                    const titleB = b.getAttribute('data-title').toLowerCase();
+                    return titleB.localeCompare(titleA);
+                });
+            }
+            
+            // Reorder the DOM elements based on sort
+            const tbody = document.querySelector('#formsTable tbody');
+            rowsArray.forEach(row => tbody.appendChild(row));
+            
+            // Now filter the rows
+            rowsArray.forEach(row => {
+                const title = row.getAttribute('data-title').toLowerCase();
+                const user = row.getAttribute('data-user');
+                const formId = row.querySelector('.form-id').textContent.toLowerCase();
+                
+                const matchesSearch = title.includes(searchInput) || 
+                                     formId.includes(searchInput);
+                const matchesUser = !userFilter || user === userFilter;
+                
+                if (matchesSearch && matchesUser) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update count and show/hide no results message
+            document.getElementById('formCount').textContent = `${visibleCount} biểu mẫu`;
+            document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+        
+        // Remove duplicate options from user filter dropdown
+        document.addEventListener('DOMContentLoaded', function() {
+            const userFilter = document.getElementById('userFilter');
+            const optionValues = new Set();
+            const options = userFilter.querySelectorAll('option');
+            
+            // Keep track of options to remove
+            const toRemove = [];
+            
+            options.forEach(option => {
+                if (option.value === '') return; // Skip the 'All users' option
+                
+                if (optionValues.has(option.value)) {
+                    toRemove.push(option);
+                } else {
+                    optionValues.add(option.value);
+                }
+            });
+            
+            // Remove duplicates
+            toRemove.forEach(option => option.remove());
+        });
     </script>
 </body>
 </html>

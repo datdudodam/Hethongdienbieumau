@@ -9,6 +9,9 @@ def register_home_routes(app):
     @app.route('/',methods=['GET', 'POST'])
     def home():
         return render_template('home.html')
+    @app.route('/goi',methods=['GET', 'POST'])
+    def DangKyGoiDichVu():
+        return render_template('DangKyGoi.html')
     @app.route('/dashboard')
     def index():
         if not current_user.is_authenticated:

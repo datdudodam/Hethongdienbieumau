@@ -11,38 +11,62 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://yourdomain.com/">
     <meta property="og:image" content="/static/images/og-image.png">
+    <link rel="icon" type="image/png" href="{{ site_logo }}">
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <style>
+     <style>
         :root {
-            --primary-color: #3b82f6;
-            --primary-hover: #2563eb;
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
             --secondary-color: #f8fafc;
+            --accent-color: #f59e0b;
             --text-primary: #1e293b;
             --text-secondary: #64748b;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --card-bg: rgba(255, 255, 255, 0.98);
         }
         
         body {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Source Sans 3', 'Inter', sans-serif;
             color: var(--text-primary);
+            min-height: 100vh;
         }
         
         .card-container {
-            backdrop-filter: blur(12px);
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            backdrop-filter: blur(16px);
+            background: var(--card-bg);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
         .card-container:hover {
-            box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 25px 50px -15px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
         }
         
         .header-gradient {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-gradient::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: linear-gradient(to bottom right, 
+                        rgba(255,255,255,0.1) 0%, 
+                        rgba(255,255,255,0) 50%);
+            transform: rotate(30deg);
+            pointer-events: none;
         }
         
         .form-input-group label {
@@ -56,30 +80,34 @@
         
         .form-input {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(203, 213, 225, 0.5);
         }
         
         .form-input:focus {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
             transform: translateY(-1px);
+            border-color: var(--primary-color);
         }
         
         .action-button {
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .action-button:hover {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
         }
         
         .suggestions-list {
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(12px);
-            border-radius: 0.5rem;
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border-radius: 0.75rem;
             z-index: 50;
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
         
         .suggestions-list li {
@@ -87,7 +115,7 @@
         }
         
         .suggestions-list li:hover {
-            background-color: rgba(59, 130, 246, 0.1);
+            background-color: rgba(79, 70, 229, 0.08);
         }
         
         .suggestions-list li:not(:last-child) {
@@ -95,27 +123,62 @@
         }
         
         .submit-button {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 20px -5px rgba(59, 130, 246, 0.4);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 25px -5px rgba(79, 70, 229, 0.4);
+            background: linear-gradient(to right, var(--primary-color), var(--primary-hover));
+            position: relative;
+            overflow: hidden;
         }
         
         .submit-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px -5px rgba(59, 130, 246, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px -5px rgba(79, 70, 229, 0.5);
+        }
+        
+        .submit-button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to bottom right,
+                rgba(255,255,255,0.3) 0%,
+                rgba(255,255,255,0) 60%
+            );
+            transform: rotate(30deg);
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+        
+        .submit-button:hover::after {
+            opacity: 1;
+            left: 100%;
         }
         
         .tooltip {
-            transition: opacity 0.2s ease, visibility 0.2s ease;
+            transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(5px);
+        }
+        
+        .group:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
         }
         
         .auto-fill-all-btn {
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px -3px rgba(245, 158, 11, 0.4);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px -3px rgba(245, 158, 11, 0.4);
+            background: linear-gradient(to right, var(--accent-color), #f97316);
         }
         
         .auto-fill-all-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px -3px rgba(245, 158, 11, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -3px rgba(245, 158, 11, 0.5);
         }
         
         .button-group {
@@ -124,6 +187,62 @@
             flex-wrap: wrap;
         }
         
+        /* Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Progress indicator */
+        .progress-container {
+            height: 4px;
+            background: rgba(203, 213, 225, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary-color), var(--primary-hover));
+            width: 0;
+            transition: width 0.4s ease;
+            position: relative;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                to right,
+                rgba(255,255,255,0.8) 0%,
+                rgba(255,255,255,0) 100%
+            );
+            animation: progress-shimmer 1.5s infinite;
+        }
+        
+        @keyframes progress-shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Responsive adjustments */
         @media (max-width: 640px) {
             .input-button-group {
                 flex-direction: column;
@@ -143,6 +262,49 @@
                 width: 100%;
                 margin-top: 0;
             }
+            
+            .card-container {
+                border-radius: 1rem;
+            }
+            
+            .header-gradient {
+                padding: 1.5rem;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #6366f1;
+                --primary-hover: #818cf8;
+                --secondary-color: #1e293b;
+                --text-primary: #f8fafc;
+                --text-secondary: #94a3b8;
+                --card-bg: rgba(15, 23, 42, 0.8);
+            }
+            
+            body {
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            }
+            
+            .form-input {
+                background: rgba(15, 23, 42, 0.7);
+                border-color: rgba(100, 116, 139, 0.3);
+                color: #f8fafc;
+            }
+            
+            .form-input:focus {
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            }
+            
+            .suggestions-list {
+                background: rgba(15, 23, 42, 0.95);
+                border-color: rgba(100, 116, 139, 0.2);
+            }
+            
+            .suggestions-list li:hover {
+                background-color: rgba(79, 70, 229, 0.2);
+            }
         }
     </style>
 </head>
@@ -159,33 +321,49 @@
                 </div>
             </div>
             
-            <div class="p-6 sm:p-8 md:p-10">
-                <!-- Nút điền tất cả tự động được di chuyển lên trên cùng -->
-                <div class="mb-8 flex justify-between items-center flex-wrap gap-4">
-                    <button 
-                        type="button" 
-                        onclick="autoFillAllFields()" 
-                        class="auto-fill-all-btn px-6 py-3 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-yellow-200 font-medium"
-                    >
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        Điền tất cả tự động
-                        <span class="auto-fill-loading hidden ml-2">
-                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </span>
-                    </button>
+           <div class="p-6 sm:p-8 md:p-10">
+                <!-- Auto-fill section with improved layout -->
+                <div class="mb-8 bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 sm:p-5">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-indigo-800 flex items-center">
+                                <i class="fas fa-magic mr-2"></i>
+                                Chức năng thông minh
+                            </h3>
+                            <p class="text-sm text-indigo-600 mt-1">
+                                Hệ thống AI sẽ tự động phân tích và điền các trường có thể
+                            </p>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-3 items-center">
+                            <button 
+                                type="button" 
+                                onclick="autoFillAllFields()" 
+                                class="auto-fill-all-btn px-5 py-2.5 text-white rounded-lg transition-all flex items-center justify-center font-medium group relative overflow-hidden"
+                            >
+                                <span class="relative z-10 flex items-center">
+                                    <span class="auto-fill-loading hidden mr-2">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </span>
+                                    <span class="auto-fill-icon flex items-center">
+                                        <i class="fas fa-bolt mr-2"></i>
+                                        Điền tất cả tự động
+                                    </span>
+                                </span>
+                            </button>
+                            
+                            
+                    </div>
                     
-                    <div class="text-sm text-gray-500">
-                        <p class="flex items-center">
-                            <svg class="w-4 h-4 mr-1 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Hệ thống sẽ tự động điền các trường có thể
-                        </p>
+                    <!-- Progress indicator for auto-fill -->
+                    <div id="auto-fill-progress" class="mt-4 hidden">
+                        <div class="flex justify-between text-xs text-indigo-600 mb-1">
+                            <span>Đang xử lý...</span>
+                            <span id="auto-fill-progress-text">0%</span>
+                        </div>
+                        <div class="progress-container rounded-full">
+                            <div id="auto-fill-progress-bar" class="progress-bar"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -194,7 +372,7 @@
                     <div class="form-input-group">
                         <div class="flex justify-between items-center mb-2">
                             <label for="{{ field.field_code }}" class="block text-sm font-medium text-gray-700">{{ field.field_name }}</label>
-                            <span class="text-xs text-gray-400">Trường bắt buộc</span>
+                            
                         </div>
                         
                         <div class="relative">
@@ -213,47 +391,41 @@
                                 </div>
                                 
                                 <div class="button-group">
-                                    <!-- Nhóm nút gợi ý -->
-                                    <!-- Nhóm nút tự động điền -->
+                                    <!-- Auto-fill button -->
                                     <button 
                                         type="button" 
                                         onclick="autoFillField('{{ field.field_code }}')" 
-                                        class="action-button px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-yellow-200 relative group"
+                                        class="action-button px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-300 rounded-lg flex items-center justify-center shadow-sm focus:ring-2 focus:ring-indigo-200 relative group"
                                         title="Điền tự động"
                                         aria-label="Điền tự động cho {{ field.field_name }}"
                                     >
                                         <span class="auto-fill-loading hidden">
-                                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
+                                            <i class="fas fa-spinner fa-spin mr-1"></i>
                                         </span>
                                         <span class="auto-fill-icon flex items-center">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                            </svg>
-                                            <span class="hidden sm:inline ml-1">Tự động</span>
+                                            <i class="fas fa-bolt mr-1.5"></i>
+                                            <span class="hidden sm:inline">Tự động</span>
                                         </span>
-                                        <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                                            Điền tự động cho {{ field.field_name }}
-                                        </div>
+                                        <div class="tooltip">Điền tự động cho {{ field.field_name }}</div>
                                     </button>
                                     
                                     <!-- Nhóm nút AI -->
                                     <button 
                                         type="button" 
                                         onclick="autoFillFieldAI('{{ field.field_code }}')" 
-                                        class="action-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-green-200 relative group"
+                                        class="action-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300 rounded-lg flex items-center justify-center shadow-sm focus:ring-2 focus:ring-green-200 relative group"
                                         title="Hỗ trợ AI"
                                         aria-label="Điền tự động cho {{ field.field_name }}"
                                     >
                                         <span class="auto-fill-loading hidden">
+                                            
                                             <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
                                         </span>
                                         <span class="auto-fill-icon flex items-center">
+                                             <i class="fas fa-robot mr-1.5"></i>
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                                             </svg>

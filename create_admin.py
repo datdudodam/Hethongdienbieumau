@@ -34,21 +34,41 @@ if not os.path.exists(db_path):
         exit(1)
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'postgresql://postgres:postgres@db:5432/updatelan5')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 with app.app_context():
-    # Tạo database nếu chưa tồn tại
-    db.create_all()
-    print('Đã tạo cơ sở dữ liệu thành công!')
-    
-    # Kiểm tra xem đã có vai trò admin chưa
-    admin_role = Role.query.filter_by(name='admin').first()
-    if not admin_role:
-        print('Tạo vai trò admin...')
-        Role.insert_roles()
+    try:
+        # Kiểm tra xem bảng đã tồn tại chưa trước khi tạo
+        inspector = db.inspect(db.engine)
+        tables_needed = ['role', 'user']
+        tables_to_create = False
+        
+        for table in tables_needed:
+            if not inspector.has_table(table):
+                tables_to_create = True
+                print(f'Bảng {table} chưa tồn tại, cần tạo mới.')
+        
+        if tables_to_create:
+            db.create_all()
+            print('Đã tạo cơ sở dữ liệu thành công!')
+            
+            # Chỉ khởi tạo vai trò nếu bảng role vừa được tạo
+            print('Tạo vai trò admin...')
+            Role.insert_roles()
+        else:
+            print('Các bảng đã tồn tại, bỏ qua việc tạo bảng.')
+        
+        # Kiểm tra xem đã có vai trò admin chưa
         admin_role = Role.query.filter_by(name='admin').first()
+        if not admin_role:
+            print('Không tìm thấy vai trò admin, tạo mới...')
+            Role.insert_roles()
+            admin_role = Role.query.filter_by(name='admin').first()
+    except Exception as e:
+        print(f'Lỗi khi kiểm tra hoặc tạo bảng: {e}')
+        exit(1)
     
     # Kiểm tra xem đã có tài khoản admin chưa
     admin = User.query.filter_by(role_id=admin_role.id).first()

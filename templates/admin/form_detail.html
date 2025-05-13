@@ -439,9 +439,12 @@
             </div>
 
             <div class="page-header">
-                <h1>Chi tiết biểu mẫu</h1>
-                <div>
-                    <a href="{{ url_for('admin_forms') }}" class="btn"><i class="fas fa-arrow-left"></i> Quay lại</a>
+                <div class="page-title">
+                    <h1>Chi tiết biểu mẫu</h1>
+                    <span class="form-id-badge">ID: {{ form.form_id }}</span>
+                </div>
+                <div class="page-actions">
+                    <a href="{{ url_for('admin_forms') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Quay lại</a>
                     <button class="btn" onclick="openEditFormModal('{{ form.form_id }}', '{{ form.form_data.document_name }}')">
                         <i class="fas fa-edit"></i> Chỉnh sửa
                     </button>
@@ -453,25 +456,39 @@
                     <h2>Thông tin biểu mẫu</h2>
                 </div>
                 <div class="form-detail">
-                    <div class="form-detail-item">
-                        <div class="form-detail-label">ID:</div>
-                        <div class="form-detail-value">{{ form.form_id }}</div>
-                    </div>
-                    <div class="form-detail-item">
-                        <div class="form-detail-label">Tên biểu mẫu:</div>
-                        <div class="form-detail-value">{{ form.form_data.document_name }}</div>
-                    </div>
-                    <div class="form-detail-item">
-                        <div class="form-detail-label">Người gửi:</div>
-                        <div class="form-detail-value">{{ form.user_name }} (ID: {{ form.user_id }})</div>
-                    </div>
-                    <div class="form-detail-item">
-                        <div class="form-detail-label">Đường dẫn file:</div>
-                        <div class="form-detail-value">{{ form.path }}</div>
-                    </div>
-                    <div class="form-detail-item">
-                        <div class="form-detail-label">Thời gian gửi:</div>
-                        <div class="form-detail-value">{{ form.timestamp }}</div>
+                    <div class="form-info-grid">
+                        <div class="form-info-card">
+                            <div class="info-icon"><i class="fas fa-file-alt"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Tên biểu mẫu</div>
+                                <div class="info-value">{{ form.form_data.document_name }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-info-card">
+                            <div class="info-icon"><i class="fas fa-user"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Người gửi</div>
+                                <div class="info-value">{{ form.user_name }}</div>
+                                <div class="info-meta">ID: {{ form.user_id }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-info-card">
+                            <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Thời gian gửi</div>
+                                <div class="info-value">{{ form.timestamp }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-info-card">
+                            <div class="info-icon"><i class="fas fa-folder"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Đường dẫn file</div>
+                                <div class="info-value path-value">{{ form.path }}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -479,13 +496,20 @@
             <div class="card">
                 <div class="card-header">
                     <h2>Dữ liệu biểu mẫu</h2>
+                    <div class="card-tools">
+                        <span class="badge badge-primary">{{ (form.form_data|length - 2) if form.form_data else 0 }} trường</span>
+                    </div>
                 </div>
                 <div class="form-fields">
                     {% if form.form_data %}
+                        <div class="form-fields-grid">
                         {% for field_name, field_value in form.form_data.items() %}
                             {% if field_name not in ['form_id', 'document_name'] %}
-                            <div class="form-field-item">
-                                <div class="form-field-name">{{ field_name }}</div>
+                            <div class="form-field-card">
+                                <div class="field-header">
+                                    <div class="form-field-name">{{ field_name }}</div>
+                                    <div class="field-type-badge">{{ field_value|type }}</div>
+                                </div>
                                 <div class="form-field-value">
                                     {% if field_value is sequence and field_value is not string %}
                                         {{ field_value|join(', ') }}

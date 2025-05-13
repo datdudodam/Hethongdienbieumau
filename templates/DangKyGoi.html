@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng giá dịch vụ</title>
+    <style>
+        .login-required {
+            font-size: 0.8rem;
+            color: var(--light-text);
+            margin-top: 10px;
+            display: block;
+        }
+        :root {
+            --primary-color: #4a6bff;
+            --secondary-color: #f8f9fa;
+            --highlight-color: #ff7043;
+            --text-color: #333;
+            --light-text: #6c757d;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f5f7ff;
+            padding: 20px;
+        }
+        
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .pricing-header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .pricing-header p {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .pricing-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .pricing-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            width: 300px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .pricing-card.popular {
+            border: 2px solid var(--highlight-color);
+            position: relative;
+        }
+        
+        .popular-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: var(--highlight-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .pricing-card-header {
+            padding: 25px;
+            text-align: center;
+            background-color: var(--secondary-color);
+        }
+        
+        .pricing-card.popular .pricing-card-header {
+            background-color: rgba(255, 112, 67, 0.1);
+        }
+        
+        .pricing-card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .pricing-card-price {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .pricing-card-period {
+            color: var(--light-text);
+            font-size: 0.9rem;
+        }
+        
+        .pricing-card-features {
+            padding: 25px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        
+        .feature-item i {
+            color: var(--primary-color);
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .pricing-card-footer {
+            padding: 0 25px 25px;
+            text-align: center;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a56d4;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-highlight {
+            background-color: var(--highlight-color);
+            color: white;
+        }
+        
+        .btn-highlight:hover {
+            background-color: #f45c2c;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="pricing-header">
+        <h1>Chọn Gói Dịch Vụ Phù Hợp</h1>
+        <p>Nâng cao hiệu suất công việc với các gói dịch vụ đa dạng của chúng tôi</p>
+    </div>
+    
+    <div class="pricing-container">
+        <!-- Gói Miễn Phí -->
+        <div class="pricing-card">
+            <div class="pricing-card-header">
+                <h3 class="pricing-card-title">Gói Miễn Phí</h3>
+                <div class="pricing-card-price">0 VNĐ</div>
+                <div class="pricing-card-period">Không cần thẻ tín dụng</div>
+            </div>
+            <div class="pricing-card-features">
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>10 lần upload biểu mẫu</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Điền thông tin cơ bản</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Xuất file DOCX</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Hỗ trợ AI nâng cao</span>
+                </div>
+            </div>
+            <div class="pricing-card-footer">
+                <a href="/signup" class="btn btn-outline">Dùng Ngay</a>
+                <span class="/login">* Yêu cầu đăng nhập</span>
+            </div>
+        </div>
+        
+        <!-- Gói Thường (Phổ biến) -->
+        <div class="pricing-card popular">
+            <div class="popular-badge">Phổ biến</div>
+            <div class="pricing-card-header">
+                <h3 class="pricing-card-title">Gói Thường</h3>
+                <div class="pricing-card-price">99.000 VNĐ</div>
+                <div class="pricing-card-period">mỗi tháng</div>
+            </div>
+            <div class="pricing-card-features">
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>100 lần upload biểu mẫu/tháng</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Điền thông tin nâng cao</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Xuất file DOCX</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Hỗ trợ AI cơ bản</span>
+                </div>
+            </div>
+            <div class="pricing-card-footer">
+                <a href="/upgrade" class="btn btn-highlight">Nâng Cấp</a>
+                <span class="/login">* Yêu cầu đăng nhập</span>
+            </div>
+        </div>
+        
+        <!-- Gói VIP -->
+        <div class="pricing-card">
+            <div class="pricing-card-header">
+                <h3 class="pricing-card-title">Gói VIP</h3>
+                <div class="pricing-card-price">199.000 VNĐ</div>
+                <div class="pricing-card-period">mỗi tháng</div>
+            </div>
+            <div class="pricing-card-features">
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Không giới hạn upload biểu mẫu</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Điền thông tin nâng cao</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Xuất file DOCX</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check"></i>
+                    <span>Hỗ trợ AI nâng cao</span>
+                </div>
+            </div>
+            <div class="pricing-card-footer">
+                <a href="/upgrade_vip" class="btn btn-primary">Nâng Cấp</a>
+                <span class="/login">* Yêu cầu đăng nhập</span>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const upgradeButtons = document.querySelectorAll('.btn-outline, .btn-highlight, .btn-primary');
+            
+            upgradeButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Kiểm tra trạng thái đăng nhập (giả sử có hàm checkLogin)
+                    if (!isLoggedIn()) {
+                        e.preventDefault();
+                        alert('Vui lòng đăng nhập trước khi đăng ký gói dịch vụ.');
+                        window.location.href = '/login?redirect=' + encodeURIComponent(this.getAttribute('href'));
+                    }
+                });
+            });
+            
+            // Hàm kiểm tra đăng nhập (cần thay thế bằng logic thực tế)
+            function isLoggedIn() {
+                // Trong thực tế, kiểm tra cookie, localStorage hoặc gọi API
+                return false; // Mặc định trả về false để demo
+            }
+        });
+    </script>
+</body>
+</html>

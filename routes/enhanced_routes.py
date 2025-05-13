@@ -24,6 +24,9 @@ def register_enhanced_routes(app):
         try:
             data = request.get_json()
             field_code = data.get("field_name")
+            
+            # Log để debug
+            print(f"Received auto_fill_field request with data: {data}")
 
             if not field_code:
                 return jsonify({"error": "Field code is required"}), 400
@@ -38,7 +41,9 @@ def register_enhanced_routes(app):
             field_name = get_field_name_from_code(fields, field_code)
             partial_form = data.get('partial_form', {})
             user_id = current_user.id if current_user.is_authenticated else None
-            matcher = EnhancedFieldMatcher(form_history_path="form_history.json")
+            # Sử dụng đường dẫn từ config thay vì hardcode
+            from config.config import FORM_HISTORY_PATH
+            matcher = EnhancedFieldMatcher(form_history_path=FORM_HISTORY_PATH)
 
             suggestions = matcher.match_fields(field_name, user_id=user_id)
 
@@ -73,7 +78,9 @@ def register_enhanced_routes(app):
             fields = extract_all_fields(doc_path)
 
             user_id = current_user.id if current_user.is_authenticated else None
-            matcher = EnhancedFieldMatcher(form_history_path="form_history.json")
+            # Sử dụng đường dẫn từ config thay vì hardcode
+            from config.config import FORM_HISTORY_PATH
+            matcher = EnhancedFieldMatcher(form_history_path=FORM_HISTORY_PATH)
 
             filled_fields = {}
 
@@ -94,4 +101,3 @@ def register_enhanced_routes(app):
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
-
