@@ -16,6 +16,10 @@ def GOI_Y_AI(app):
     form_history_path = "form_history.json"
     ai_matcher = AIFieldMatcher(form_history_path=form_history_path)
     
+    # Đảm bảo ai_matcher luôn sử dụng client OpenAI mới nhất
+    from utils.api_key_manager import get_api_key_manager
+    api_key_manager = get_api_key_manager()
+    
 
     @app.route('/AI_FILL', methods=['POST'])
     def AI_FILL():

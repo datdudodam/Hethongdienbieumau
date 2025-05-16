@@ -6,6 +6,8 @@ from functools import wraps
 import os
 from werkzeug.utils import secure_filename
 from config.config import BASE_DIR
+from utils.api_key_manager import get_api_key_manager
+
 
 def admin_required(f):
     """Decorator để kiểm tra quyền admin"""
@@ -306,3 +308,47 @@ def register_admin_routes(app):
         users = User.query.all()
         
         return render_template('admin/form_history.html', history=filtered_data, users=users)
+    
+    @app.route('/admin/api-settings', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def admin_api_settings():
+        """Trang quản lý API key"""
+        from models.web_config import WebConfig
+        from utils.api_key_manager import get_api_key_manager
+        
+        # Lấy API key manager
+        api_key_manager = get_api_key_manager()
+        
+        # Lấy API key hiện tại
+        current_api_key = WebConfig.get_value('openai_api_key', '')
+        
+        # Kiểm tra trạng thái API key
+        api_key_status = None
+        if current_api_key:
+            api_key_status = api_key_manager.check_api_key_validity()
+        
+        # Xử lý form cập nhật API key
+        if request.method == 'POST':
+            new_api_key = request.form.get('openai_api_key')
+            
+            # Kiểm tra tính hợp lệ của API key mới
+            if new_api_key:
+                # Cập nhật API key mới vào cơ sở dữ liệu và khởi tạo lại client
+                api_key_manager.update_api_key(new_api_key)
+                
+                # Kiểm tra trạng thái API key mới
+                api_key_status = api_key_manager.check_api_key_validity()
+                
+                if api_key_status['valid']:
+                    flash('Cập nhật API key thành công và key đang hoạt động tốt', 'success')
+                else:
+                    flash(f'Đã lưu API key nhưng có vấn đề: {api_key_status["message"]}', 'warning')
+            else:
+                flash('API key không được để trống', 'error')
+            
+            return redirect(url_for('admin_api_settings'))
+        
+        return render_template('admin/api_settings.html', 
+                            current_api_key=current_api_key,
+                            api_key_status=api_key_status)

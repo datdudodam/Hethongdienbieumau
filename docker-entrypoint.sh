@@ -2,7 +2,7 @@
 set -e
 
 # Khởi tạo cơ sở dữ liệu nếu cần
-python /app/init_db.py
+
 
 # Tạo tài khoản admin nếu chưa tồn tại
 python /app/create_admin.py

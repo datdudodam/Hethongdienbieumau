@@ -2,9 +2,23 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fillout Subscription</title>
-  <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_title }}</title>
+    <meta name="description" content="{{ site_description }}">
+    <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
+    <meta property="og:title" content="Quản lý Biểu mẫu - {{ site_title }}">
+    <meta property="og:description" content="{{ site_description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/dashboard">
+    <meta property="og:image" content="{{ og_image }}">
+    <link rel="icon" type="image/png" href="{{ site_logo }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family={{ font_family|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
   <style>
   * {
   box-sizing: border-box;
@@ -159,16 +173,19 @@ body {
 .payment-methods label {
   display: flex;
   align-items: center;
+  justify-content: space-between; /* Nếu muốn label và nội dung cách đều */
   gap: 10px;
-  font-size: 16px;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid #161313;
   border-radius: 6px;
   cursor: pointer;
 }
 
+/* Căn giữa riêng radio button nếu cần */
 .payment-methods input[type="radio"] {
-  transform: scale(1.1);
+  transform: scale(1.2);
+  margin-left: 0;   /* Không cần căn trái */
+  align-self: center;  /* Đảm bảo nằm giữa theo chiều dọc */
 }
 
 .subscribe-btn {
@@ -261,7 +278,80 @@ body {
   border: 1px solid #ccc;
 }
 
+/* MoMo Payment Styles */
+.momo-info {
+  display: none;
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
 
+.momo-info img {
+  width: 100%;
+  max-width: 200px;
+  display: block;
+  margin: 10px auto;
+}
+
+.momo-steps {
+  margin-top: 15px;
+}
+
+.momo-steps ol {
+  padding-left: 20px;
+  margin-top: 10px;
+}
+
+.momo-steps li {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.momo-qr-code {
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
+}
+
+.momo-qr-code img {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 10px;
+}
+
+.momo-phone {
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.momo-phone input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-right: 10px;
+}
+
+.momo-phone button {
+  padding: 10px 15px;
+  background-color: #af1f6b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.momo-logo {
+  color: #af1f6b;
+  font-weight: bold;
+  font-size: 18px;
+}
 </style>
   
 </head>
@@ -274,10 +364,11 @@ body {
   
         <div class="plan-box">
           <div class="plan-header">
-            <img src="https://fillout.com/favicon.ico" alt="Fillout Logo">
+            <img src="/static/images/ChatGPT_Image_12_38_56_26_thg_4_2025.png" alt="Fillout Logo">
+
             <div>
               <strong>Pro Plan</strong><br>
-              <small>See fillout.com/pricing for details of what is included on the Pro plan.<br>
+              <small>See auto fill for details of what is included on the Pro plan.<br>
                 Thanh toán hàng tháng</small>
             </div>
           </div>
@@ -307,17 +398,16 @@ body {
   
       <!-- RIGHT SECTION -->
       <div class="right-panel">
-        <form>
+        <form id="payment-form" method="post" action="/payment/momo/create">
+          <input type="hidden" id="subscription_type" name="subscription_type" value="standard">
+          
           <label for="email">Thông tin liên hệ</label>
-          <input type="email" id="email" placeholder="Email" required>
+          <input type="email" id="email" name="email" placeholder="Email" required value="{{ current_user.email if current_user.is_authenticated else '' }}">
   
           <label>Phương thức thanh toán</label>
           <div class="payment-methods">
-            <label><input type="radio" name="payment" value="card" checked> 💳 Thẻ</label>
-            <label><input type="radio" name="payment" value="cash"> 💵 Cash App Pay</label>
-          </div>
-  
-          <!-- Di chuyển card-details RA NGOÀI label -->
+            <label><input type="radio" name="payment_method" value="card" checked> 💳 Thẻ</label>
+            <!-- Di chuyển card-details RA NGOÀI label -->
           <div id="card-details" class="card-info">
             <label>Thông tin thẻ</label>
             <div class="card-row">
@@ -345,14 +435,52 @@ body {
               <option>Khác</option>
             </select>
           </div>
+            <label><input type="radio" name="payment_method" value="momo"> <span class="momo-logo">MoMo</span></label>
+          </div>
+          
+          <!-- MoMo Payment Section -->
+          <div id="momo-details" class="momo-info">
+            <h3>Thanh toán qua MoMo</h3>
+            <img src="https://developers.momo.vn/v3/vi/img/logo.png" alt="MoMo Logo">
+            
+            <div class="momo-steps">
+              <p>Vui lòng thực hiện theo các bước sau:</p>
+              <ol>
+                <li>Mở ứng dụng MoMo trên điện thoại của bạn</li>
+                <li>Chọn tính năng "Quét mã QR"</li>
+                <li>Quét mã QR bên dưới để thanh toán</li>
+                <li>Xác nhận thanh toán trên ứng dụng MoMo</li>
+              </ol>
+            </div>
+            
+            <div class="momo-qr-code">
+              <p>Nhập số điện thoại để nhận link thanh toán</p>
+            </div>
+            
+            <div class="momo-phone">
+              <input type="tel" id="phone_number" name="phone_number" placeholder="Nhập số điện thoại MoMo" required>
+              <button type="button" id="momo-request-btn">Gửi yêu cầu</button>
+            </div>
+          </div>
   
-          <button type="submit" class="subscribe-btn">Đăng ký</button>
+          <button type="submit" id="submit-btn" class="subscribe-btn">Đăng ký</button>
   
           <p class="terms">
-            Khi xác nhận gói đăng ký, bạn cho phép Fillout tính phí cho các khoản thanh toán trong tương lai căn cứ theo các điều khoản của họ. Bạn luôn có thể hủy đăng ký.
+            Khi xác nhận gói đăng ký, bạn đồng ý với các điều khoản dịch vụ của chúng tôi. Bạn có thể hủy đăng ký bất cứ lúc nào.
           </p>
-          <small>Được cung cấp bởi <strong>stripe</strong><br>
+          <small>Thanh toán an toàn qua <strong>MoMo</strong><br>
             <a href="#">Điều khoản</a> · <a href="#">Quyền riêng tư</a></small>
+            
+          <!-- Thông báo kết quả thanh toán -->
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" style="margin-top: 20px; padding: 10px; border-radius: 5px; {% if category == 'success' %}background-color: #d4edda; color: #155724;{% else %}background-color: #f8d7da; color: #721c24;{% endif %}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
         </form>
       </div>
     </div>
@@ -364,32 +492,104 @@ body {
         promoInput.style.display = promoInput.style.display === "block" ? "none" : "block";
       });
   
-      // Toggle card details
+      // Toggle payment methods
       const cardDetails = document.getElementById("card-details");
-      const paymentRadios = document.querySelectorAll('input[name="payment"]');
+      const momoDetails = document.getElementById("momo-details");
+      const paymentRadios = document.querySelectorAll('input[name="payment_method"]');
+      const paymentForm = document.getElementById("payment-form");
+      const submitBtn = document.getElementById("submit-btn");
+      const momoRequestBtn = document.getElementById("momo-request-btn");
   
-      function updateCardForm() {
-        const selected = document.querySelector('input[name="payment"]:checked');
+      function updatePaymentForm() {
+        const selected = document.querySelector('input[name="payment_method"]:checked');
+        
+        // Ẩn tất cả các form thanh toán
+        cardDetails.style.display = "none";
+        momoDetails.style.display = "none";
+        
+        // Hiển thị form thanh toán được chọn
         if (selected.value === "card") {
           cardDetails.style.display = "block";
-        } else {
-          cardDetails.style.display = "none";
+          // Cập nhật action của form
+          paymentForm.action = "/payment/card/create"; // Giả sử có endpoint này
+        } else if (selected.value === "momo") {
+          momoDetails.style.display = "block";
+          // Cập nhật action của form
+          paymentForm.action = "/payment/momo/create";
         }
       }
   
       paymentRadios.forEach(radio => {
-        radio.addEventListener("change", updateCardForm);
+        radio.addEventListener("change", updatePaymentForm);
       });
   
       // Set initial visibility
-      updateCardForm();
+      updatePaymentForm();
+      
+      // Xử lý yêu cầu thanh toán MoMo qua API
+      momoRequestBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        
+        const phoneNumber = document.getElementById("phone_number").value;
+        const subscriptionType = document.getElementById("subscription_type").value;
+        
+        if (!phoneNumber || phoneNumber.length < 10) {
+          alert("Vui lòng nhập số điện thoại MoMo hợp lệ");
+          return;
+        }
+        
+        // Hiển thị trạng thái đang xử lý
+        momoRequestBtn.disabled = true;
+        momoRequestBtn.textContent = "Đang xử lý...";
+        
+        // Gửi yêu cầu đến API
+        fetch('/payment/momo/request', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phone_number: phoneNumber,
+            subscription_type: subscriptionType
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          momoRequestBtn.disabled = false;
+          momoRequestBtn.textContent = "Gửi yêu cầu";
+          
+          if (data.success) {
+            // Chuyển hướng đến trang thanh toán MoMo
+            window.location.href = data.pay_url;
+          } else {
+            alert("Lỗi: " + data.message);
+          }
+        })
+        .catch(error => {
+          momoRequestBtn.disabled = false;
+          momoRequestBtn.textContent = "Gửi yêu cầu";
+          alert("Đã xảy ra lỗi: " + error.message);
+        });
+      });
+      
+      // Xử lý submit form
+      paymentForm.addEventListener("submit", function(e) {
+        const selectedPayment = document.querySelector('input[name="payment_method"]:checked').value;
+        
+        // Nếu chọn MoMo, sử dụng API thay vì submit form
+        if (selectedPayment === "momo") {
+          e.preventDefault();
+          momoRequestBtn.click();
+        }
+        // Nếu là phương thức khác, form sẽ submit bình thường
+      });
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
           const plans = {
-            free: { price: 0, name: "Gói Miễn Phí" },
-            pro: { price: 99000, name: "Gói Thường" },
-            vip: { price: 199000, name: "Gói VIP" }
+            free: { price: 0, name: "Gói Miễn Phí", type: "free" },
+            pro: { price: 99000, name: "Gói Thường", type: "standard" },
+            vip: { price: 199000, name: "Gói VIP", type: "vip" }
           };
       
           const params = new URLSearchParams(window.location.search);
@@ -405,6 +605,9 @@ body {
             document.querySelector(".left-panel h1").innerHTML = `${(plan.price / 1000).toFixed(3).replace('.', ',')} VNĐ <span>/ mỗi tháng</span>`;
             document.querySelector(".subtotal span").textContent = `${(plan.price / 1000).toFixed(3).replace('.', ',')} VNĐ`;
             document.querySelector(".total-due span").textContent = `${(plan.price / 1000).toFixed(3).replace('.', ',')} VNĐ`;
+            
+            // Cập nhật loại gói đăng ký trong form
+            document.getElementById("subscription_type").value = plan.type;
       
             // Ẩn khối thanh toán nếu là miễn phí
             if (plan.price === 0) {
@@ -416,6 +619,26 @@ body {
               msg.textContent = 'Gói miễn phí không yêu cầu thanh toán. Bạn đã có thể sử dụng ngay.';
               document.querySelector(".right-panel").appendChild(msg);
             }
+          }
+          
+          // Kiểm tra nếu người dùng chưa đăng nhập
+          const emailInput = document.getElementById("email");
+          if (!emailInput.value) {
+            const loginMsg = document.createElement('div');
+            loginMsg.className = 'alert alert-warning';
+            loginMsg.style.marginTop = '10px';
+            loginMsg.style.padding = '10px';
+            loginMsg.style.borderRadius = '5px';
+            loginMsg.style.backgroundColor = '#fff3cd';
+            loginMsg.style.color = '#856404';
+            loginMsg.innerHTML = 'Bạn cần <a href="/login?redirect=/GoiThuong.html?plan=' + selectedPlanKey + '" style="font-weight: bold;">đăng nhập</a> để tiếp tục thanh toán.';
+            
+            const form = document.querySelector(".right-panel form");
+            form.insertBefore(loginMsg, form.firstChild);
+            
+            // Disable nút thanh toán nếu chưa đăng nhập
+            document.getElementById("submit-btn").disabled = true;
+            document.getElementById("momo-request-btn").disabled = true;
           }
         });
       </script>

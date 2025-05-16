@@ -12,7 +12,7 @@ import os
 app = Flask(__name__)
 
 # Cấu hình cơ sở dữ liệu (Thay thế bằng URI thật của bạn)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'  # Hoặc PostgreSQL/MySQL URI
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///database.db')  # Kết nối PostgreSQL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Use a fixed secret key for development to ensure session persistence
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-for-session-persistence') # Thêm secret key cho session
@@ -49,14 +49,32 @@ db.init_app(app)
 with app.app_context():
     # Import WebConfig model trước khi tạo bảng để đảm bảo nó được đăng ký với SQLAlchemy
     from models.web_config import WebConfig
-    
-    # Tạo tất cả các bảng sau khi đã import tất cả các model
-    db.create_all()
-    
-    # Khởi tạo các vai trò
-    from models.user import Role
-    Role.insert_roles()
-
+    from models.transaction import Transaction
+    try:
+    # Kiểm tra xem bảng đã tồn tại chưa trước khi tạo
+        inspector = db.inspect(db.engine)
+        tables_to_create = False
+        
+        # Danh sách các bảng cần kiểm tra
+        tables_needed = ['role', 'user', 'web_config', 'transactions']
+        
+        for table in tables_needed:
+            if not inspector.has_table(table):
+                tables_to_create = True
+                print(f'Bảng {table} chưa tồn tại, cần tạo mới.')
+        
+        if tables_to_create:
+            # Tạo tất cả các bảng sau khi đã import tất cả các model
+            db.create_all()
+            print('Đã tạo cơ sở dữ liệu thành công!')
+            
+            # Khởi tạo các vai trò
+            from models.user import Role
+            Role.insert_roles()
+        else:
+            print('Các bảng đã tồn tại, bỏ qua việc tạo bảng.')
+    except Exception as e:
+        print(f"Lỗi khi kiểm tra hoặc tạo bảng: {e}")
 # Cấu hình Flask-Login
 login_manager = LoginManager() 
 login_manager.init_app(app)

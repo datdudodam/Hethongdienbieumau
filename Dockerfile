@@ -32,7 +32,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     FLASK_APP=app.py \
     FLASK_ENV=production \
     FLASK_DEBUG=False \
-    SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@db:5432/updatelan5 \
+    SQLALCHEMY_DATABASE_URI=sqlite:///database.db \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
@@ -60,7 +60,8 @@ COPY . .
 # Tạo các thư mục cần thiết và đảm bảo quyền truy cập
 RUN mkdir -p uploads instance flask_session /app/hf_cache \
     && touch instance/database.db \
-    && chown -R appuser:appuser /app /usr/share/nltk_data instance/database.db \
+    && chown -R appuser:appuser /app /usr/share/nltk_data \
+    && chmod -R 777 /app/instance \
     && chmod -R 755 /app \
     && chmod 666 instance/database.db
 

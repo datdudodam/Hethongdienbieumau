@@ -46,7 +46,7 @@ GOOGLE_REDIRECT_URI=http://localhost:55003/login/google/callback
 #### Hoặc sử dụng lệnh Docker trực tiếp
 
 ```bash
-docker build -t updatelan5:latest .
+docker build -t sys_55003:latest .
 ```
 
 ### 3. Chạy ứng dụng
@@ -60,7 +60,7 @@ docker-compose up -d
 #### Hoặc sử dụng Docker run
 
 ```bash
-docker run -p 55003:55003 --env-file .env --name updatelan5-app updatelan5:latest
+docker run -p 55003:55003 --env-file .env --name sys_55003-app sys_55003:latest
 ```
 
 ### 4. Truy cập ứng dụng
@@ -72,20 +72,20 @@ Mở trình duyệt và truy cập địa chỉ: [http://localhost:55003](http:/
 ### Kiểm tra logs
 
 ```bash
-docker logs updatelan5-app
+docker logs sys_55003-app
 ```
 
 ### Khởi động lại container
 
 ```bash
-docker restart updatelan5-app
+docker restart sys_55003-app
 ```
 
 ### Dừng và xóa container
 
 ```bash
-docker stop updatelan5-app
-docker rm updatelan5-app
+docker stop sys_55003-app
+docker rm sys_55003-app
 ```
 
 ## Lưu ý bảo mật

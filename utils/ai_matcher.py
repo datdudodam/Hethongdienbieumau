@@ -1,19 +1,34 @@
+# utils/ai_matcher.py
 from openai import OpenAI
-from config.config import OPENAI_API_KEY, FORM_HISTORY_PATH
+from config.config import FORM_HISTORY_PATH
+from utils.api_key_manager import get_api_key_manager
+
 from collections import defaultdict, Counter
 import re
 import json
 import os
+import logging
 from typing import Dict, List, Optional, Union, Any
 from .field_matcher import EnhancedFieldMatcher
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+logger = logging.getLogger(__name__)
 
 class AIFieldMatcher:
     def __init__(self, form_history_path: str = FORM_HISTORY_PATH):
         self.field_matcher = EnhancedFieldMatcher(form_history_path)
         self.context_cache = {}
         self.suggestion_cache = {}
+        self._client = None
+    
+    @property
+    def client(self):
+        if self._client is None:
+            api_key_manager = get_api_key_manager()
+            self._client = api_key_manager.get_client()
+            
+            if self._client is None:
+                raise RuntimeError("OpenAI client could not be initialized. Please check your API key configuration.")
+        return self._client
         
     def extract_context_from_form_text(self, form_text: str) -> str:
         """Extract context from form text with caching"""
@@ -32,20 +47,26 @@ class AIFieldMatcher:
             "5. Các giá trị thường được điền vào biểu mẫu này có đặc điểm gì?\n\n"
             "Hãy tổng hợp thành một đoạn văn ngắn gọn, súc tích để hệ thống gợi ý AI hiểu đúng ngữ cảnh và mục đích của biểu mẫu."
         )
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "Bạn là trợ lý AI chuyên phân tích và hiểu ngữ cảnh biểu mẫu để cung cấp gợi ý chính xác."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=300
+            )
 
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Bạn là trợ lý AI chuyên phân tích và hiểu ngữ cảnh biểu mẫu để cung cấp gợi ý chính xác."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=300
-        )
-
-        context = response.choices[0].message.content.strip() if response and response.choices and response.choices[0].message.content else ""
-        self.context_cache[cache_key] = context
-        return context
+            context = response.choices[0].message.content.strip() if response and response.choices and response.choices[0].message.content else ""
+            self.context_cache[cache_key] = context
+            return context
+        except Exception as e:
+            logger.error(f"Error in extract_context_from_form_text: {str(e)}")
+            return ""
+    
+    # Các phương thức khác giữ nguyên...
     
     def call_gpt_for_suggestions(self, field_name: str, historical_values: List[str], 
                                context: Optional[str] = None, recent_values: Optional[List[str]] = None,
@@ -90,7 +111,7 @@ class AIFieldMatcher:
                 "Mặc định: giá trị"
             )
 
-            response = client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": "You are a smart and contextual form assistant."},
@@ -141,7 +162,7 @@ class AIFieldMatcher:
                 "Chỉ trả về nội dung đã viết lại, không thêm gì khác."
             )
 
-            response = client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": "Bạn là một trợ lý AI giúp viết lại nội dung biểu mẫu chuyên nghiệp."},

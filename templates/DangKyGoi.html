@@ -3,7 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng giá dịch vụ</title>
+    <title>{{ site_title }}</title>
+    <meta name="description" content="{{ site_description }}">
+    <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
+    <meta property="og:title" content="Quản lý Biểu mẫu - {{ site_title }}">
+    <meta property="og:description" content="{{ site_description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/dashboard">
+    <meta property="og:image" content="{{ og_image }}">
+    <link rel="icon" type="image/png" href="{{ site_logo }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family={{ font_family|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
     <style>
         .login-required {
             font-size: 0.8rem;
@@ -73,6 +88,10 @@
             border: 2px solid var(--highlight-color);
             position: relative;
         }
+        .pricing-card {
+            background: #ffffff;
+            border: 1px solid #eee;
+        }
         
         .popular-badge {
             position: absolute;
@@ -131,9 +150,37 @@
         }
         
         .pricing-card-footer {
-            padding: 0 25px 25px;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            gap: 8px;
+            background-color: #fafbff;
+            border-top: 1px solid #eee;
         }
+
+        .pricing-card-footer .btn {
+            width: 80%;
+            max-width: 200px;
+            font-size: 1rem;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .pricing-card-footer .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .pricing-card-footer .login-required {
+            font-size: 0.75rem;
+            color: var(--light-text);
+            text-align: center;
+            margin-top: 6px;
+            opacity: 0.85;
+        }
+
         
         .btn {
             display: inline-block;
@@ -212,8 +259,8 @@
                 </div>
             </div>
             <div class="pricing-card-footer">
-                <a href="/signup" class="btn btn-outline">Dùng Ngay</a>
-                <span class="/login">* Yêu cầu đăng nhập</span>
+                <a href="/signup" class="btn btn-outline"><i class="fas fa-play-circle"></i> Dùng Ngay</a>
+                <span class="login-required">* Yêu cầu đăng nhập</span>
             </div>
         </div>
         
@@ -245,7 +292,7 @@
             </div>
             <div class="pricing-card-footer">
                 <a href="/GoiThuong.html?plan=pro" class="btn btn-highlight">Nâng Cấp</a>
-                <span class="/login">* Yêu cầu đăng nhập</span>
+                <span class="login-required">* Yêu cầu đăng nhập</span>
             </div>
         </div>
         
@@ -275,12 +322,14 @@
                 </div>
             </div>
             <div class="pricing-card-footer">
-                <a href="/GoiThuong.html?plan=vip" class="btn btn-primary">Nâng Cấp</a>
-                <span class="/login">* Yêu cầu đăng nhập</span>
+                <a href="/GoiThuong.html?plan=vip" class="btn btn-primary"><i class="fas fa-arrow-up"></i> Nâng Cấp</a>
+                <span class="login-required">* Yêu cầu đăng nhập</span>
+
             </div>
         </div>
     </div>
     <script>
+
         document.addEventListener('DOMContentLoaded', function() {
             const upgradeButtons = document.querySelectorAll('.btn-outline, .btn-highlight, .btn-primary');
             
@@ -290,7 +339,7 @@
                     if (!isLoggedIn()) {
                         e.preventDefault();
                         alert('Vui lòng đăng nhập trước khi đăng ký gói dịch vụ.');
-                        window.location.href = '/login?redirect=/GoiThuong.html';
+                        window.location.href = `/login?redirect=${encodeURIComponent(button.getAttribute('href'))}`;
                     }
                 });
             });

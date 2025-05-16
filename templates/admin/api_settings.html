@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_title }} - Quản lý API</title>
+    <meta name="description" content="{{ site_description }}">
+    <meta name="keywords" content="quản lý API, OpenAI, API key, cấu hình hệ thống">
+    <meta property="og:title" content="{{ site_title }} - Quản lý API">
+    <meta property="og:description" content="{{ site_description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/admin/api-settings">
+    <meta property="og:image" content="{{ og_image }}">
+    <link rel="icon" type="image/png" href="{{ site_logo }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --border-dark: #cbd5e1;
+            --radius: 0.5rem;
+            --radius-sm: 0.25rem;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text);
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg);
+            box-shadow: var(--shadow);
+            padding: 1.5rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-header h2 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .sidebar-header i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-menu a:hover, 
+        .sidebar-menu a.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        .sidebar-menu i {
+            margin-right: 0.75rem;
+            width: 1.25rem;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .api-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .api-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 2rem;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .api-card {
+            background: var(--bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .api-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .api-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .api-icon {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-right: 0.75rem;
+        }
+
+        .api-card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .api-card-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .api-form-group {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-secondary);
+            color: var(--text);
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-hint {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+
+        .status-valid {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .status-invalid {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .status-unknown {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .status-warning {
+            background-color: rgba(234, 179, 8, 0.1);
+            color: #ca8a04;
+        }
+
+        .status-icon {
+            margin-right: 0.375rem;
+        }
+
+        .status-details {
+            background-color: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .status-details-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .status-details-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .status-details-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .status-details-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-details-label {
+            color: var(--text-secondary);
+        }
+
+        .status-details-value {
+            font-weight: 500;
+        }
+
+        .api-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .api-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .api-button:hover {
+            background: var(--primary-hover);
+        }
+
+        .api-button-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .api-button-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--border-dark);
+        }
+
+        .api-button-warning {
+            background-color: rgba(234, 179, 8, 0.1);
+            color: #ca8a04;
+            border: 1px solid rgba(234, 179, 8, 0.2);
+        }
+
+        .api-button-warning:hover {
+            background-color: rgba(234, 179, 8, 0.2);
+        }
+
+        .api-button-icon {
+            font-size: 0.875rem;
+        }
+
+        .key-type-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+
+        .key-type-primary {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+        }
+
+        .key-type-fallback {
+            background-color: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
+        .key-active-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .key-active {
+            background-color: #10b981;
+        }
+
+        .key-inactive {
+            background-color: #64748b;
+        }
+
+        .key-last-used {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        .alert-notification {
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .alert-warning {
+            background-color: rgba(234, 179, 8, 0.1);
+            border-left: 4px solid #ca8a04;
+        }
+
+        .alert-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-info {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--primary);
+        }
+
+        .alert-icon {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .alert-message {
+            font-size: 0.95rem;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--text);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+            .main-content {
+                margin-left: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+                padding: 1rem 0;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 1.5rem;
+            }
+            .api-grid {
+                grid-template-columns: 1fr;
+            }
+            .tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 1rem;
+            }
+            .api-title {
+                font-size: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            .api-actions {
+                flex-direction: column;
+            }
+            .tab {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-shield-alt"></i>
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+                <li><a href="{{ url_for('admin_users') }}"><i class="fas fa-users"></i> <span>Quản lý người dùng</span></a></li>
+                <li><a href="{{ url_for('admin_forms') }}"><i class="fas fa-file-alt"></i> <span>Quản lý biểu mẫu</span></a></li>
+                <li><a href="{{ url_for('admin_form_history') }}"><i class="fas fa-history"></i> <span>Lịch sử biểu mẫu</span></a></li>
+                <li><a href="{{ url_for('web_config') }}"><i class="fas fa-cog"></i> <span>Cấu hình website</span></a></li>
+                <li><a href="{{ url_for('admin_api_settings') }}" class="active"><i class="fas fa-key"></i> <span>Quản lý API</span></a></li>
+                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
+                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="api-container">
+                <h1 class="api-title">Quản Lý API</h1>
+                
+                {% if current_user.role_id == 1 %}
+                    <!-- Thông báo hệ thống -->
+                    {% if api_alerts %}
+                        {% for alert in api_alerts %}
+                            <div class="alert-notification alert-{{ alert.type }}">
+                                <i class="fas fa-{{ alert.icon }} alert-icon"></i>
+                                <div class="alert-content">
+                                    <h3 class="alert-title">{{ alert.title }}</h3>
+                                    <p class="alert-message">{{ alert.message }}</p>
+                                    {% if alert.details %}
+                                        <p class="alert-message" style="margin-top: 0.5rem; font-size: 0.9rem;">{{ alert.details }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="tabs">
+                        <div class="tab active" data-tab="api-settings">Cấu hình API</div>
+                        <div class="tab" data-tab="api-status">Trạng thái hệ thống</div>
+                        <div class="tab" data-tab="api-history">Lịch sử chuyển đổi</div>
+                    </div>
+
+                    <!-- Tab API Settings -->
+                    <div id="api-settings" class="tab-content active">
+                        <div class="api-grid">
+                            <!-- Primary Key Card -->
+                            <div class="api-card">
+                                <div class="api-card-header">
+                                    <i class="fas fa-key api-icon"></i>
+                                    <h2 class="api-card-title">
+                                        <span>API Key Chính</span>
+                                        <span class="key-type-badge key-type-primary">PRIMARY</span>
+                                        {% if active_key_info and active_key_info.type == 'primary' %}
+                                            <span class="key-active-indicator key-active"></span>
+                                        {% endif %}
+                                    </h2>
+                                </div>
+                                <p class="api-card-description">API key chính sẽ được sử dụng mặc định cho tất cả các yêu cầu đến OpenAI.</p>
+                                
+                                <!-- Hiển thị trạng thái API key chính -->
+                                {% if primary_key_status %}
+                                    {% if primary_key_status.valid %}
+                                        <div class="status-badge status-valid">
+                                            <i class="fas fa-check-circle status-icon"></i>
+                                            <span>{{ primary_key_status.message }}</span>
+                                        </div>
+                                        
+                                        <!-- Chi tiết API key hợp lệ -->
+                                        <div class="status-details">
+                                            <h3 class="status-details-title">Thông tin chi tiết</h3>
+                                            <ul class="status-details-list">
+                                                <li class="status-details-item">
+                                                    <span class="status-details-label">Thời gian phản hồi:</span>
+                                                    <span class="status-details-value">{{ primary_key_status.details.response_time_ms }} ms</span>
+                                                </li>
+                                                <li class="status-details-item">
+                                                    <span class="status-details-label">Kiểm tra lúc:</span>
+                                                    <span class="status-details-value">{{ primary_key_status.details.checked_at }}</span>
+                                                </li>
+                                                <li class="status-details-item">
+                                                    <span class="status-details-label">Models khả dụng:</span>
+                                                    <span class="status-details-value">{{ primary_key_status.details.available_models|length }}</span>
+                                                </li>
+                                            </ul>
+                                            
+                                            <!-- Danh sách models -->
+                                            <div style="margin-top: 1rem;">
+                                                <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Models khả dụng:</h4>
+                                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                                    {% for model in primary_key_status.details.available_models %}
+                                                        <span class="status-badge" style="background-color: rgba(59, 130, 246, 0.1); color: var(--primary);">
+                                                            {{ model }}
+                                                        </span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="status-badge status-invalid">
+                                            <i class="fas fa-exclamation-circle status-icon"></i>
+                                            <span>{{ primary_key_status.message }}</span>
+                                        </div>
+                                        
+                                        <!-- Chi tiết lỗi API key -->
+                                        {% if primary_key_status.details %}
+                                            <div class="status-details">
+                                                <h3 class="status-details-title">Thông tin lỗi</h3>
+                                                <ul class="status-details-list">
+                                                    <li class="status-details-item">
+                                                        <span class="status-details-label">Lỗi:</span>
+                                                        <span class="status-details-value">{{ primary_key_status.details.error }}</span>
+                                                    </li>
+                                                    <li class="status-details-item">
+                                                        <span class="status-details-label">Kiểm tra lúc:</span>
+                                                        <span class="status-details-value">{{ primary_key_status.details.checked_at }}</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    <div class="status-badge status-unknown">
+                                        <i class="fas fa-question-circle status-icon"></i>
+                                        <span>Chưa kiểm tra trạng thái API key</span>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Form cập nhật API key chính -->
+                                <form method="POST" action="{{ url_for('admin_api_settings') }}" style="margin-top: 1.5rem;">
+                                    <input type="hidden" name="key_type" value="primary">
+                                    <div class="api-form-group">
+                                        <div class="form-field">
+                                            <label class="form-label">OpenAI API Key Chính</label>
+                                            <input type="text" class="form-input" name="openai_api_key" value="{{ current_primary_key }}" placeholder="Nhập OpenAI API key chính">
+                                            <small class="form-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
+                                        </div>
+                                        
+                                        <div class="api-actions">
+                                            <button type="submit" class="api-button">
+                                                <i class="fas fa-save api-button-icon"></i> Lưu Key Chính
+                                            </button>
+                                            <button type="button" class="api-button api-button-secondary" onclick="checkKeyValidity('primary')">
+                                                <i class="fas fa-sync-alt api-button-icon"></i> Kiểm tra lại
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Fallback Key Card -->
+                            <div class="api-card">
+                                <div class="api-card-header">
+                                    <i class="fas fa-key api-icon"></i>
+                                    <h2 class="api-card-title">
+                                        <span>API Key Dự phòng</span>
+                                        <span class="key-type-badge key-type-fallback">FALLBACK</span>
+                                        {% if active_key_info and active_key_info.type == 'fallback' %}
+                                            <span class="key-active-indicator key-active"></span>
+                                        {% endif %}
+                                    </h2>
+                                </div>
+                                <p class="api-card-description">API key dự phòng sẽ tự động được sử dụng khi key chính gặp sự cố hoặc hết hạn.</p>
+                                
+                                <!-- Hiển thị trạng thái API key dự phòng -->
+                                {% if fallback_key_status %}
+                                    {% if fallback_key_status.valid %}
+                                        <div class="status-badge status-valid">
+                                            <i class="fas fa-check-circle status-icon"></i>
+                                            <span>{{ fallback_key_status.message }}</span>
+                                        </div>
+                                        
+                                        <!-- Chi tiết API key hợp lệ -->
+                                        <div class="status-details">
+                                            <h3 class="status-details-title">Thông tin chi tiết</h3>
+                                            <ul class="status-details-list">
+                                                <li class="status-details-item">
+                                                    <span class="status-details-label">Thời gian phản hồi:</span>
+                                                    <span class="status-details-value">{{ fallback_key_status.details.response_time_ms }} ms</span>
+                                                </li>
+                                                <li class="status-details-item">
+                                                    <span class="status-details-label">Kiểm tra lúc:</span>
+                                                    <span class="status-details-value">{{ fallback_key_status.details.checked_at }}</span>
+                                                </li>
+                                                <li class="status-details-item">
+                                                    <span class="status-details-label">Models khả dụng:</span>
+                                                    <span class="status-details-value">{{ fallback_key_status.details.available_models|length }}</span>
+                                                </li>
+                                            </ul>
+                                            
+                                            <!-- Danh sách models -->
+                                            <div style="margin-top: 1rem;">
+                                                <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Models khả dụng:</h4>
+                                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                                    {% for model in fallback_key_status.details.available_models %}
+                                                        <span class="status-badge" style="background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                                                            {{ model }}
+                                                        </span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="status-badge status-invalid">
+                                            <i class="fas fa-exclamation-circle status-icon"></i>
+                                            <span>{{ fallback_key_status.message }}</span>
+                                        </div>
+                                        
+                                        <!-- Chi tiết lỗi API key -->
+                                        {% if fallback_key_status.details %}
+                                            <div class="status-details">
+                                                <h3 class="status-details-title">Thông tin lỗi</h3>
+                                                <ul class="status-details-list">
+                                                    <li class="status-details-item">
+                                                        <span class="status-details-label">Lỗi:</span>
+                                                        <span class="status-details-value">{{ fallback_key_status.details.error }}</span>
+                                                    </li>
+                                                    <li class="status-details-item">
+                                                        <span class="status-details-label">Kiểm tra lúc:</span>
+                                                        <span class="status-details-value">{{ fallback_key_status.details.checked_at }}</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    <div class="status-badge status-unknown">
+                                        <i class="fas fa-question-circle status-icon"></i>
+                                        <span>Chưa kiểm tra trạng thái API key</span>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Form cập nhật API key dự phòng -->
+                                <form method="POST" action="{{ url_for('admin_api_settings') }}" style="margin-top: 1.5rem;">
+                                    <input type="hidden" name="key_type" value="fallback">
+                                    <div class="api-form-group">
+                                        <div class="form-field">
+                                            <label class="form-label">OpenAI API Key Dự phòng</label>
+                                            <input type="text" class="form-input" name="openai_fallback_key" value="{{ current_fallback_key }}" placeholder="Nhập OpenAI API key dự phòng">
+                                            <small class="form-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
+                                        </div>
+                                        
+                                        <div class="api-actions">
+                                            <button type="submit" class="api-button">
+                                                <i class="fas fa-save api-button-icon"></i> Lưu Key Dự phòng
+                                            </button>
+                                            <button type="button" class="api-button api-button-secondary" onclick="checkKeyValidity('fallback')">
+                                                <i class="fas fa-sync-alt api-button-icon"></i> Kiểm tra lại
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 2rem;">
+                            <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Hướng dẫn sử dụng</h2>
+                            <div class="api-card">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Cách lấy OpenAI API Key</h3>
+                                <ol style="padding-left: 1.5rem; margin-bottom: 1.5rem;">
+                                    <li style="margin-bottom: 0.5rem;">Đăng nhập vào tài khoản OpenAI của bạn tại <a href="https://platform.openai.com/" target="_blank" style="color: var(--primary);">platform.openai.com</a></li>
+                                    <li style="margin-bottom: 0.5rem;">Truy cập vào mục API Keys trong phần quản lý tài khoản</li>
+                                    <li style="margin-bottom: 0.5rem;">Tạo API key mới và sao chép vào ô nhập liệu ở trên</li>
+                                    <li style="margin-bottom: 0.5rem;">Nhấn "Lưu API Key" để cập nhật</li>
+                                </ol>
+                                
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Lưu ý quan trọng</h3>
+                                <ul style="padding-left: 1.5rem;">
+                                    <li style="margin-bottom: 0.5rem;">API key có tính phí, hãy đảm bảo bạn hiểu rõ cách tính phí của OpenAI</li>
+                                    <li style="margin-bottom: 0.5rem;">Không chia sẻ API key với người khác</li>
+                                    <li style="margin-bottom: 0.5rem;">Nếu API key bị lộ, hãy vô hiệu hóa ngay và tạo key mới</li>
+                                    <li style="margin-bottom: 0.5rem;">Kiểm tra trạng thái API key thường xuyên để đảm bảo hệ thống hoạt động ổn định</li>
+                                    <li style="margin-bottom: 0.5rem;">Hệ thống sẽ tự động chuyển sang key dự phòng nếu key chính gặp sự cố</li>
+                                    <li style="margin-bottom: 0.5rem;">Bạn sẽ nhận được thông báo qua email khi hệ thống chuyển đổi giữa các key</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab API Status -->
+                    <div id="api-status" class="tab-content">
+                        <div class="api-card">
+                            <div class="api-card-header">
+                                <i class="fas fa-chart-line api-icon"></i>
+                                <h2 class="api-card-title">Trạng thái hệ thống API</h2>
+                            </div>
+                            
+                            <div class="api-form-group">
+                                <div class="form-field">
+                                    <label class="form-label">Key đang hoạt động</label>
+                                    <div style="display: flex; align-items: center;">
+                                        {% if active_key_info %}
+                                            <span class="key-active-indicator key-active"></span>
+                                            <span style="font-weight: 500;">
+                                                {{ active_key_info.type|upper }} KEY: {{ active_key_info.short_key }}
+                                            </span>
+                                        {% else %}
+                                            <span class="key-active-indicator key-inactive"></span>
+                                            <span style="font-weight: 500;">Không có key nào hoạt động</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if last_switch_time %}
+                                        <small class="key-last-used">Lần chuyển đổi cuối: {{ last_switch_time }}</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-field">
+                                    <label class="form-label">Tự động chuyển đổi</label>
+                                    <div style="display: flex; align-items: center;">
+                                        <span class="status-badge status-valid">
+                                            <i class="fas fa-check-circle status-icon"></i>
+                                            <span>Đang bật</span>
+                                        </span>
+                                        <small style="margin-left: 0.5rem;">(Tự động chuyển sang key dự phòng khi key chính gặp sự cố)</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-field">
+                                    <label class="form-label">Thống kê sử dụng</label>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+                                        <div class="api-card" style="padding: 1rem;">
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Key chính</div>
+                                            <div style="font-size: 1.25rem; font-weight: 600;">
+                                                {% if primary_key_stats %}
+                                                    {{ primary_key_stats.success_rate }}% thành công
+                                                {% else %}
+                                                    Chưa có dữ liệu
+                                                {% endif %}
+                                            </div>
+                                            <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">
+                                                {% if primary_key_stats %}
+                                                    {{ primary_key_stats.total_requests }} yêu cầu
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="api-card" style="padding: 1rem;">
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Key dự phòng</div>
+                                            <div style="font-size: 1.25rem; font-weight: 600;">
+                                                {% if fallback_key_stats %}
+                                                    {{ fallback_key_stats.success_rate }}% thành công
+                                                {% else %}
+                                                    Chưa có dữ liệu
+                                                {% endif %}
+                                            </div>
+                                            <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">
+                                                {% if fallback_key_stats %}
+                                                    {{ fallback_key_stats.total_requests }} yêu cầu
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="api-card" style="padding: 1rem;">
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Lần chuyển đổi</div>
+                                            <div style="font-size: 1.25rem; font-weight: 600;">
+                                                {% if switch_stats %}
+                                                    {{ switch_stats.total_switches }}
+                                                {% else %}
+                                                    0
+                                                {% endif %}
+                                            </div>
+                                            <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">
+                                                {% if switch_stats and switch_stats.last_switch %}
+                                                    Lần cuối: {{ switch_stats.last_switch }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="api-actions">
+                                    <button type="submit" class="api-button">
+                                        <i class="fas fa-save api-button-icon"></i> Lưu API Key
+                                    </button>
+                                    <button type="button" class="api-button api-button-secondary" onclick="window.location.reload();">
+                                        <i class="fas fa-sync-alt api-button-icon"></i> Kiểm tra lại
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 2rem;">
+                    <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Hướng dẫn sử dụng</h2>
+                    <div class="api-card">
+                        <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Cách lấy OpenAI API Key</h3>
+                        <ol style="padding-left: 1.5rem; margin-bottom: 1.5rem;">
+                            <li style="margin-bottom: 0.5rem;">Đăng nhập vào tài khoản OpenAI của bạn tại <a href="https://platform.openai.com/" target="_blank" style="color: var(--primary);">platform.openai.com</a></li>
+                            <li style="margin-bottom: 0.5rem;">Truy cập vào mục API Keys trong phần quản lý tài khoản</li>
+                            <li style="margin-bottom: 0.5rem;">Tạo API key mới và sao chép vào ô nhập liệu ở trên</li>
+                            <li style="margin-bottom: 0.5rem;">Nhấn "Lưu API Key" để cập nhật</li>
+                        </ol>
+                        
+                        <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Lưu ý quan trọng</h3>
+                        <ul style="padding-left: 1.5rem;">
+                            <li style="margin-bottom: 0.5rem;">API key có tính phí, hãy đảm bảo bạn hiểu rõ cách tính phí của OpenAI</li>
+                            <li style="margin-bottom: 0.5rem;">Không chia sẻ API key với người khác</li>
+                            <li style="margin-bottom: 0.5rem;">Nếu API key bị lộ, hãy vô hiệu hóa ngay và tạo key mới</li>
+                            <li style="margin-bottom: 0.5rem;">Kiểm tra trạng thái API key thường xuyên để đảm bảo hệ thống hoạt động ổn định</li>
+                        </ul>
+                    </div>
+                </div>
+                {% else %}
+                <div class="api-card access-denied">
+                    <div class="api-card-header">
+                        <i class="fas fa-lock api-icon"></i>
+                        <h2 class="api-card-title">Quyền truy cập bị giới hạn</h2>
+                    </div>
+                    <p class="api-card-description">Bạn không có quyền truy cập vào trang quản lý API. Chỉ quản trị viên mới có thể thực hiện các thay đổi cấu hình API.</p>
+                    <p>Bạn có thể quay lại <a href="{{ url_for('profile') }}" style="color: var(--primary);">trang hồ sơ cá nhân</a> để cập nhật thông tin của mình.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script>
+        // Xử lý chuyển đổi giữa các tab
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Xóa active class từ tất cả các tab và nội dung
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Thêm active class cho tab và nội dung được chọn
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Kiểm tra nếu có hash trong URL để mở tab tương ứng
+            const hash = window.location.hash.substr(1);
+            if (hash) {
+                const tabToOpen = document.querySelector(`.tab[data-tab="${hash}"]`);
+                if (tabToOpen) {
+                    tabToOpen.click();
+                }
+            }
+        });
+    
+        // Hàm kiểm tra tính hợp lệ của API key
+        
+    
+        // Xử lý hiển thị/ẩn API key khi nhấp vào icon eye
+        document.querySelectorAll('.toggle-password').forEach(icon => {
+            icon.addEventListener('click', function() {
+                const input = this.previousElementSibling;
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.classList.remove('fa-eye');
+                    this.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    this.classList.remove('fa-eye-slash');
+                    this.classList.add('fa-eye');
+                }
+            });
+        });
+    
+        // Xử lý thông báo tự động đóng sau 5 giây
+        document.querySelectorAll('.alert-notification').forEach(alert => {
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 300);
+            }, 5000);
+        });
+    
+        // Thêm sự kiện click để đóng thông báo thủ công
+        document.querySelectorAll('.alert-notification .alert-icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                this.closest('.alert-notification').style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

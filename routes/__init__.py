@@ -10,6 +10,7 @@ from .goiy_openai import GOI_Y_AI
 from .ai_feedback import register_ai_feedback_routes
 from .api_docs_routes import register_api_docs_routes
 from .api_routes import register_api_routes
+from .payment_routes import register_payment_routes
 
 def register_routes(app):
     register_home_routes(app)
@@ -24,4 +25,5 @@ def register_routes(app):
     register_oauth_routes(app)
     register_profile_routes(app)
     register_api_docs_routes(app)
+    register_payment_routes(app)
    

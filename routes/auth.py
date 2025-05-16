@@ -12,7 +12,7 @@ def dangNhap_Dangky(app):
     """
     @app.route('/GoiThuong.html')
     def serve_goi_thuong():
-         return render_template('GoiThuong.html')
+         return render_template('GoiThuong.html', current_user=current_user)
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         # Lấy tham số redirect từ URL nếu có
