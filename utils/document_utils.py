@@ -5,10 +5,11 @@ import uuid
 from werkzeug.utils import secure_filename
 from config.config import UPLOADS_DIR
 from flask import session
-
+from utils.fuzzy_matcher import FuzzyMatcher  # Import lớp FuzzyMatcher mới
 
 # Biến toàn cục để lưu đường dẫn tài liệu hiện tại
 doc_path = None
+fuzzy_matcher = FuzzyMatcher()  # Khởi tạo FuzzyMatcher
 
 def load_document(doc_path):
     """
@@ -19,32 +20,30 @@ def load_document(doc_path):
 
 def extract_fields(text):
     """
-    Trích xuất các trường từ văn bản
+    Trích xuất các trường từ văn bản với khả năng nhận diện nâng cao
+    Sử dụng FuzzyMatcher để cải thiện độ chính xác
     """
+    # Tìm tất cả các mã trường [_123_]
     matches = re.finditer(r"\[_\d+_\]", text)
     fields = []
-    special_words = {"ngày", "tháng", "năm"}
     
     for match in matches:
-        end_index = match.start()
-        field_name = ""
-        i = end_index - 1
-        while i >= 0 and text[i] == " ":
-            i -= 1
+        field_code = match.group()
+        field_code_position = match.start()
         
-        for word in special_words:
-            if text[max(0, i - len(word) + 1):end_index].strip().lower() == word:
-                field_name = word
-                break
-        
-        if not field_name:
-            for j in range(i, -1, -1):
-                if text[j].isupper():
-                    field_name = text[j:end_index].strip()
-                    break
+        # Sử dụng FuzzyMatcher để tìm tên trường
+        field_name = fuzzy_matcher.find_field_name(text, field_code_position)
         
         if field_name:
-            fields.append({"field_name": field_name, "field_code": match.group()})
+            # Phân tích ngữ cảnh của trường
+            context_info = fuzzy_matcher.get_field_context(text, field_name, field_code_position)
+            
+            fields.append({
+                "field_name": field_name,
+                "field_code": field_code,
+                "context_info": context_info
+            })
+    
     return fields
 
 def upload_document(file):
@@ -125,10 +124,12 @@ def set_doc_path(path):
         print(f"Error setting doc_path in session: {str(e)}")
     # Vẫn lưu vào biến toàn cục để đảm bảo tương thích ngược
     doc_path = path
+
 def extract_table_fields(doc_path):
     """
     Trích xuất các trường từ bảng trong tài liệu docx.
     Trường hợp bảng có dạng: | Tên trường | [_123_] |
+    Sử dụng FuzzyMatcher để chuẩn hóa tên trường
     """
     doc = Document(doc_path)
     fields = []
@@ -136,18 +137,35 @@ def extract_table_fields(doc_path):
     for table in doc.tables:
         for row in table.rows:
             if len(row.cells) >= 2:
-                field_name = row.cells[0].text.strip()
+                raw_field_name = row.cells[0].text.strip()
                 field_value = row.cells[1].text.strip()
+                
+                # Chuẩn hóa tên trường bằng FuzzyMatcher
+                normalized_field_name = fuzzy_matcher.normalize_text(raw_field_name)
+                
+                # Tìm trường phù hợp nhất trong từ điển đồng nghĩa
+                best_match = None
+                highest_similarity = 0
+                
+                for standard_field, synonyms in fuzzy_matcher.synonym_map.items():
+                    for synonym in [standard_field] + synonyms:
+                        similarity = fuzzy_matcher.calculate_similarity(normalized_field_name, synonym, 'hybrid')
+                        if similarity > highest_similarity and similarity > fuzzy_matcher.similarity_threshold:
+                            highest_similarity = similarity
+                            best_match = standard_field
+                
+                field_name = best_match if best_match else raw_field_name
                 
                 match = re.search(r"\[_\d+_\]", field_value)
                 if match:
                     field_code = match.group()
                     fields.append({
                         "field_name": field_name,
-                        "field_code": field_code
+                        "field_code": field_code,
+                        "raw_field_name": raw_field_name,
+                        "similarity_score": highest_similarity if best_match else None
                     })
     return fields
-
 
 def extract_all_fields(doc_path):
     """
@@ -162,8 +180,12 @@ def extract_all_fields(doc_path):
     # Gộp tất cả các trường lại
     all_fields = text_fields + table_fields
 
-    # Sắp xếp từ trên xuống dưới (giả sử có key 'y' biểu thị vị trí theo chiều dọc)
-    all_fields.sort(key=lambda field: field.get("y", 0))  # bạn có thể thay "y" bằng "position" hay tên key phù hợp
+    # Sắp xếp từ trên xuống dưới dựa trên vị trí xuất hiện trong tài liệu
+    # Đối với text_fields, vị trí đã được xác định trong extract_fields
+    # Đối với table_fields, cần thêm logic để xác định vị trí
+    
+    # Tạm thời sắp xếp theo thứ tự xuất hiện (text_fields trước, table_fields sau)
+    all_fields.sort(key=lambda f: f.get("position", 0))
 
     # Loại bỏ trùng lặp dựa trên `field_code`
     combined_fields = []

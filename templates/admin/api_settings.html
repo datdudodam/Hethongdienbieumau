@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -63,14 +64,14 @@
 
         .sidebar-header {
             padding: 0 20px 20px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
             display: flex;
             align-items: center;
         }
 
         .sidebar-header h2 {
-            color: var(--primary);
+            color: var(--primary-color);
             margin: 0;
             font-size: 1.5rem;
             font-weight: 600;
@@ -242,11 +243,6 @@
             color: #f59e0b;
         }
 
-        .status-warning {
-            background-color: rgba(234, 179, 8, 0.1);
-            color: #ca8a04;
-        }
-
         .status-icon {
             margin-right: 0.375rem;
         }
@@ -327,133 +323,8 @@
             border-color: var(--border-dark);
         }
 
-        .api-button-warning {
-            background-color: rgba(234, 179, 8, 0.1);
-            color: #ca8a04;
-            border: 1px solid rgba(234, 179, 8, 0.2);
-        }
-
-        .api-button-warning:hover {
-            background-color: rgba(234, 179, 8, 0.2);
-        }
-
         .api-button-icon {
             font-size: 0.875rem;
-        }
-
-        .key-type-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.5rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin-left: 0.5rem;
-        }
-
-        .key-type-primary {
-            background-color: rgba(59, 130, 246, 0.1);
-            color: var(--primary);
-        }
-
-        .key-type-fallback {
-            background-color: rgba(139, 92, 246, 0.1);
-            color: #8b5cf6;
-        }
-
-        .key-active-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 6px;
-        }
-
-        .key-active {
-            background-color: #10b981;
-        }
-
-        .key-inactive {
-            background-color: #64748b;
-        }
-
-        .key-last-used {
-            font-size: 0.85rem;
-            color: var(--text-light);
-            margin-top: 0.25rem;
-        }
-
-        .alert-notification {
-            padding: 1rem;
-            border-radius: var(--radius-sm);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: flex-start;
-        }
-
-        .alert-warning {
-            background-color: rgba(234, 179, 8, 0.1);
-            border-left: 4px solid #ca8a04;
-        }
-
-        .alert-danger {
-            background-color: rgba(239, 68, 68, 0.1);
-            border-left: 4px solid #ef4444;
-        }
-
-        .alert-info {
-            background-color: rgba(59, 130, 246, 0.1);
-            border-left: 4px solid var(--primary);
-        }
-
-        .alert-icon {
-            margin-right: 0.75rem;
-            font-size: 1.25rem;
-        }
-
-        .alert-content {
-            flex: 1;
-        }
-
-        .alert-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .alert-message {
-            font-size: 0.95rem;
-        }
-
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 1.5rem;
-        }
-
-        .tab {
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            font-weight: 500;
-            color: var(--text-secondary);
-            border-bottom: 2px solid transparent;
-            transition: var(--transition);
-        }
-
-        .tab.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-
-        .tab:hover:not(.active) {
-            color: var(--text);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
         }
 
         @media (max-width: 1024px) {
@@ -482,10 +353,6 @@
             .api-grid {
                 grid-template-columns: 1fr;
             }
-            .tabs {
-                overflow-x: auto;
-                white-space: nowrap;
-            }
         }
 
         @media (max-width: 480px) {
@@ -498,10 +365,6 @@
             }
             .api-actions {
                 flex-direction: column;
-            }
-            .tab {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
             }
         }
     </style>
@@ -532,353 +395,90 @@
                 <h1 class="api-title">Quản Lý API</h1>
                 
                 {% if current_user.role_id == 1 %}
-                    <!-- Thông báo hệ thống -->
-                    {% if api_alerts %}
-                        {% for alert in api_alerts %}
-                            <div class="alert-notification alert-{{ alert.type }}">
-                                <i class="fas fa-{{ alert.icon }} alert-icon"></i>
-                                <div class="alert-content">
-                                    <h3 class="alert-title">{{ alert.title }}</h3>
-                                    <p class="alert-message">{{ alert.message }}</p>
-                                    {% if alert.details %}
-                                        <p class="alert-message" style="margin-top: 0.5rem; font-size: 0.9rem;">{{ alert.details }}</p>
-                                    {% endif %}
+                <div class="api-grid">
+                    <!-- Cấu hình OpenAI API -->
+                    <div class="api-card">
+                        <div class="api-card-header">
+                            <i class="fas fa-robot api-icon"></i>
+                            <h2 class="api-card-title">OpenAI API Key</h2>
+                        </div>
+                        <p class="api-card-description">Quản lý API key của OpenAI để sử dụng cho các tính năng AI trong hệ thống.</p>
+                        
+                        <!-- Hiển thị trạng thái API key -->
+                        {% if api_key_status %}
+                            {% if api_key_status.valid %}
+                                <div class="status-badge status-valid">
+                                    <i class="fas fa-check-circle status-icon"></i>
+                                    <span>{{ api_key_status.message }}</span>
                                 </div>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <div class="tabs">
-                        <div class="tab active" data-tab="api-settings">Cấu hình API</div>
-                        <div class="tab" data-tab="api-status">Trạng thái hệ thống</div>
-                        <div class="tab" data-tab="api-history">Lịch sử chuyển đổi</div>
-                    </div>
-
-                    <!-- Tab API Settings -->
-                    <div id="api-settings" class="tab-content active">
-                        <div class="api-grid">
-                            <!-- Primary Key Card -->
-                            <div class="api-card">
-                                <div class="api-card-header">
-                                    <i class="fas fa-key api-icon"></i>
-                                    <h2 class="api-card-title">
-                                        <span>API Key Chính</span>
-                                        <span class="key-type-badge key-type-primary">PRIMARY</span>
-                                        {% if active_key_info and active_key_info.type == 'primary' %}
-                                            <span class="key-active-indicator key-active"></span>
-                                        {% endif %}
-                                    </h2>
-                                </div>
-                                <p class="api-card-description">API key chính sẽ được sử dụng mặc định cho tất cả các yêu cầu đến OpenAI.</p>
                                 
-                                <!-- Hiển thị trạng thái API key chính -->
-                                {% if primary_key_status %}
-                                    {% if primary_key_status.valid %}
-                                        <div class="status-badge status-valid">
-                                            <i class="fas fa-check-circle status-icon"></i>
-                                            <span>{{ primary_key_status.message }}</span>
+                                <!-- Chi tiết API key hợp lệ -->
+                                <div class="status-details">
+                                    <h3 class="status-details-title">Thông tin chi tiết</h3>
+                                    <ul class="status-details-list">
+                                        <li class="status-details-item">
+                                            <span class="status-details-label">Thời gian phản hồi:</span>
+                                            <span class="status-details-value">{{ api_key_status.details.response_time_ms }} ms</span>
+                                        </li>
+                                        <li class="status-details-item">
+                                            <span class="status-details-label">Kiểm tra lúc:</span>
+                                            <span class="status-details-value">{{ api_key_status.details.checked_at }}</span>
+                                        </li>
+                                        <li class="status-details-item">
+                                            <span class="status-details-label">Models khả dụng:</span>
+                                            <span class="status-details-value">{{ api_key_status.details.available_models|length }}</span>
+                                        </li>
+                                    </ul>
+                                    
+                                    <!-- Danh sách models -->
+                                    <div style="margin-top: 1rem;">
+                                        <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Models khả dụng:</h4>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                            {% for model in api_key_status.details.available_models %}
+                                                <span class="status-badge" style="background-color: rgba(59, 130, 246, 0.1); color: var(--primary);">
+                                                    {{ model }}
+                                                </span>
+                                            {% endfor %}
                                         </div>
-                                        
-                                        <!-- Chi tiết API key hợp lệ -->
-                                        <div class="status-details">
-                                            <h3 class="status-details-title">Thông tin chi tiết</h3>
-                                            <ul class="status-details-list">
-                                                <li class="status-details-item">
-                                                    <span class="status-details-label">Thời gian phản hồi:</span>
-                                                    <span class="status-details-value">{{ primary_key_status.details.response_time_ms }} ms</span>
-                                                </li>
-                                                <li class="status-details-item">
-                                                    <span class="status-details-label">Kiểm tra lúc:</span>
-                                                    <span class="status-details-value">{{ primary_key_status.details.checked_at }}</span>
-                                                </li>
-                                                <li class="status-details-item">
-                                                    <span class="status-details-label">Models khả dụng:</span>
-                                                    <span class="status-details-value">{{ primary_key_status.details.available_models|length }}</span>
-                                                </li>
-                                            </ul>
-                                            
-                                            <!-- Danh sách models -->
-                                            <div style="margin-top: 1rem;">
-                                                <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Models khả dụng:</h4>
-                                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                                    {% for model in primary_key_status.details.available_models %}
-                                                        <span class="status-badge" style="background-color: rgba(59, 130, 246, 0.1); color: var(--primary);">
-                                                            {{ model }}
-                                                        </span>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    {% else %}
-                                        <div class="status-badge status-invalid">
-                                            <i class="fas fa-exclamation-circle status-icon"></i>
-                                            <span>{{ primary_key_status.message }}</span>
-                                        </div>
-                                        
-                                        <!-- Chi tiết lỗi API key -->
-                                        {% if primary_key_status.details %}
-                                            <div class="status-details">
-                                                <h3 class="status-details-title">Thông tin lỗi</h3>
-                                                <ul class="status-details-list">
-                                                    <li class="status-details-item">
-                                                        <span class="status-details-label">Lỗi:</span>
-                                                        <span class="status-details-value">{{ primary_key_status.details.error }}</span>
-                                                    </li>
-                                                    <li class="status-details-item">
-                                                        <span class="status-details-label">Kiểm tra lúc:</span>
-                                                        <span class="status-details-value">{{ primary_key_status.details.checked_at }}</span>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                    {% endif %}
-                                {% else %}
-                                    <div class="status-badge status-unknown">
-                                        <i class="fas fa-question-circle status-icon"></i>
-                                        <span>Chưa kiểm tra trạng thái API key</span>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="status-badge status-invalid">
+                                    <i class="fas fa-exclamation-circle status-icon"></i>
+                                    <span>{{ api_key_status.message }}</span>
+                                </div>
+                                
+                                <!-- Chi tiết lỗi API key -->
+                                {% if api_key_status.details %}
+                                    <div class="status-details">
+                                        <h3 class="status-details-title">Thông tin lỗi</h3>
+                                        <ul class="status-details-list">
+                                            <li class="status-details-item">
+                                                <span class="status-details-label">Lỗi:</span>
+                                                <span class="status-details-value">{{ api_key_status.details.error }}</span>
+                                            </li>
+                                            <li class="status-details-item">
+                                                <span class="status-details-label">Kiểm tra lúc:</span>
+                                                <span class="status-details-value">{{ api_key_status.details.checked_at }}</span>
+                                            </li>
+                                        </ul>
                                     </div>
                                 {% endif %}
-                                
-                                <!-- Form cập nhật API key chính -->
-                                <form method="POST" action="{{ url_for('admin_api_settings') }}" style="margin-top: 1.5rem;">
-                                    <input type="hidden" name="key_type" value="primary">
-                                    <div class="api-form-group">
-                                        <div class="form-field">
-                                            <label class="form-label">OpenAI API Key Chính</label>
-                                            <input type="text" class="form-input" name="openai_api_key" value="{{ current_primary_key }}" placeholder="Nhập OpenAI API key chính">
-                                            <small class="form-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
-                                        </div>
-                                        
-                                        <div class="api-actions">
-                                            <button type="submit" class="api-button">
-                                                <i class="fas fa-save api-button-icon"></i> Lưu Key Chính
-                                            </button>
-                                            <button type="button" class="api-button api-button-secondary" onclick="checkKeyValidity('primary')">
-                                                <i class="fas fa-sync-alt api-button-icon"></i> Kiểm tra lại
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
+                            {% endif %}
+                        {% else %}
+                            <div class="status-badge status-unknown">
+                                <i class="fas fa-question-circle status-icon"></i>
+                                <span>Chưa kiểm tra trạng thái API key</span>
                             </div>
-
-                            <!-- Fallback Key Card -->
-                            <div class="api-card">
-                                <div class="api-card-header">
-                                    <i class="fas fa-key api-icon"></i>
-                                    <h2 class="api-card-title">
-                                        <span>API Key Dự phòng</span>
-                                        <span class="key-type-badge key-type-fallback">FALLBACK</span>
-                                        {% if active_key_info and active_key_info.type == 'fallback' %}
-                                            <span class="key-active-indicator key-active"></span>
-                                        {% endif %}
-                                    </h2>
-                                </div>
-                                <p class="api-card-description">API key dự phòng sẽ tự động được sử dụng khi key chính gặp sự cố hoặc hết hạn.</p>
-                                
-                                <!-- Hiển thị trạng thái API key dự phòng -->
-                                {% if fallback_key_status %}
-                                    {% if fallback_key_status.valid %}
-                                        <div class="status-badge status-valid">
-                                            <i class="fas fa-check-circle status-icon"></i>
-                                            <span>{{ fallback_key_status.message }}</span>
-                                        </div>
-                                        
-                                        <!-- Chi tiết API key hợp lệ -->
-                                        <div class="status-details">
-                                            <h3 class="status-details-title">Thông tin chi tiết</h3>
-                                            <ul class="status-details-list">
-                                                <li class="status-details-item">
-                                                    <span class="status-details-label">Thời gian phản hồi:</span>
-                                                    <span class="status-details-value">{{ fallback_key_status.details.response_time_ms }} ms</span>
-                                                </li>
-                                                <li class="status-details-item">
-                                                    <span class="status-details-label">Kiểm tra lúc:</span>
-                                                    <span class="status-details-value">{{ fallback_key_status.details.checked_at }}</span>
-                                                </li>
-                                                <li class="status-details-item">
-                                                    <span class="status-details-label">Models khả dụng:</span>
-                                                    <span class="status-details-value">{{ fallback_key_status.details.available_models|length }}</span>
-                                                </li>
-                                            </ul>
-                                            
-                                            <!-- Danh sách models -->
-                                            <div style="margin-top: 1rem;">
-                                                <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Models khả dụng:</h4>
-                                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                                    {% for model in fallback_key_status.details.available_models %}
-                                                        <span class="status-badge" style="background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
-                                                            {{ model }}
-                                                        </span>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    {% else %}
-                                        <div class="status-badge status-invalid">
-                                            <i class="fas fa-exclamation-circle status-icon"></i>
-                                            <span>{{ fallback_key_status.message }}</span>
-                                        </div>
-                                        
-                                        <!-- Chi tiết lỗi API key -->
-                                        {% if fallback_key_status.details %}
-                                            <div class="status-details">
-                                                <h3 class="status-details-title">Thông tin lỗi</h3>
-                                                <ul class="status-details-list">
-                                                    <li class="status-details-item">
-                                                        <span class="status-details-label">Lỗi:</span>
-                                                        <span class="status-details-value">{{ fallback_key_status.details.error }}</span>
-                                                    </li>
-                                                    <li class="status-details-item">
-                                                        <span class="status-details-label">Kiểm tra lúc:</span>
-                                                        <span class="status-details-value">{{ fallback_key_status.details.checked_at }}</span>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                    {% endif %}
-                                {% else %}
-                                    <div class="status-badge status-unknown">
-                                        <i class="fas fa-question-circle status-icon"></i>
-                                        <span>Chưa kiểm tra trạng thái API key</span>
-                                    </div>
-                                {% endif %}
-                                
-                                <!-- Form cập nhật API key dự phòng -->
-                                <form method="POST" action="{{ url_for('admin_api_settings') }}" style="margin-top: 1.5rem;">
-                                    <input type="hidden" name="key_type" value="fallback">
-                                    <div class="api-form-group">
-                                        <div class="form-field">
-                                            <label class="form-label">OpenAI API Key Dự phòng</label>
-                                            <input type="text" class="form-input" name="openai_fallback_key" value="{{ current_fallback_key }}" placeholder="Nhập OpenAI API key dự phòng">
-                                            <small class="form-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
-                                        </div>
-                                        
-                                        <div class="api-actions">
-                                            <button type="submit" class="api-button">
-                                                <i class="fas fa-save api-button-icon"></i> Lưu Key Dự phòng
-                                            </button>
-                                            <button type="button" class="api-button api-button-secondary" onclick="checkKeyValidity('fallback')">
-                                                <i class="fas fa-sync-alt api-button-icon"></i> Kiểm tra lại
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 2rem;">
-                            <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Hướng dẫn sử dụng</h2>
-                            <div class="api-card">
-                                <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Cách lấy OpenAI API Key</h3>
-                                <ol style="padding-left: 1.5rem; margin-bottom: 1.5rem;">
-                                    <li style="margin-bottom: 0.5rem;">Đăng nhập vào tài khoản OpenAI của bạn tại <a href="https://platform.openai.com/" target="_blank" style="color: var(--primary);">platform.openai.com</a></li>
-                                    <li style="margin-bottom: 0.5rem;">Truy cập vào mục API Keys trong phần quản lý tài khoản</li>
-                                    <li style="margin-bottom: 0.5rem;">Tạo API key mới và sao chép vào ô nhập liệu ở trên</li>
-                                    <li style="margin-bottom: 0.5rem;">Nhấn "Lưu API Key" để cập nhật</li>
-                                </ol>
-                                
-                                <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Lưu ý quan trọng</h3>
-                                <ul style="padding-left: 1.5rem;">
-                                    <li style="margin-bottom: 0.5rem;">API key có tính phí, hãy đảm bảo bạn hiểu rõ cách tính phí của OpenAI</li>
-                                    <li style="margin-bottom: 0.5rem;">Không chia sẻ API key với người khác</li>
-                                    <li style="margin-bottom: 0.5rem;">Nếu API key bị lộ, hãy vô hiệu hóa ngay và tạo key mới</li>
-                                    <li style="margin-bottom: 0.5rem;">Kiểm tra trạng thái API key thường xuyên để đảm bảo hệ thống hoạt động ổn định</li>
-                                    <li style="margin-bottom: 0.5rem;">Hệ thống sẽ tự động chuyển sang key dự phòng nếu key chính gặp sự cố</li>
-                                    <li style="margin-bottom: 0.5rem;">Bạn sẽ nhận được thông báo qua email khi hệ thống chuyển đổi giữa các key</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tab API Status -->
-                    <div id="api-status" class="tab-content">
-                        <div class="api-card">
-                            <div class="api-card-header">
-                                <i class="fas fa-chart-line api-icon"></i>
-                                <h2 class="api-card-title">Trạng thái hệ thống API</h2>
-                            </div>
-                            
+                        {% endif %}
+                        
+                        <!-- Form cập nhật API key -->
+                        <form method="POST" action="{{ url_for('admin_api_settings') }}" style="margin-top: 1.5rem;">
                             <div class="api-form-group">
                                 <div class="form-field">
-                                    <label class="form-label">Key đang hoạt động</label>
-                                    <div style="display: flex; align-items: center;">
-                                        {% if active_key_info %}
-                                            <span class="key-active-indicator key-active"></span>
-                                            <span style="font-weight: 500;">
-                                                {{ active_key_info.type|upper }} KEY: {{ active_key_info.short_key }}
-                                            </span>
-                                        {% else %}
-                                            <span class="key-active-indicator key-inactive"></span>
-                                            <span style="font-weight: 500;">Không có key nào hoạt động</span>
-                                        {% endif %}
-                                    </div>
-                                    {% if last_switch_time %}
-                                        <small class="key-last-used">Lần chuyển đổi cuối: {{ last_switch_time }}</small>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="form-field">
-                                    <label class="form-label">Tự động chuyển đổi</label>
-                                    <div style="display: flex; align-items: center;">
-                                        <span class="status-badge status-valid">
-                                            <i class="fas fa-check-circle status-icon"></i>
-                                            <span>Đang bật</span>
-                                        </span>
-                                        <small style="margin-left: 0.5rem;">(Tự động chuyển sang key dự phòng khi key chính gặp sự cố)</small>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-field">
-                                    <label class="form-label">Thống kê sử dụng</label>
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
-                                        <div class="api-card" style="padding: 1rem;">
-                                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Key chính</div>
-                                            <div style="font-size: 1.25rem; font-weight: 600;">
-                                                {% if primary_key_stats %}
-                                                    {{ primary_key_stats.success_rate }}% thành công
-                                                {% else %}
-                                                    Chưa có dữ liệu
-                                                {% endif %}
-                                            </div>
-                                            <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">
-                                                {% if primary_key_stats %}
-                                                    {{ primary_key_stats.total_requests }} yêu cầu
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="api-card" style="padding: 1rem;">
-                                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Key dự phòng</div>
-                                            <div style="font-size: 1.25rem; font-weight: 600;">
-                                                {% if fallback_key_stats %}
-                                                    {{ fallback_key_stats.success_rate }}% thành công
-                                                {% else %}
-                                                    Chưa có dữ liệu
-                                                {% endif %}
-                                            </div>
-                                            <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">
-                                                {% if fallback_key_stats %}
-                                                    {{ fallback_key_stats.total_requests }} yêu cầu
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="api-card" style="padding: 1rem;">
-                                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Lần chuyển đổi</div>
-                                            <div style="font-size: 1.25rem; font-weight: 600;">
-                                                {% if switch_stats %}
-                                                    {{ switch_stats.total_switches }}
-                                                {% else %}
-                                                    0
-                                                {% endif %}
-                                            </div>
-                                            <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">
-                                                {% if switch_stats and switch_stats.last_switch %}
-                                                    Lần cuối: {{ switch_stats.last_switch }}
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <label class="form-label">OpenAI API Key</label>
+                                    <input type="text" class="form-input" name="openai_api_key" value="{{ current_api_key }}" placeholder="Nhập OpenAI API key mới">
+                                    <small class="form-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
                                 </div>
                                 
                                 <div class="api-actions">
@@ -927,70 +527,5 @@
             </div>
         </div>
     </div>
-    <script>
-        // Xử lý chuyển đổi giữa các tab
-        document.addEventListener('DOMContentLoaded', function() {
-            const tabs = document.querySelectorAll('.tab');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Xóa active class từ tất cả các tab và nội dung
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tabContents.forEach(c => c.classList.remove('active'));
-                    
-                    // Thêm active class cho tab và nội dung được chọn
-                    this.classList.add('active');
-                    const tabId = this.getAttribute('data-tab');
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-            
-            // Kiểm tra nếu có hash trong URL để mở tab tương ứng
-            const hash = window.location.hash.substr(1);
-            if (hash) {
-                const tabToOpen = document.querySelector(`.tab[data-tab="${hash}"]`);
-                if (tabToOpen) {
-                    tabToOpen.click();
-                }
-            }
-        });
-    
-        // Hàm kiểm tra tính hợp lệ của API key
-        
-    
-        // Xử lý hiển thị/ẩn API key khi nhấp vào icon eye
-        document.querySelectorAll('.toggle-password').forEach(icon => {
-            icon.addEventListener('click', function() {
-                const input = this.previousElementSibling;
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    this.classList.remove('fa-eye');
-                    this.classList.add('fa-eye-slash');
-                } else {
-                    input.type = 'password';
-                    this.classList.remove('fa-eye-slash');
-                    this.classList.add('fa-eye');
-                }
-            });
-        });
-    
-        // Xử lý thông báo tự động đóng sau 5 giây
-        document.querySelectorAll('.alert-notification').forEach(alert => {
-            setTimeout(() => {
-                alert.style.opacity = '0';
-                setTimeout(() => {
-                    alert.style.display = 'none';
-                }, 300);
-            }, 5000);
-        });
-    
-        // Thêm sự kiện click để đóng thông báo thủ công
-        document.querySelectorAll('.alert-notification .alert-icon').forEach(icon => {
-            icon.addEventListener('click', function() {
-                this.closest('.alert-notification').style.display = 'none';
-            });
-        });
-    </script>
 </body>
 </html>

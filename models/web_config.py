@@ -9,7 +9,6 @@ class WebConfig(db.Model):
     category = db.Column(db.String(50), nullable=False, default='general')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
     @classmethod
     def get_value(cls, key, default=None):
         """Get a configuration value by key"""
@@ -37,4 +36,84 @@ class WebConfig(db.Model):
     @classmethod
     def get_all(cls):
         """Get all configuration values"""
-        return cls.query.all()
+        return cls.query.all() @classmethod
+    
+class APIKey(db.Model):
+    """Model for storing API keys with their status"""
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(100), nullable=False, default='OpenAI API Key')
+    provider = db.Column(db.String(50), nullable=False, default='openai')
+    is_active = db.Column(db.Boolean, default=True)
+    is_valid = db.Column(db.Boolean, default=True)
+    status_message = db.Column(db.Text, nullable=True)
+    last_checked = db.Column(db.DateTime, nullable=True)
+    response_time = db.Column(db.Integer, nullable=True)  # Thời gian phản hồi (ms)
+    available_models = db.Column(db.Text, nullable=True)  # Danh sách models dạng JSON
+    error_details = db.Column(db.Text, nullable=True)  # Chi tiết lỗi nếu có
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @classmethod
+    def add_key(cls, key, name=None, provider='openai'):
+        """Thêm API key mới vào hệ thống"""
+        if not name:
+            name = f'{provider.capitalize()} API Key'
+        
+        api_key = cls(key=key, name=name, provider=provider)
+        db.session.add(api_key)
+        db.session.commit()
+        return api_key
+    
+    @classmethod
+    def get_active_key(cls, provider='openai'):
+        """Lấy API key đang hoạt động của một provider"""
+        return cls.query.filter_by(provider=provider, is_active=True, is_valid=True).first()
+    
+    @classmethod
+    def get_all_keys(cls, provider=None):
+        """Lấy tất cả API key, có thể lọc theo provider"""
+        if provider:
+            return cls.query.filter_by(provider=provider).order_by(cls.is_active.desc(), cls.updated_at.desc()).all()
+        return cls.query.order_by(cls.provider, cls.is_active.desc(), cls.updated_at.desc()).all()
+    
+    @classmethod
+    def update_key_status(cls, key_id, is_valid, status_message=None, response_time=None, available_models=None, error_details=None):
+        """Cập nhật trạng thái của API key"""
+        api_key = cls.query.get(key_id)
+        if api_key:
+            api_key.is_valid = is_valid
+            api_key.status_message = status_message
+            api_key.last_checked = datetime.utcnow()
+            api_key.response_time = response_time
+            api_key.available_models = available_models
+            api_key.error_details = error_details
+            db.session.commit()
+            return api_key
+        return None
+    
+    @classmethod
+    def set_active_key(cls, key_id, provider='openai'):
+        """Đặt một API key làm key hoạt động chính và vô hiệu hóa các key khác"""
+        # Vô hiệu hóa tất cả các key hiện tại của provider
+        cls.query.filter_by(provider=provider).update({cls.is_active: False})
+        
+        # Đặt key được chọn làm key hoạt động
+        api_key = cls.query.get(key_id)
+        if api_key and api_key.provider == provider:
+            api_key.is_active = True
+            db.session.commit()
+            return api_key
+        return None
+    
+    @classmethod
+    def delete_key(cls, key_id):
+        """Xóa một API key"""
+        api_key = cls.query.get(key_id)
+        if api_key:
+            db.session.delete(api_key)
+            db.session.commit()
+            return True
+        return False
+    
+   
