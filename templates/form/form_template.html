@@ -1,0 +1,7 @@
+<!-- Thêm vào phần head của template -->
+<script src="{{ url_for('static', filename='js/ai-suggestions.js') }}" defer></script>
+
+<!-- Cập nhật form để thêm thuộc tính data-form-type -->
+<form method="POST" action="{{ url_for('form.submit_form') }}" data-form-type="{{ form_type }}" id="dynamic-form">
+    <!-- ... existing code ... -->
+</form>

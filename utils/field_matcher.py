@@ -575,17 +575,24 @@ class EnhancedFieldMatcher:
         
         return [val[0] for val in sorted_values[:limit]]
     
-    def update_form_history(self, new_form_data: Dict, user_id: Optional[int] = None) -> None:
+    def update_form_history(self, new_form_data: Dict, user_id: Optional[int] = None, doc_path: Optional[str] = None) -> None:
         """
-        Cải tiến: Cập nhật cả user preferences khi thêm dữ liệu mới
+        Cải tiến: Cập nhật cả user preferences khi thêm dữ liệu mới và thêm form_type
         """
         try:
             # Thêm thông tin user nếu có
             if user_id is not None:
                 new_form_data['user_id'] = user_id
             
+            # Thêm form_type nếu có đường dẫn tài liệu
+            if doc_path is not None:
+                from utils.form_type_detector import FormTypeDetector
+                detector = FormTypeDetector(self.form_history_path)
+                form_type = detector.detect_form_type(doc_path)
+                new_form_data['form_type'] = form_type
+            
             # Thêm vào lịch sử
-            self.form_history_path.append({'form_data': new_form_data, 'user_id': user_id})
+            self.form_history.append({'form_data': new_form_data, 'user_id': user_id})
             
             # Cập nhật field_value_mapping
             for field_name, value in new_form_data.items():
@@ -608,6 +615,6 @@ class EnhancedFieldMatcher:
             
             # Lưu vào file
             with open(self.form_history_path, 'w', encoding='utf-8') as f:
-                json.dump(self.form_history_path, f, ensure_ascii=False, indent=2)
+                json.dump(self.form_history, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Error updating form history: {e}")

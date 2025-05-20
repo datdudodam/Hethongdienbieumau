@@ -54,13 +54,16 @@ def register_form_routes(app):
                 "form_id": form_id,
                 "document_name": form_data.get('document_name', '')
             }
-            
+            from utils.form_type_detector import FormTypeDetector
+            detector = FormTypeDetector()
+            form_type = detector.detect_form_type(doc_path)
             for field in fields:
                 field_code = field['field_code']
                 field_name = field['field_name']
                 if field_code in form_data:
                     transformed_data[field_name] = form_data[field_code]
-
+           
+            transformed_data['form_type'] = form_type
             # Lưu vào form history
             try:
                 from flask_login import current_user

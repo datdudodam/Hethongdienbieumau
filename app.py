@@ -17,6 +17,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Use a fixed secret key for development to ensure session persistence
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-for-session-persistence') # Thêm secret key cho session
 
+# Cấu hình OpenAI API
+app.config['OPENAI_API_KEY'] = os.environ.get('OPENAI_API_KEY', '')
+
 # Cấu hình session cho OAuth
 app.config['SESSION_COOKIE_NAME'] = 'My Flask App'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Session lifetime in seconds
@@ -48,7 +51,7 @@ db.init_app(app)
 # Đảm bảo có một app context khi truy vấn DB
 with app.app_context():
     # Import WebConfig model trước khi tạo bảng để đảm bảo nó được đăng ký với SQLAlchemy
-    from models.web_config import WebConfig
+    from models.web_config import WebConfig, APIKey
     from models.transaction import Transaction
     try:
     # Kiểm tra xem bảng đã tồn tại chưa trước khi tạo
@@ -56,7 +59,7 @@ with app.app_context():
         tables_to_create = False
         
         # Danh sách các bảng cần kiểm tra
-        tables_needed = ['role', 'user', 'web_config', 'transactions']
+        tables_needed = ['role', 'user', 'web_config', 'transactions', 'api_key']
         
         for table in tables_needed:
             if not inspector.has_table(table):

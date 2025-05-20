@@ -36,7 +36,7 @@ class WebConfig(db.Model):
     @classmethod
     def get_all(cls):
         """Get all configuration values"""
-        return cls.query.all() @classmethod
+        return cls.query.all() 
     
 class APIKey(db.Model):
     """Model for storing API keys with their status"""

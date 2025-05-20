@@ -331,3 +331,71 @@ function addEnhancedSuggestionButtons() {
         buttonsContainer.appendChild(enhancedButton);
     });
 }
+
+/**
+ * Module xử lý gợi ý thông minh dựa trên form_type
+ */
+
+/**
+ * Module xử lý gợi ý thông minh dựa trên form_type
+ */
+const SmartFormSuggester = {
+    /**
+     * Khởi tạo module
+     */
+    init: function() {
+        // Thêm nút gợi ý thông minh vào giao diện
+        this.addSmartSuggestionButton();
+        
+        // Lắng nghe sự kiện khi người dùng tải lên tài liệu mới
+        document.addEventListener('documentLoaded', this.onDocumentLoaded.bind(this));
+    },
+    
+    /**
+     * Thêm nút gợi ý thông minh vào giao diện
+     */
+    addSmartSuggestionButton: function() {
+        // Tìm container chứa các nút chức năng
+        const actionContainer = document.querySelector('.form-actions') || document.querySelector('.action-buttons');
+        
+        if (actionContainer) {
+            // Tạo nút gợi ý thông minh
+            const smartButton = document.createElement('button');
+            smartButton.type = 'button';
+            smartButton.className = 'btn btn-primary smart-suggestion-btn';
+            smartButton.innerHTML = '<i class="fas fa-magic"></i> Gợi ý thông minh';
+            smartButton.onclick = this.requestSmartSuggestions.bind(this);
+            
+            // Thêm nút vào container
+            actionContainer.appendChild(smartButton);
+        }
+    },
+    
+    /**
+     * Xử lý khi tài liệu được tải lên
+     */
+    onDocumentLoaded: function(event) {
+        // Tự động phát hiện form_type
+        this.detectFormType();
+    },
+    
+    /**
+     * Phát hiện loại biểu mẫu
+     */
+    detectFormType: function() {
+        // Kiểm tra xem đã có form_type trong form chưa
+        const formTypeInput = document.querySelector('input[name="form_type"]');
+        
+        if (!formTypeInput) {
+            // Nếu chưa có, tạo input ẩn để lưu form_type
+            const form = document.querySelector('form');
+            if (form) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'form_type';
+                hiddenInput.id = 'form_type';
+                hiddenInput.value = 'form_type';
+            }
+        }
+    }
+}

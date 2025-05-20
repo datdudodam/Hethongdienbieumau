@@ -87,13 +87,22 @@ def generate_docx(form_data, doc_path, custom_filename=None):
         ascii_filename = download_filename.encode('ascii', 'ignore').decode()
         utf8_filename = quote(download_filename.encode('utf-8'))
         
+        # Xác định loại biểu mẫu
+        from utils.form_type_detector import FormTypeDetector
+        detector = FormTypeDetector()
+        form_type = detector.detect_form_type(doc_path)
+        
+        # Thêm form_type vào form_data
+        form_data['form_type'] = form_type
+        
         # Trả về thông tin để tạo response
         return {
             "success": True,
             "doc_data": doc_data,
             "ascii_filename": ascii_filename,
             "utf8_filename": utf8_filename,
-            "temp_doc_path": temp_doc_path
+            "temp_doc_path": temp_doc_path,
+            "form_type": form_type
         }, 200
 
     except Exception as e:

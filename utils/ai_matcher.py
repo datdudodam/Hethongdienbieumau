@@ -93,7 +93,7 @@ class AIFieldMatcher:
             if recent_values:
                 prompt += f"Gần đây người dùng hay chọn (theo thứ tự mới nhất): {', '.join(recent_values)}.\n"
                 prompt += f"Hãy ưu tiên các giá trị gần đây nhất khi đưa ra gợi ý.\n"
-            
+             
             # Add frequency data if available
             if frequency_data:
                 prompt += f"Tần suất sử dụng: {frequency_data}\n"
