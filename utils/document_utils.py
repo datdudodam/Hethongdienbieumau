@@ -17,34 +17,53 @@ def load_document(doc_path):
     doc = Document(doc_path)
     return "\n".join([para.text.strip() for para in doc.paragraphs])
 
+
+
 def extract_fields(text):
     """
-    Trích xuất các trường từ văn bản
+    Trích xuất các trường từ văn bản, với nhiều mẫu mã trường khác nhau.
+    Các mẫu mã trường: [_123_], ...., ____, [fill]
+    Nếu có các từ khóa đặc biệt như "ngày", "tháng", "năm" đứng ngay trước mã trường, 
+    thì trường được lấy là từ khóa đó.
+    Nếu không, lấy chuỗi bắt đầu từ ký tự viết hoa gần nhất trước mã trường đến vị trí mã trường.
     """
-    matches = re.finditer(r"\[_\d+_\]", text)
+    patterns = [r"\[_\d+_\]", r"\.{4,}", r"_{4,}", r"\[fill\]"]
     fields = []
-    special_words = {"ngày", "tháng", "năm"}
     
-    for match in matches:
-        end_index = match.start()
-        field_name = ""
-        i = end_index - 1
-        while i >= 0 and text[i] == " ":
-            i -= 1
-        
-        for word in special_words:
-            if text[max(0, i - len(word) + 1):end_index].strip().lower() == word:
-                field_name = word
-                break
-        
-        if not field_name:
-            for j in range(i, -1, -1):
-                if text[j].isupper():
-                    field_name = text[j:end_index].strip()
-                    break
-        
-        if field_name:
-            fields.append({"field_name": field_name, "field_code": match.group()})
+    for pattern in patterns:
+        for match in re.finditer(pattern, text):
+            end_index = match.start()
+            
+            # Bỏ khoảng trắng ngay trước vị trí mã trường
+            i = end_index - 1
+            while i >= 0 and text[i] == " ":
+                i -= 1
+            
+            field_name = ""
+            special_words = {"ngày", "tháng", "năm"}
+            
+            # Kiểm tra từ khóa đặc biệt
+            for word in special_words:
+                start_word = i - len(word) + 1
+                if start_word >= 0:
+                    segment = text[start_word:i+1].lower()
+                    if segment == word:
+                        field_name = word
+                        break
+            
+            # Nếu không có từ khóa đặc biệt, tìm chuỗi bắt đầu từ chữ in hoa gần nhất trước mã trường
+            if not field_name:
+                for j in range(i, -1, -1):
+                    if text[j].isupper():
+                        field_name = text[j:end_index].strip()
+                        break
+            
+            if field_name:
+                fields.append({
+                    "field_name": field_name,
+                    "field_code": match.group()
+                })
+
     return fields
 
 def upload_document(file):
@@ -131,13 +150,15 @@ def set_doc_path(path):
         print(f"Error setting doc_path in session: {str(e)}")
     # Vẫn lưu vào biến toàn cục để đảm bảo tương thích ngược
     doc_path = path
-def extract_table_fields(doc_path):
+def extract_table_fields(doc_path): 
     """
     Trích xuất các trường từ bảng trong tài liệu docx.
-    Trường hợp bảng có dạng: | Tên trường | [_123_] |
+    Trường hợp bảng có dạng: | Tên trường | [_123_] hoặc ____ hoặc .... hoặc [fill] |
     """
     doc = Document(doc_path)
     fields = []
+    
+    patterns = [r"\[_\d+_\]", r"\.{4,}", r"_{4,}", r"\[fill\]"]
     
     for table in doc.tables:
         for row in table.rows:
@@ -145,15 +166,16 @@ def extract_table_fields(doc_path):
                 field_name = row.cells[0].text.strip()
                 field_value = row.cells[1].text.strip()
                 
-                match = re.search(r"\[_\d+_\]", field_value)
-                if match:
-                    field_code = match.group()
-                    fields.append({
-                        "field_name": field_name,
-                        "field_code": field_code
-                    })
+                for pattern in patterns:
+                    match = re.search(pattern, field_value)
+                    if match:
+                        field_code = match.group()
+                        fields.append({
+                            "field_name": field_name,
+                            "field_code": field_code
+                        })
+                        break  # Dừng nếu đã khớp một pattern
     return fields
-
 
 def extract_all_fields(doc_path):
     """

@@ -317,269 +317,85 @@ class AIFieldMatcher:
             "reason": result.get("reason", "")
         }
 
-    def rewrite_user_input(
-        self,
-        field_name: str,
-        user_input: str,
-        context: Optional[str] = None,
-        expected_length: Optional[int] = None
-    ) -> str:
-        """
-        Phiên bản nâng cao của phương thức cải thiện đầu vào người dùng
-        """
+    def rewrite_user_input(self, field_name: str, user_input: str, context: Optional[str] = None) -> str:
+        """Improve user input for form field"""
         if not user_input:
             return ""
-        
-        try:
-            # Phân tích loại trường
-            field_type = self._determine_field_type(field_name, user_input)
             
-            prompt_parts = [
-                f"Cải thiện đầu vào cho trường '{field_name}':",
-                f"Loại trường: {field_type}",
-                f"Đầu vào gốc: \"{user_input}\"",
-            ]
+        try:
+            similar_fields = self.find_similar_fields(field_name)
+            
+            prompt = (
+                f"Improve this form input for field '{field_name}':\n"
+                f"Similar fields: {', '.join(similar_fields) if similar_fields else 'None'}\n"
+                f"User input: \"{user_input}\"\n"
+            )
             
             if context:
-                prompt_parts.append(f"Ngữ cảnh: {context}")
-            
-            if expected_length:
-                prompt_parts.append(f"Độ dài mong muốn: ~{expected_length} ký tự")
-            
-            prompt_parts.extend([
-                "Yêu cầu cải thiện:",
-                "1. Giữ nguyên ý chính",
-                "2. Sửa lỗi ngữ pháp/chính tả",
-                "3. Làm rõ nghĩa nếu cần",
-                "4. Phù hợp với loại trường",
-                "5. Giữ nguyên giọng văn của người dùng",
-                "Chỉ trả về văn bản đã cải thiện, không thêm chú thích"
-            ])
+                prompt += f"\nContext:\n{context}\n"
+                
+            prompt += (
+                "\nImprove to be:\n"
+                "1. Grammatically correct\n"
+                "2. Field-appropriate\n"
+                "3. Professional\n"
+                "4. Preserve original meaning\n\n"
+                "Return only improved text."
+            )
             
             response = self.client.chat.completions.create(
                 model="gpt-4-1106-preview",
-                messages=[{"role": "user", "content": "\n".join(prompt_parts)}],
-                temperature=0.4,
-                max_tokens=500
+                messages=[
+                    {"role": "system", "content": "Form input improvement assistant."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=200
             )
             
-            improved = response.choices[0].message.content.strip()
-            
-            # Xử lý hậu kỳ
-            return self._post_process_improved_text(
-                improved, 
-                field_type,
-                expected_length
-            )
+            improved_text = response.choices[0].message.content.strip() if response and response.choices else user_input
+            return improved_text.strip('"')
             
         except Exception as e:
-            logger.error(f"Error in advanced input rewriting: {e}")
+            logger.error(f"Error rewriting input: {e}")
             return user_input
-
-    def _determine_field_type(self, field_name: str, example: str) -> str:
-        """
-        Xác định loại trường dựa trên tên và ví dụ
-        """
-        normalized_name = self._normalize_field_name(field_name)
-        
-        # Kiểm tra các từ khóa quan trọng
-        if any(kw in normalized_name for kw in ["name", "ho ten", "ten"]):
-            return "name"
-        elif any(kw in normalized_name for kw in ["date", "ngay", "thoi gian"]):
-            return "date"
-        elif any(kw in normalized_name for kw in ["address", "dia chi"]):
-            return "address"
-        elif any(kw in normalized_name for kw in ["description", "mo ta", "content"]):
-            return "free_text"
-        elif len(example.split()) > 10 or len(example) > 100:
-            return "free_text"
-        elif re.match(r"\d{1,2}/\d{1,2}/\d{4}", example):
-            return "date"
-        else:
-            return "short_text"
     def _get_enhanced_context(
         self,
-        current_context: Optional[str],
+        context: Optional[str],
         db_data: List[Dict],
         user_id: str,
-        form_type: Optional[str]
+        form_type: Optional[str] = None
     ) -> str:
         """
-        Tăng cường ngữ cảnh hiện tại bằng cách kết hợp lịch sử người dùng và loại biểu mẫu
+        Tăng cường ngữ cảnh dựa trên lịch sử người dùng, loại form và các thông tin liên quan
         """
-        if current_context:
-            return current_context
+        # Khởi tạo context nếu chưa có
+        enhanced_context = context or ""
 
+        # Lấy các form gần đây của người dùng cùng loại (nếu có)
         recent_entries = [
             entry for entry in db_data
             if str(entry.get("user_id")) == str(user_id)
+            and (not form_type or entry.get("form_data", {}).get("form_type") == form_type)
         ]
-
-        if form_type:
-            recent_entries = [
-                e for e in recent_entries
-                if e.get("form_data", {}).get("form_type") == form_type
-            ]
-
-        context_fragments = []
-        for entry in recent_entries[-3:]:  # Lấy 3 biểu mẫu gần nhất
-            form_data = entry.get("form_data", {})
-            summary = "; ".join(
-                f"{k}: {v}" for k, v in form_data.items()
-                if k != "form_type" and v
-            )
-            if summary:
-                context_fragments.append(f"Gần đây bạn đã điền: {summary}")
-
-        return "\n".join(context_fragments) if context_fragments else "Không có ngữ cảnh rõ ràng từ lịch sử."
-
-    def _find_best_matching_field(
-        self,
-        db_data: List[Dict],
-        user_id: str,
-        field_code: Optional[str],
-        field_name: Optional[str],
-        form_type: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Tìm trường phù hợp nhất từ tên hoặc mã đã cho
-        """
-        field_candidates = set()
         
-        for entry in db_data:
-            if form_type and entry.get("form_data", {}).get("form_type") != form_type:
-                continue
-            for k in entry.get("form_data", {}).keys():
-                field_candidates.add(k)
-
-        def normalize(text: str) -> str:
-            return text.lower().replace("_", "").replace(" ", "")
-
-        target = normalize(field_code or field_name or "")
-        best_field = None
-        highest_score = -1
-
-        for field in field_candidates:
-            score = self._similarity_score(normalize(field), target)
-            if score > highest_score:
-                best_field = field
-                highest_score = score
-
-        similar_fields = [
-            f for f in field_candidates if f != best_field and self._similarity_score(normalize(f), normalize(best_field)) > 0.8
-        ]
-
-        return {
-            "best_field_name": best_field,
-            "similar_fields": similar_fields,
-            "match_score": highest_score
-        }
-
-    def _similarity_score(self, a: str, b: str) -> float:
-        """
-        Tính điểm tương đồng đơn giản giữa hai chuỗi
-        """
-        from difflib import SequenceMatcher
-        return SequenceMatcher(None, a, b).ratio()
-    def _analyze_data_patterns(self, values: List[str]) -> Dict:
-        """
-        Phân tích danh sách giá trị để tìm ra mẫu dữ liệu chung
-        """
-        if not values:
-            return {}
-
-        samples = values[:10] if len(values) > 10 else values
-        prompt = (
-            "Phân tích các giá trị sau và xác định mẫu dữ liệu chung (nếu có):\n"
-            f"{samples}\n\n"
-            "Trả về JSON với các trường:\n"
-            "- pattern_type (enum: ['list', 'date', 'name', 'address', 'free_text', 'other'])\n"
-            "- common_format (ví dụ: 'DD/MM/YYYY')\n"
-            "- likely_purpose\n"
-            "- sample_template"
-        )
-
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                response_format={"type": "json_object"}
-            )
-            return json.loads(response.choices[0].message.content)
-        except:
-            return {"pattern_type": "other"}
-    def _collect_relevant_data(
-        self,
-        db_data: List[Dict],
-        user_id: str,
-        field_name: str,
-        similar_fields: List[str],
-        form_type: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Thu thập dữ liệu liên quan cho trường đang xét, dựa trên lịch sử người dùng
-        và các trường có tên tương đồng trong cùng loại form.
-        """
-        values = []
-        matched_fields = set()
-
-        for entry in db_data:
-            if str(entry.get("user_id")) != str(user_id):
-                continue
-
+        # Chọn tối đa 3 mẫu gần nhất để rút trích ngữ cảnh
+        recent_entries = sorted(
+            recent_entries,
+            key=lambda x: x.get("timestamp", ""),
+            reverse=True
+        )[:3]
+        
+        # Trích xuất một số trường phổ biến để bổ sung vào context
+        for entry in recent_entries:
             form_data = entry.get("form_data", {})
-            entry_form_type = form_data.get("form_type")
-            if form_type and form_type != entry_form_type:
-                continue
-
-            for field, value in form_data.items():
-                if not value:
-                    continue
-                norm_field = self._normalize_field_name(field)
-                if norm_field == self._normalize_field_name(field_name) or norm_field in similar_fields:
-                    values.append(str(value).strip())
-                    matched_fields.add(field)
-
-        return {
-            "values": values,
-            "matched_fields": list(matched_fields)
-        }
-    def _get_ai_suggestions(
-    self,
-    field_name: str,
-    relevant_values: List[str],
-    form_type: Optional[str] = None
-) -> str:
-            """
-            Gửi prompt đến AI để gợi ý dữ liệu phù hợp dựa trên các giá trị lịch sử liên quan.
-            """
-            if not relevant_values:
-                return ""
-
-            context_text = "\n".join(f"- {v}" for v in relevant_values)
-            form_type_text = f" thuộc loại biểu mẫu '{form_type}'" if form_type else ""
-
-            prompt = (
-                f"Dựa vào các giá trị sau đây đã từng được nhập cho trường '{field_name}'{form_type_text}:\n"
-                f"{context_text}\n\n"
-                f"Hãy đề xuất một giá trị phù hợp cho trường '{field_name}' để điền vào biểu mẫu."
+            context_snippet = "; ".join(
+                f"{k}: {v}" for k, v in form_data.items() if v and k != "form_type"
             )
-
-            try:
-                response = self.client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[
-                        {"role": "system", "content": "Bạn là một trợ lý điền biểu mẫu thông minh."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.3
-                )
-                suggestion = response.choices[0].message.content.strip()
-                return suggestion
-            except Exception as e:
-                print(f"Lỗi khi gọi AI: {e}")
-                return ""
+            if context_snippet:
+                enhanced_context += f"\nNgữ cảnh từ mẫu trước: {context_snippet}"
+        
+        return enhanced_context.strip()
 
     def generate_personalized_suggestions(
         self,
@@ -589,240 +405,110 @@ class AIFieldMatcher:
         field_name: Optional[str] = None,
         context: Optional[str] = None,
         form_type: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Phiên bản nâng cao của phương thức gợi ý cá nhân hóa
-        """
-        # Phân tích lịch sử người dùng
-        user_history = self._analyze_user_history(db_data, user_id)
-        
-        # Xác định ngữ cảnh nâng cao
-        context = self._get_enhanced_context(context, db_data, user_id, form_type)
-        
-        # Tìm trường phù hợp nhất
-        field_info = self._find_best_matching_field(
-            db_data, user_id, field_code, field_name, form_type
-        )
-        field_name = field_info["best_field_name"]
-        
-        # Thu thập dữ liệu liên quan
-        data_collection = self._collect_relevant_data(
-            db_data, user_id, field_name, 
-            field_info["similar_fields"], form_type
-        )
-        
-        # Phân tích kiểu dữ liệu và mẫu
-        data_patterns = self._analyze_data_patterns(data_collection["values"])
-        
-        # Tạo prompt thông minh
-        prompt = self._build_intelligent_prompt(
-            field_name,
-            data_collection,
-            context,
-            form_type,
-            user_history,
-            data_patterns
-        )
-        
-        # Gọi AI để nhận gợi ý
-        ai_response = self._get_ai_suggestions(prompt, field_name)
-        
-        # Xử lý và tối ưu hóa kết quả
-        return self._process_ai_response(
-            ai_response,
-            data_collection,
-            field_info,
-            user_history
-        )
-
-    def _analyze_user_history(self, db_data: List[Dict], user_id: str) -> Dict:
-        """
-        Phân tích sâu hành vi điền form của người dùng
-        """
-        user_entries = [e for e in db_data if str(e.get("user_id")) == str(user_id)]
-        
-        analysis = {
-            "frequently_used_values": defaultdict(Counter),
-            "common_patterns": {},
-            "time_based_patterns": defaultdict(list),
-            "form_type_preferences": Counter(),
-            "response_length_stats": defaultdict(list)
-        }
-        
-        for entry in user_entries:
-            form_data = entry.get("form_data", {})
-            timestamp = entry.get("timestamp")
-            form_type = form_data.get("form_type")
-            
-            if form_type:
-                analysis["form_type_preferences"][form_type] += 1
-            
-            for field, value in form_data.items():
-                if not value:
-                    continue
-                
-                # Phân tích giá trị thường dùng
-                str_value = str(value).strip()
-                analysis["frequently_used_values"][field][str_value] += 1
-                
-                # Phân tích độ dài phản hồi
-                analysis["response_length_stats"][field].append(len(str_value))
-                
-                # Phân tích theo thời gian
-                if timestamp:
-                    analysis["time_based_patterns"][field].append((timestamp, str_value))
-        
-        # Xác định các mẫu phổ biến
-        for field, counter in analysis["frequently_used_values"].items():
-            if len(counter) > 3:
-                analysis["common_patterns"][field] = self._detect_value_patterns(counter)
-        
-        return analysis
-
-    def _detect_value_patterns(self, value_counter: Counter) -> Dict:
-        """
-        Phát hiện các mẫu trong giá trị trường
-        """
-        samples = [v for v, _ in value_counter.most_common(10)]
-        
-        # Phân tích bằng AI
-        prompt = (
-            "Phân tích các giá trị sau và xác định mẫu chung (nếu có):\n"
-            f"{samples}\n\n"
-            "Trả về JSON với các trường:\n"
-            "- pattern_type (enum: ['list', 'date', 'name', 'address', 'free_text', 'other'])\n"
-            "- common_format (ví dụ: 'DD/MM/YYYY' cho ngày tháng)\n"
-            "- likely_purpose (dự đoán mục đích của trường)\n"
-            "- sample_template (mẫu điển hình)"
-        )
-        
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                response_format={"type": "json_object"}
-            )
-            return json.loads(response.choices[0].message.content)
-        except:
-            return {"pattern_type": "other"}
-
-    def _build_intelligent_prompt(
-        self,
-        field_name: str,
-        data_collection: Dict,
-        context: str,
-        form_type: str,
-        user_history: Dict,
-        data_patterns: Dict
-    ) -> str:
-        """
-        Xây dựng prompt thông minh cho AI
-        """
-        # Phân tích lịch sử cá nhân
-        freq_values = user_history["frequently_used_values"].get(field_name, Counter())
-        common_pattern = user_history["common_patterns"].get(field_name, {})
-        
-        prompt_parts = [
-            f"Yêu cầu: Tạo gợi ý điền trường '{field_name}'",
-            f"Loại form: {form_type}" if form_type else "",
-            f"Ngữ cảnh: {context}" if context else "",
+        ) -> Dict[str, Any]:
+        """Generate personalized suggestions with context"""
+        filtered_entries = [
+            entry for entry in db_data
+            if str(entry.get("user_id")) == str(user_id) and
+            (form_type is None or entry.get("form_data", {}).get("form_type") == form_type)
         ]
-        
-        # Thêm thông tin giá trị lịch sử
-        if data_collection["values"]:
-            prompt_parts.append("\nGiá trị lịch sử:")
-            for val in data_collection["values"][:10]:
-                prompt_parts.append(f"- {val}")
-        
-        # Thêm thông tin mẫu phát hiện
-        if common_pattern:
-            prompt_parts.append("\nMẫu phát hiện:")
-            prompt_parts.append(f"- Kiểu: {common_pattern.get('pattern_type')}")
-            if common_pattern.get("common_format"):
-                prompt_parts.append(f"- Định dạng: {common_pattern['common_format']}")
-            if common_pattern.get("likely_purpose"):
-                prompt_parts.append(f"- Mục đích: {common_pattern['likely_purpose']}")
-        
-        # Thêm hướng dẫn cụ thể cho từng loại trường
-        field_guidance = self._get_field_specific_guidance(field_name, data_patterns)
-        prompt_parts.append(f"\nHướng dẫn điền trường:\n{field_guidance}")
-        
-        # Yêu cầu định dạng đầu ra
-        prompt_parts.extend([
-            "\nYêu cầu đầu ra:",
-            "1. Gợi ý 3 giá trị phù hợp (độ dài khác nhau nếu là văn bản)",
-            "2. Giá trị mặc định tốt nhất",
-            "3. Giải thích ngắn gọn",
-            "Định dạng JSON với các trường: suggestions, default, reason"
-        ])
-        
-        return "\n".join(prompt_parts)
+        sorted_entries = sorted(filtered_entries, key=lambda x: x.get("timestamp", ""), reverse=True)
 
-    def _get_field_specific_guidance(self, field_name: str, data_patterns: Dict) -> str:
-        """
-        Tạo hướng dẫn cụ thể cho từng loại trường
-        """
-        normalized_name = self._normalize_field_name(field_name)
-        
-        # Xác định loại trường từ tên và mẫu dữ liệu
-        field_type = data_patterns.get("pattern_type", "")
-        if not field_type:
-            if any(kw in normalized_name for kw in ["name", "ho ten", "ten"]):
-                field_type = "name"
-            elif any(kw in normalized_name for kw in ["date", "ngay", "thoi gian"]):
-                field_type = "date"
-            elif any(kw in normalized_name for kw in ["address", "dia chi"]):
-                field_type = "address"
-            elif any(kw in normalized_name for kw in ["description", "mo ta"]):
-                field_type = "free_text"
-        
-        # Tạo hướng dẫn cụ thể
-        guidance = {
-            "name": "Điền họ tên đầy đủ, viết hoa chữ cái đầu. Ví dụ: 'Nguyễn Văn A'",
-            "date": "Định dạng ngày tháng theo DD/MM/YYYY. Ví dụ: '15/05/2023'",
-            "address": "Theo thứ tự: Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố",
-            "free_text": "Câu trả lời đầy đủ, rõ ràng, tối thiểu 2 câu. Có thể dùng bullet points nếu phù hợp",
-            "default": "Điền thông tin chính xác, ngắn gọn, phù hợp với yêu cầu"
-        }
-        
-        return guidance.get(field_type, guidance["default"])
+        # Nếu chưa có context thì trích xuất từ lịch sử biểu mẫu gần đây
+        if not context and sorted_entries:
+            recent_forms_text = "\n".join([
+                json.dumps(entry.get("form_data", {}), ensure_ascii=False)
+                for entry in sorted_entries[:3]
+            ])
+        context = self._get_enhanced_context(context, db_data, user_id, form_type)
 
-    def _process_ai_response(
-        self,
-        ai_response: Dict,
-        data_collection: Dict,
-        field_info: Dict,
-        user_history: Dict
-    ) -> Dict:
-        """
-        Xử lý và tối ưu hóa phản hồi từ AI
-        """
-        # Kiểm tra và làm sạch phản hồi AI
-        if not isinstance(ai_response, dict):
-            ai_response = {"suggestions": [], "default": "", "reason": ""}
-        
-        # Bổ sung giá trị phổ biến từ lịch sử nếu cần
-        freq_values = user_history["frequently_used_values"].get(field_info["best_field_name"], Counter())
-        if freq_values and len(ai_response["suggestions"]) < 3:
-            for val, _ in freq_values.most_common(3 - len(ai_response["suggestions"])):
-                if val not in [s["text"] for s in ai_response["suggestions"]]:
-                    ai_response["suggestions"].append({
-                        "text": val,
-                        "reason": "Giá trị thường dùng trước đây"
-                    })
-        
-        # Đảm bảo có giá trị mặc định hợp lý
-        if not ai_response.get("default") and data_collection["values"]:
-            ai_response["default"] = data_collection["values"][0]
-        
+        recent_values = []
+        matched_fields = set()
+        related_fields_data = {}
+        best_similarity = 0
+        best_field_name = field_name or None
+
+        if field_code:
+            similar_fields_cache = {}
+
+            # Nếu chưa có field_name, tìm field_name tốt nhất từ lịch sử
+            if not field_name:
+                for entry in sorted_entries:
+                    form_data = entry.get("form_data", {})
+
+                    # Ưu tiên exact match
+                    if field_code in form_data:
+                        best_field_name = field_code
+                        best_similarity = 1.0
+                        break
+
+                    # Tìm trường gần giống
+                    for key in form_data.keys():
+                        if key not in similar_fields_cache:
+                            similar_fields_cache[key] = self._calculate_field_similarity(field_code, key)
+
+                        similarity = similar_fields_cache[key]
+                        if similarity > best_similarity:
+                            best_similarity = similarity
+                            best_field_name = key
+
+                    if best_similarity >= 0.7:
+                        break
+
+                # Nếu không tìm được tên tốt hơn, dùng field_code làm tên
+                field_name = best_field_name if best_similarity >= 0.5 else field_code
+            else:
+                # Nếu field_name đã được cung cấp → vẫn kiểm tra độ tương đồng để log lại
+                best_field_name = field_name
+                best_similarity = self._calculate_field_similarity(field_code, field_name)
+
+            # Xác định các trường liên quan
+            similar_fields = self.find_similar_fields(field_name)
+            related_fields = self._get_related_field_names(field_name, similar_fields)
+
+            # Thu thập dữ liệu
+            for entry in sorted_entries:
+                form_data = entry.get("form_data", {})
+
+                # Dữ liệu từ trường chính
+                if field_name in form_data:
+                    value = form_data[field_name]
+                    if value and str(value).strip():
+                        recent_values.append(str(value).strip())
+                        matched_fields.add(field_name)
+
+                # Dữ liệu từ các trường liên quan
+                self._collect_related_data(form_data, related_fields, related_fields_data)
+
+                if len(recent_values) >= 10:
+                    break
+
+        frequency_data = Counter(recent_values)
+    
+        # Sinh đề xuất từ AI
+        ai_suggestion = self.generate_suggestions(
+            field_name=field_name or field_code or "unknown",
+            historical_values=recent_values,
+            context=context,
+            form_type=form_type,
+            related_fields_data=related_fields_data
+        )
+
+        # Tính toán giá trị mặc định
+        default_value = self._get_default_value(sorted_entries, matched_fields, ai_suggestion)
+      
         return {
-            "suggestions": ai_response.get("suggestions", [])[:3],
-            "default_value": ai_response.get("default", ""),
-            "recent_values": data_collection["values"],
-            "matched_fields": data_collection["matched_fields"],
-            "field_matching_info": field_info,
-            "reason": ai_response.get("reason", "")
+            "ai_suggestion": ai_suggestion,
+            "recent_values": recent_values,
+            "default_value": default_value,
+            "matched_fields": list(matched_fields),
+            "related_fields_data": related_fields_data,
+            "reason": ai_suggestion.get("reason", ""),
+            "field_matching_info": {
+                "requested_field_code": field_code,
+                "matched_field_name": field_name,
+                "similarity_score": round(best_similarity, 3)
+            }
         }
 
 
