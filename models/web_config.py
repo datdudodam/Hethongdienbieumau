@@ -53,18 +53,36 @@ class APIKey(db.Model):
     error_details = db.Column(db.Text, nullable=True)  # Chi tiết lỗi nếu có
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    total_requests = db.Column(db.Integer, default=0)
+    successful_requests = db.Column(db.Integer, default=0)
+    usage_limit = db.Column(db.Integer, nullable=True)
+    usage_reset_at = db.Column(db.DateTime, nullable=True)
+    description = db.Column(db.Text, nullable=True)  # Thêm trường description
     @classmethod
-    def add_key(cls, key, name=None, provider='openai'):
+    def add_key(cls, key, name=None,description=None, provider='openai'):
         """Thêm API key mới vào hệ thống"""
         if not name:
             name = f'{provider.capitalize()} API Key'
         
-        api_key = cls(key=key, name=name, provider=provider)
+        api_key = cls(key=key, name=name, provider=provider,description=description)
         db.session.add(api_key)
         db.session.commit()
         return api_key
-    
+    @classmethod
+    def get_key_details(cls, key_id):
+        """Lấy thông tin chi tiết về API key"""
+        api_key = cls.query.get(key_id)
+        if not api_key:
+            return None
+            
+        return {
+            'total_requests': 0,  # Bạn cần thêm trường này vào model nếu muốn theo dõi
+            'successful_requests': 0,  # Bạn cần thêm trường này vào model nếu muốn theo dõi
+            'available_models': api_key.available_models,
+            'last_checked': api_key.last_checked,
+            'response_time': api_key.response_time,
+            'error_details': api_key.error_details
+        }
     @classmethod
     def get_active_key(cls, provider='openai'):
         """Lấy API key đang hoạt động của một provider"""

@@ -4,6 +4,7 @@ from models.user import db, User, Role
 from models.data_model import load_db, save_db, load_form_history, save_form_history
 from functools import wraps
 import os
+from datetime import datetime
 from werkzeug.utils import secure_filename
 from config.config import BASE_DIR
 from utils.api_key_manager import get_api_key_manager
@@ -313,38 +314,37 @@ def register_admin_routes(app):
     @login_required
     @admin_required
     def admin_api_settings():
-        """Trang quản lý API key"""
+        """Trang quản lý API key nâng cao"""
         from models.web_config import WebConfig, APIKey
         from utils.api_key_manager import get_api_key_manager
         
-        # Lấy API key manager
         api_key_manager = get_api_key_manager()
-        
-        # Lấy tất cả API key
         api_keys = api_key_manager.get_all_api_keys('openai')
-        
-        # Lấy API key hiện tại (cho tương thích ngược)
         current_api_key = WebConfig.get_value('openai_api_key', '')
         
-        # Kiểm tra trạng thái API key hiện tại
+        # Kiểm tra trạng thái tất cả API key
         active_key = None
         for key in api_keys:
             if key.is_active:
                 active_key = key
                 break
         
-        # Xử lý các action
         if request.method == 'POST':
             action = request.form.get('action')
             
-            # Thêm API key mới
             if action == 'add_key':
-                new_api_key = request.form.get('openai_api_key')
-                key_name = request.form.get('key_name', 'OpenAI API Key')
+                new_api_key = request.form.get('new_api_key').strip()
+                key_name = request.form.get('key_name', 'OpenAI API Key').strip()
+                description = request.form.get('description', '').strip()
                 
                 if new_api_key:
-                    # Thêm API key mới
-                    api_key = api_key_manager.add_api_key(new_api_key, key_name)
+                    # Thêm API key mới với đầy đủ thông tin
+                    api_key = api_key_manager.add_api_key(
+                        new_api_key, 
+                        key_name,
+                        description=description,
+                        provider='openai'
+                    )
                     
                     if api_key:
                         if api_key.is_valid:
@@ -354,7 +354,22 @@ def register_admin_routes(app):
                 else:
                     flash('API key không được để trống', 'error')
             
-            # Xóa API key
+            elif action == 'update_key':
+                key_id = request.form.get('key_id')
+                if key_id and key_id.isdigit():
+                    key_id = int(key_id)
+                    key_name = request.form.get('key_name').strip()
+                    description = request.form.get('description', '').strip()
+                    
+                    if api_key_manager.update_key_info(
+                        key_id,
+                        name=key_name,
+                        description=description
+                    ):
+                        flash('Cập nhật thông tin API key thành công', 'success')
+                    else:
+                        flash('Không thể cập nhật thông tin API key', 'error')
+            
             elif action == 'delete_key':
                 key_id = request.form.get('key_id')
                 if key_id and key_id.isdigit():
@@ -365,7 +380,6 @@ def register_admin_routes(app):
                 else:
                     flash('ID API key không hợp lệ', 'error')
             
-            # Kích hoạt API key
             elif action == 'activate_key':
                 key_id = request.form.get('key_id')
                 if key_id and key_id.isdigit():
@@ -376,7 +390,6 @@ def register_admin_routes(app):
                 else:
                     flash('ID API key không hợp lệ', 'error')
             
-            # Làm mới trạng thái API key
             elif action == 'refresh_key':
                 key_id = request.form.get('key_id')
                 if key_id and key_id.isdigit():
@@ -388,26 +401,29 @@ def register_admin_routes(app):
                 else:
                     flash('ID API key không hợp lệ', 'error')
             
-            # Tương thích ngược với form cũ
-            else:
-                new_api_key = request.form.get('openai_api_key')
-                
-                if new_api_key:
-                    # Cập nhật API key mới vào cơ sở dữ liệu và khởi tạo lại client
-                    api_key_manager.update_api_key(new_api_key)
-                    
-                    # Kiểm tra trạng thái API key mới
-                    active_key = api_key_manager.get_all_api_keys('openai')[0] if api_key_manager.get_all_api_keys('openai') else None
-                    
-                    if active_key and active_key.is_valid:
-                        flash('Cập nhật API key thành công và key đang hoạt động tốt', 'success')
+            elif action == 'test_key':
+                key_id = request.form.get('key_id')
+                if key_id and key_id.isdigit():
+                    test_result = api_key_manager.test_api_key(int(key_id))
+                    if test_result:
+                        flash(f'Kết quả kiểm tra: {test_result["message"]}', 'success' if test_result["valid"] else 'warning')
                     else:
-                        flash(f'Đã lưu API key nhưng có vấn đề: {active_key.status_message if active_key else "Unknown error"}', 'warning')
-                else:
-                    flash('API key không được để trống', 'error')
+                        flash('Không thể kiểm tra API key', 'error')
             
             return redirect(url_for('admin_api_settings'))
         
+        # Lấy thông tin chi tiết về API key đang hoạt động
+        active_key_details = None
+        if active_key:
+            active_key_details = api_key_manager.get_key_details(active_key.id)
+            # Nếu không có chi tiết, thử refresh lại trạng thái
+            if not active_key_details:
+                api_key_manager.refresh_api_key_status(active_key.id)
+                active_key_details = api_key_manager.get_key_details(active_key.id)
+        
         return render_template('admin/api_settings.html', 
                             api_keys=api_keys,
-                            current_api_key=current_api_key)
+                            current_api_key=current_api_key,
+                            active_key=active_key,
+                            active_key_details=active_key_details,
+                            now=datetime.now())

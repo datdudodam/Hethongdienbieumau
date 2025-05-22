@@ -116,23 +116,28 @@ class APIKeyManager:
             }
         
         try:
-            # Gọi API đơn giản để kiểm tra key
             start_time = time.time()
             response = client.models.list()
             end_time = time.time()
+            response_time = round((end_time - start_time) * 1000)
             
-            # Tính thời gian phản hồi
-            response_time = round((end_time - start_time) * 1000)  # Đổi sang milliseconds
+            # Lấy toàn bộ danh sách models
+            all_models = [model.id for model in response.data]
             
-            # Lấy danh sách models để hiển thị
-            available_models = [model.id for model in response.data[:5]]  # Chỉ lấy 5 model đầu tiên
+            # Phân loại models
+            gpt_models = [m for m in all_models if 'gpt' in m]
+            embedding_models = [m for m in all_models if 'embedding' in m or 'embed-' in m]
+            other_models = [m for m in all_models if m not in gpt_models and m not in embedding_models]
             
             return {
                 "valid": True,
                 "message": "API key hợp lệ và đang hoạt động",
                 "details": {
                     "response_time_ms": response_time,
-                    "available_models": available_models,
+                    "total_models": len(all_models),
+                    "gpt_models": gpt_models,
+                    "embedding_models": embedding_models,
+                    "other_models": other_models,
                     "checked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
             }
@@ -161,14 +166,14 @@ class APIKeyManager:
                 }
             }
     
-    def add_api_key(self, new_api_key, name=None, provider='openai'):
+    def add_api_key(self, new_api_key, name=None,description=None, provider='openai'):
         """Thêm API key mới vào hệ thống và kiểm tra tính hợp lệ
         
         Args:
             new_api_key (str): API key mới
             name (str, optional): Tên hiển thị của API key
             provider (str, optional): Nhà cung cấp API (mặc định: 'openai')
-            
+            description (str, optional): Mô tả cho API key
         Returns:
             APIKey: Đối tượng API key đã được thêm vào hệ thống
         """
@@ -186,7 +191,7 @@ class APIKeyManager:
             validity_result = self.check_api_key_validity(new_api_key)
             
             # Thêm API key vào cơ sở dữ liệu
-            api_key = APIKey.add_key(new_api_key, name, provider)
+            api_key = APIKey.add_key(new_api_key, name, provider, description)
             
             # Cập nhật trạng thái của API key
             is_valid = validity_result['valid']
@@ -231,7 +236,43 @@ class APIKeyManager:
         except Exception as e:
             logger.error(f"Error adding API key: {str(e)}")
             return None
-    
+    def get_key_details(self, key_id):
+        """Lấy thông tin chi tiết về API key
+        
+        Args:
+            key_id (int): ID của API key cần lấy thông tin
+            
+        Returns:
+            dict: Thông tin chi tiết về API key hoặc None nếu không tìm thấy
+        """
+        try:
+            if current_app and hasattr(current_app, 'app_context'):
+                api_key = APIKey.query.get(key_id)
+                if not api_key:
+                    return None
+                    
+                # Kiểm tra lại trạng thái nếu cần
+                if not api_key.last_checked or (datetime.now() - api_key.last_checked).total_seconds() > 3600:  # 1 giờ
+                    api_key = self.refresh_api_key_status(key_id)
+                    
+                return {
+                    'total_requests': api_key.total_requests if hasattr(api_key, 'total_requests') else 0,
+                    'successful_requests': api_key.successful_requests if hasattr(api_key, 'successful_requests') else 0,
+                    'available_models': json.loads(api_key.available_models) if api_key.available_models else [],
+                    'last_checked': api_key.last_checked,
+                    'response_time': api_key.response_time,
+                    'error_details': api_key.error_details,
+                    'name': api_key.name,
+                    'is_active': api_key.is_active,
+                    'is_valid': api_key.is_valid,
+                    'status_message': api_key.status_message,
+                    'created_at': api_key.created_at,
+                    'updated_at': api_key.updated_at
+                }
+            return None
+        except Exception as e:
+            logger.error(f"Error getting key details: {str(e)}")
+            return None
     def update_api_key(self, new_api_key):
         """Cập nhật API key mới vào cơ sở dữ liệu (tương thích ngược)"""
         try:
@@ -361,6 +402,7 @@ class APIKeyManager:
         except Exception as e:
             logger.error(f"Error refreshing API key status: {str(e)}")
             return None
+
 
 # Singleton instance
 def get_api_key_manager():

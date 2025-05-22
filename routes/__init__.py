@@ -10,7 +10,7 @@ from routes.enhanced_routes import register_enhanced_routes
 from routes.api_docs_routes import register_api_docs_routes
 from routes.payment_routes import register_payment_routes
 from routes.ai_feedback import register_ai_feedback_routes
-from routes.goiy_openai import register_goiy_openai_routes
+from .goiy_openai import GOI_Y_AI
 
 def register_routes(app):
     """
@@ -28,5 +28,5 @@ def register_routes(app):
     register_api_docs_routes(app)
     register_payment_routes(app)
     register_ai_feedback_routes(app)
-    register_goiy_openai_routes(app)  # Đăng ký route mới
+    GOI_Y_AI(app)  # Đăng ký route mới
    

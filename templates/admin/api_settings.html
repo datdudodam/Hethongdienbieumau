@@ -367,6 +367,152 @@
                 flex-direction: column;
             }
         }
+        /* Thêm các style mới */
+        .api-key-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .api-key-table th, 
+        .api-key-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .api-key-table th {
+            background-color: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .api-key-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .api-key-table tr:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        
+        .key-name {
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .key-value {
+            font-family: monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        
+        .key-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        .key-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .action-btn {
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-secondary);
+        }
+        
+        .action-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--primary);
+        }
+        
+        .active-key {
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+        
+        .active-key .key-name {
+            color: #10b981;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: var(--bg);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 500px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        .usage-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .stat-card {
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
     </style>
 </head>
 <body>
@@ -389,106 +535,260 @@
             </ul>
         </div>
 
-        <!-- Main Content -->
+         <!-- Main Content -->
         <div class="main-content">
             <div class="api-container">
-                <h1 class="api-title">Quản Lý API</h1>
+                <h1 class="api-title">Quản Lý API Keys</h1>
                 
                 {% if current_user.role_id == 1 %}
-                <div class="api-grid">
-                    <!-- Cấu hình OpenAI API -->
-                    <div class="api-card">
-                        <div class="api-card-header">
-                            <i class="fas fa-robot api-icon"></i>
-                            <h2 class="api-card-title">OpenAI API Key</h2>
-                        </div>
-                        <p class="api-card-description">Quản lý API key của OpenAI để sử dụng cho các tính năng AI trong hệ thống.</p>
-                        
-                        <!-- Hiển thị trạng thái API key -->
-                        {% if api_key_status %}
-                            {% if api_key_status.valid %}
-                                <div class="status-badge status-valid">
-                                    <i class="fas fa-check-circle status-icon"></i>
-                                    <span>{{ api_key_status.message }}</span>
-                                </div>
-                                
-                                <!-- Chi tiết API key hợp lệ -->
-                                <div class="status-details">
-                                    <h3 class="status-details-title">Thông tin chi tiết</h3>
-                                    <ul class="status-details-list">
-                                        <li class="status-details-item">
-                                            <span class="status-details-label">Thời gian phản hồi:</span>
-                                            <span class="status-details-value">{{ api_key_status.details.response_time_ms }} ms</span>
-                                        </li>
-                                        <li class="status-details-item">
-                                            <span class="status-details-label">Kiểm tra lúc:</span>
-                                            <span class="status-details-value">{{ api_key_status.details.checked_at }}</span>
-                                        </li>
-                                        <li class="status-details-item">
-                                            <span class="status-details-label">Models khả dụng:</span>
-                                            <span class="status-details-value">{{ api_key_status.details.available_models|length }}</span>
-                                        </li>
-                                    </ul>
-                                    
-                                    <!-- Danh sách models -->
-                                    <div style="margin-top: 1rem;">
-                                        <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Models khả dụng:</h4>
-                                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                            {% for model in api_key_status.details.available_models %}
-                                                <span class="status-badge" style="background-color: rgba(59, 130, 246, 0.1); color: var(--primary);">
-                                                    {{ model }}
-                                                </span>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                </div>
+                <!-- Thống kê sử dụng -->
+                <div class="usage-stats">
+                    <div class="stat-card">
+                        <div class="stat-title">Tổng số API Keys</div>
+                        <div class="stat-value">{{ api_keys|length }}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">API Key đang hoạt động</div>
+                        <div class="stat-value">
+                            {% if active_key %}
+                                {{ active_key.name }}
                             {% else %}
-                                <div class="status-badge status-invalid">
-                                    <i class="fas fa-exclamation-circle status-icon"></i>
-                                    <span>{{ api_key_status.message }}</span>
-                                </div>
-                                
-                                <!-- Chi tiết lỗi API key -->
-                                {% if api_key_status.details %}
-                                    <div class="status-details">
-                                        <h3 class="status-details-title">Thông tin lỗi</h3>
-                                        <ul class="status-details-list">
-                                            <li class="status-details-item">
-                                                <span class="status-details-label">Lỗi:</span>
-                                                <span class="status-details-value">{{ api_key_status.details.error }}</span>
-                                            </li>
-                                            <li class="status-details-item">
-                                                <span class="status-details-label">Kiểm tra lúc:</span>
-                                                <span class="status-details-value">{{ api_key_status.details.checked_at }}</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                {% endif %}
+                                Không có
                             {% endif %}
-                        {% else %}
-                            <div class="status-badge status-unknown">
-                                <i class="fas fa-question-circle status-icon"></i>
-                                <span>Chưa kiểm tra trạng thái API key</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Lần kiểm tra cuối</div>
+                        <div class="stat-value">{{ now.strftime('%H:%M %d/%m/%Y') }}</div>
+                    </div>
+                </div>
+                
+                <!-- Bảng danh sách API Keys -->
+                <div class="api-card">
+                    <div class="api-card-header" style="justify-content: space-between;">
+                        <div>
+                            <i class="fas fa-key api-icon"></i>
+                            <h2 class="api-card-title">Danh sách API Keys</h2>
+                        </div>
+                        <button class="api-button" onclick="openModal('add-key-modal')">
+                            <i class="fas fa-plus api-button-icon"></i> Thêm Key mới
+                        </button>
+                    </div>
+                    
+                    <table class="api-key-table">
+                        <thead>
+                            <tr>
+                                <th>Tên Key</th>
+                                <th>API Key</th>
+                                <th>Trạng thái</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key in api_keys %}
+                            <tr {% if key.is_active %}class="active-key"{% endif %}>
+                                <td>
+                                    <div class="key-name">{{ key.name }}</div>
+                                    {% if key.description %}
+                                    <div class="key-description">{{ key.description }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="key-value">
+                                    {{ key.key[:4] }}...{{ key.key[-4:] }}
+                                </td>
+                                <td>
+                                    {% if key.is_valid %}
+                                    <span class="status-badge status-valid">
+                                        <i class="fas fa-check-circle status-icon"></i>
+                                        Hoạt động
+                                    </span>
+                                    {% else %}
+                                    <span class="status-badge status-invalid">
+                                        <i class="fas fa-exclamation-circle status-icon"></i>
+                                        {{ key.status_message or 'Lỗi' }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="key-actions">
+                                        {% if not key.is_active %}
+                                        <form method="POST" action="{{ url_for('admin_api_settings') }}" style="display: inline;">
+                                            <input type="hidden" name="action" value="activate_key">
+                                            <input type="hidden" name="key_id" value="{{ key.id }}">
+                                            <button type="submit" class="action-btn" title="Kích hoạt">
+                                                <i class="fas fa-power-off"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        
+                                        <button class="action-btn"
+                                            title="Chỉnh sửa"
+                                            data-id="{{ key.id }}"
+                                            data-name="{{ key.name }}"
+                                            data-description="{{ key.description }}"
+                                            onclick="handleEditClick(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+
+                                        
+                                        <form method="POST" action="{{ url_for('admin_api_settings') }}" style="display: inline;">
+                                            <input type="hidden" name="action" value="test_key">
+                                            <input type="hidden" name="key_id" value="{{ key.id }}">
+                                            <button type="submit" class="action-btn" title="Kiểm tra">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        
+                                        <form method="POST" action="{{ url_for('admin_api_settings') }}" style="display: inline;" 
+                                            onsubmit="return confirm('Bạn có chắc chắn muốn xóa API key này?');">
+                                            <input type="hidden" name="action" value="delete_key">
+                                            <input type="hidden" name="key_id" value="{{ key.id }}">
+                                            <button type="submit" class="action-btn" title="Xóa">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Chi tiết API Key đang hoạt động -->
+                {% if active_key and active_key_details %}
+                <div class="api-card">
+                    <div class="api-card-header">
+                        <i class="fas fa-info-circle api-icon"></i>
+                        <h2 class="api-card-title">Thông tin chi tiết API Key đang hoạt động</h2>
+                    </div>
+                    
+                    <div class="status-details">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div>
+                                <h3 class="status-details-title">Thông tin cơ bản</h3>
+                                <ul class="status-details-list">
+                                    <li class="status-details-item">
+                                        <span class="status-details-label">Tên:</span>
+                                        <span class="status-details-value">{{ active_key.name }}</span>
+                                    </li>
+                                    <li class="status-details-item">
+                                        <span class="status-details-label">Ngày tạo:</span>
+                                        <span class="status-details-value">{{ active_key.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                                    </li>
+                                    <li class="status-details-item">
+                                        <span class="status-details-label">Lần kiểm tra cuối:</span>
+                                        <span class="status-details-value">{{ active_key.last_checked.strftime('%d/%m/%Y %H:%M') }}</span>
+                                    </li>
+                                </ul>
                             </div>
-                        {% endif %}
+                            
+                            <div>
+                                <h3 class="status-details-title">Thông tin sử dụng</h3>
+                                <ul class="status-details-list">
+                                    <li class="status-details-item">
+                                        <span class="status-details-label">Tổng yêu cầu:</span>
+                                        <span class="status-details-value">{{ active_key_details.total_requests }}</span>
+                                    </li>
+                                    <li class="status-details-item">
+                                        <span class="status-details-label">Yêu cầu thành công:</span>
+                                        <span class="status-details-value">{{ active_key_details.successful_requests }}</span>
+                                    </li>
+                                    <li class="status-details-item">
+                                        <span class="status-details-label">Tỷ lệ thành công:</span>
+                                        <span class="status-details-value">
+                                            {% if active_key_details.total_requests > 0 %}
+                                                {{ (active_key_details.successful_requests / active_key_details.total_requests * 100)|round(1) }}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                         
-                        <!-- Form cập nhật API key -->
-                        <form method="POST" action="{{ url_for('admin_api_settings') }}" style="margin-top: 1.5rem;">
-                            <div class="api-form-group">
-                                <div class="form-field">
-                                    <label class="form-label">OpenAI API Key</label>
-                                    <input type="text" class="form-input" name="openai_api_key" value="{{ current_api_key }}" placeholder="Nhập OpenAI API key mới">
-                                    <small class="form-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
-                                </div>
-                                
-                                <div class="api-actions">
-                                    <button type="submit" class="api-button">
-                                        <i class="fas fa-save api-button-icon"></i> Lưu API Key
-                                    </button>
-                                    <button type="button" class="api-button api-button-secondary" onclick="window.location.reload();">
-                                        <i class="fas fa-sync-alt api-button-icon"></i> Kiểm tra lại
-                                    </button>
-                                </div>
+                        <div style="margin-top: 1.5rem;">
+                            <h3 class="status-details-title">Models khả dụng</h3>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                                {% for model in active_key_details.available_models %}
+                                    <span class="status-badge" style="background-color: rgba(59, 130, 246, 0.1); color: var(--primary);">
+                                        {{ model }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Modal thêm API Key mới -->
+                <div id="add-key-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Thêm API Key mới</h3>
+                            <button class="modal-close" onclick="closeModal('add-key-modal')">&times;</button>
+                        </div>
+                        <form method="POST" action="{{ url_for('admin_api_settings') }}">
+                            <input type="hidden" name="action" value="add_key">
+                            
+                            <div class="form-field">
+                                <label class="form-label">Tên Key</label>
+                                <input type="text" class="form-input" name="key_name" required placeholder="Ví dụ: OpenAI Production Key">
+                            </div>
+                            
+                            <div class="form-field" style="margin-top: 1rem;">
+                                <label class="form-label">Mô tả (tùy chọn)</label>
+                                <input type="text" class="form-input" name="description" placeholder="Mô tả công dụng của key này">
+                            </div>
+                            
+                            <div class="form-field" style="margin-top: 1rem;">
+                                <label class="form-label">API Key</label>
+                                <input type="text" class="form-input" name="new_api_key" required placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                                <small class="form-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
+                            </div>
+                            
+                            <div class="api-actions" style="margin-top: 1.5rem;">
+                                <button type="submit" class="api-button">
+                                    <i class="fas fa-save api-button-icon"></i> Lưu Key mới
+                                </button>
+                                <button type="button" class="api-button api-button-secondary" onclick="closeModal('add-key-modal')">
+                                    <i class="fas fa-times api-button-icon"></i> Hủy bỏ
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Modal chỉnh sửa API Key -->
+                <div id="edit-key-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Chỉnh sửa API Key</h3>
+                            <button class="modal-close" onclick="closeModal('edit-key-modal')">&times;</button>
+                        </div>
+                        <form method="POST" action="{{ url_for('admin_api_settings') }}">
+                            <input type="hidden" name="action" value="update_key">
+                            <input type="hidden" id="edit-key-id" name="key_id" value="">
+                            
+                            <div class="form-field">
+                                <label class="form-label">Tên Key</label>
+                                <input type="text" class="form-input" id="edit-key-name" name="key_name" required>
+                            </div>
+                            
+                            <div class="form-field" style="margin-top: 1rem;">
+                                <label class="form-label">Mô tả (tùy chọn)</label>
+                                <input type="text" class="form-input" id="edit-key-description" name="description">
+                            </div>
+                            
+                            <div class="api-actions" style="margin-top: 1.5rem;">
+                                <button type="submit" class="api-button">
+                                    <i class="fas fa-save api-button-icon"></i> Lưu thay đổi
+                                </button>
+                                <button type="button" class="api-button api-button-secondary" onclick="closeModal('edit-key-modal')">
+                                    <i class="fas fa-times api-button-icon"></i> Hủy bỏ
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -527,5 +827,31 @@
             </div>
         </div>
     </div>
+      <script>
+        // Hàm mở modal
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+        
+        // Hàm đóng modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Hàm mở modal chỉnh sửa với dữ liệu
+        function openEditModal(id, name, description) {
+            document.getElementById('edit-key-id').value = id;
+            document.getElementById('edit-key-name').value = name;
+            document.getElementById('edit-key-description').value = description || '';
+            openModal('edit-key-modal');
+        }
+        
+        // Đóng modal khi click bên ngoài nội dung modal
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

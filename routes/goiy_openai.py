@@ -1,231 +1,179 @@
-from flask import request, jsonify, current_app, session
-from flask_login import current_user
-from utils.ai_form_suggester import AIFormSuggester
-from utils.document_utils import get_doc_path, extract_all_fields
-from models.data_model import load_form_history
+from flask import request, jsonify, session
+from typing import Dict, Any, Optional
+from utils.ai_matcher import AIFieldMatcher
+import json
+from models.data_model import load_db, save_db, load_form_history, save_form_history
 import logging
-import os
-
+from flask_login import current_user
+from utils.document_utils import get_doc_path, load_document, extract_all_fields, extract_fields
 logger = logging.getLogger(__name__)
 
-def register_goiy_openai_routes(app):
+def GOI_Y_AI(app):
     """
-    Đăng ký các route cho tính năng gợi ý thông minh dựa trên OpenAI
+    Đăng ký các route cho tính năng gợi ý AI nâng cao
     """
-    
-    @app.route('/api/smart-suggestions', methods=['POST'])
-    def get_smart_suggestions():
-        """
-        API lấy gợi ý thông minh dựa trên form_type và lịch sử biểu mẫu
-        """
-        try:
-            data = request.get_json()
-            
-            # Lấy form_type từ request
-            form_type = data.get('form_type')
-            if not form_type:
-                return jsonify({"error": "Thiếu thông tin form_type"}), 400
-            
-            # Lấy các trường đã điền (nếu có)
-            current_fields = data.get('current_fields', {})
-            
-            # Lấy API key từ config hoặc environment
-            api_key = os.environ.get("OPENAI_API_KEY")
-            if not api_key:
-                api_key = app.config.get("OPENAI_API_KEY")
-            
-            # Khởi tạo AI suggester
-            suggester = AIFormSuggester(api_key=api_key)
-            
-            # Lấy user_id nếu đã đăng nhập
-            user_id = current_user.id if current_user.is_authenticated else None
-            
-            # Tạo gợi ý
-            result = suggester.generate_suggestions(
-                form_type=form_type,
-                current_fields=current_fields,
-                user_id=user_id
-            )
-            
-            return jsonify(result)
-            
-        except Exception as e:
-            logger.error(f"Lỗi khi tạo gợi ý thông minh: {str(e)}")
-            return jsonify({"error": str(e)}), 500
-    
-    @app.route('/api/form-types', methods=['GET'])
-    def get_form_types():
-        """
-        API lấy danh sách các loại biểu mẫu có trong hệ thống
-        """
-        try:
-            # Lấy tất cả biểu mẫu từ lịch sử
-            forms = load_form_history()
-            
-            # Lấy danh sách các form_type duy nhất
-            form_types = set()
-            for form in forms:
-                if 'form_data' in form and 'form_type' in form['form_data']:
-                    form_types.add(form['form_data']['form_type'])
-            
-            # Đếm số lượng biểu mẫu cho mỗi loại
-            form_type_counts = {}
-            for form_type in form_types:
-                count = 0
-                for form in forms:
-                    if 'form_data' in form and form['form_data'].get('form_type') == form_type:
-                        count += 1
-                form_type_counts[form_type] = count
-            
-            return jsonify({
-                "form_types": list(form_types),
-                "counts": form_type_counts
-            })
-            
-        except Exception as e:
-            logger.error(f"Lỗi khi lấy danh sách loại biểu mẫu: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+    # Initialize components once at startup
+    form_history_path = "form_history.json"
+    ai_matcher = AIFieldMatcher(form_history_path=form_history_path)
     
     @app.route('/AI_FILL', methods=['POST'])
     def AI_FILL():
-        """
-        API tự động điền biểu mẫu dựa trên form_type
-        """
         try:
             data = request.get_json()
             
-            # Lấy form_type từ request
-            form_type = data.get('form_data', {}).get('form_type') or data.get('form_type')
+            # Get required fields from request
+            field_code = data.get("field_code") or data.get("field_name")  # Handle both field_code and field_name
+            if not field_code:
+                return jsonify({"error": "Field code is required"}), 400
             
-            # Nếu không có form_type trong request, thử lấy từ tài liệu hiện tại
-            if not form_type:
-                doc_path = get_doc_path()
-                if doc_path:
-                    from utils.form_type_detector import FormTypeDetector
-                    detector = FormTypeDetector()
-                    form_type = detector.detect_form_type(doc_path)
-                
-            if not form_type:
-                return jsonify({"error": "Không thể xác định loại biểu mẫu"}), 400
-            
-            # Kiểm tra xem form_type có tồn tại trong form_history.json không
-            from models.data_model import load_form_history
-            form_history = load_form_history()
-            form_types_in_history = set()
-            for form in form_history:
-                if 'form_data' in form and 'form_type' in form['form_data']:
-                    form_types_in_history.add(form['form_data']['form_type'])
-            
-            # Nếu form_type không tồn tại chính xác, thử tìm kiếm tương đối
-            if form_type not in form_types_in_history:
-                # Tìm form_type tương tự nhất
-                best_match = None
-                best_match_score = 0
-                form_type_keywords = form_type.lower().split()
-                
-                for history_form_type in form_types_in_history:
-                    match_count = 0
-                    for keyword in form_type_keywords:
-                        if keyword in history_form_type.lower():
-                            match_count += 1
-                
-                # Tính điểm tương đồng
-                if form_type_keywords:
-                    match_score = match_count / len(form_type_keywords)
-                    if match_score > best_match_score:
-                        best_match_score = match_score
-                        best_match = history_form_type
-                
-                # Nếu tìm thấy form_type tương tự với điểm > 0.3, sử dụng nó
-                if best_match and best_match_score > 0.3:
-                    logger.info(f"Đã tìm thấy form_type tương tự: {best_match} (điểm: {best_match_score})")
-                    form_type = best_match
-            
-            # Lấy API key từ config hoặc environment
-            api_key = os.environ.get("OPENAI_API_KEY")
-            if not api_key:
-                api_key = app.config.get("OPENAI_API_KEY")
-            
-            # Khởi tạo AI suggester
-            suggester = AIFormSuggester(api_key=api_key)
-            
-            # Lấy user_id nếu đã đăng nhập
-            user_id = current_user.id if current_user.is_authenticated else None
-            
-            # Lấy các trường đã điền (nếu có)
-            current_fields = data.get('current_fields', {})
-            
-            # Tạo gợi ý
-            result = suggester.generate_suggestions(
-                form_type=form_type,
-                current_fields=current_fields,
-                user_id=user_id
-            )
-            
-            # Lấy danh sách các trường trong biểu mẫu hiện tại
+            # Get current document
             doc_path = get_doc_path()
             if not doc_path:
-                return jsonify({"error": "Không tìm thấy tài liệu"}), 400
+                return jsonify({"error": "No document loaded"}), 400
                 
+            # Extract fields from document
+            text = load_document(doc_path)
             fields = extract_all_fields(doc_path)
             
-            # Ánh xạ gợi ý vào các trường
-            field_suggestions = {}
-            
-            if 'suggestions' in result and isinstance(result['suggestions'], dict):
-                suggestions = result['suggestions']
-                
-                # Tạo một từ điển ánh xạ tên trường với mã trường
-                field_name_to_code = {}
-                for field in fields:
-                    field_name = field.get('field_name')
-            
-                    field_code = field.get('field_code')
-                   
-                    if field_name and field_code:
-                        # Chuẩn hóa tên trường để so sánh tốt hơn
-                        normalized_name = field_name.lower().strip()
-                        field_name_to_code[normalized_name] = field_code
-                        # Thêm cả tên gốc để đảm bảo tương thích ngược
-                        field_name_to_code[field_name] = field_code
-                
-                # Ánh xạ gợi ý vào các trường dựa trên tên trường
-                for field_name, value in suggestions.items():
-                    # Chuẩn hóa tên trường từ gợi ý
-                    normalized_suggestion_name = field_name.lower().strip()
+            # Find matching field name - cải thiện cách tìm field_name
+            field_name = None
+            for field in fields:
+                if field.get('field_code') == field_code:
+                    field_name = field['field_name']
+                    break
                     
-                    # Thử tìm trực tiếp
-                    if normalized_suggestion_name in field_name_to_code:
-                        field_suggestions[field_name_to_code[normalized_suggestion_name]] = value
-                    elif field_name in field_name_to_code:
-                        field_suggestions[field_name_to_code[field_name]] = value
-                    else:
-                        # Tìm kiếm tương đối nếu không có kết quả chính xác
-                        best_match = None
-                        best_match_score = 0
-                        
-                        for doc_field_name in field_name_to_code.keys():
-                            # Kiểm tra nếu một chuỗi là substring của chuỗi kia
-                            if normalized_suggestion_name in doc_field_name.lower() or doc_field_name.lower() in normalized_suggestion_name:
-                                # Tính điểm tương đồng dựa trên độ dài chuỗi chung
-                                common_length = min(len(normalized_suggestion_name), len(doc_field_name.lower()))
-                                max_length = max(len(normalized_suggestion_name), len(doc_field_name.lower()))
-                                match_score = common_length / max_length if max_length > 0 else 0
-                                
-                                if match_score > best_match_score:
-                                    best_match_score = match_score
-                                    best_match = doc_field_name
-                        
-                        # Nếu tìm thấy trường tương tự với điểm > 0.5, sử dụng nó
-                        if best_match and best_match_score > 0.5:
-                            field_suggestions[field_name_to_code[best_match]] = value
+            # Nếu không tìm thấy, sử dụng field_code làm field_name
+            if not field_name:
+                field_name = field_code
+            
+            # Get form type and user info
+            form_type = data.get('form_type') or data.get('form_data', {}).get('form_type')
+            user_id = str(current_user.id) if current_user.is_authenticated else "anonymous"
+            
+            # Lấy thêm dữ liệu đã điền từ form hiện tại để cung cấp ngữ cảnh tốt hơn
+            partial_form_data = data.get('partial_form', {}) or data.get('form_data', {})
+            
+            # Load form history data
+            form_history_data = load_form_history()
+            
+            try:
+                # Extract context from form text
+                form_context = ai_matcher.extract_context_from_form_text(text)
+                
+                # Get personalized suggestions
+                suggestions_result = ai_matcher.generate_personalized_suggestions(
+                    db_data=form_history_data,
+                    field_code=field_code,
+                    user_id=user_id,
+                    context=form_context,
+                    form_type=form_type,
+                    field_name=field_name 
+                )
+                
+                # Prepare response data
+                response_data = {
+                    "value": suggestions_result.get("default_value", ""),
+                    "suggestions": suggestions_result.get("ai_suggestion", {}).get("suggestions", []),
+                    "confidence": 0.95,  # Tăng độ tin cậy
+                    "field_name": suggestions_result.get("field_name", field_name),
+                    "field_code": field_code,
+                    "recent_values": suggestions_result.get("recent_values", []),
+                    "reason": suggestions_result.get("reason", "") or suggestions_result.get("ai_suggestion", {}).get("reason", "")
+                }
+                
+                # If no suggestions, try to get from recent values
+                if not response_data["suggestions"] and response_data["recent_values"]:
+                    response_data["suggestions"] = response_data["recent_values"][:5]
+                    response_data["value"] = response_data["recent_values"][0] if response_data["recent_values"] else ""
+                
+                return jsonify(response_data)
+                
+            except Exception as inner_e:
+                logger.error(f"Error in suggestion generation: {str(inner_e)}", exc_info=True)
                 return jsonify({
-                    "success": True,
-                    "fields": field_suggestions,
-                    "form_type": form_type,
-                    "based_on": result.get('based_on', 0)
+                    "value": "",
+                    "suggestions": [],
+                    "confidence": 0.5,
+                    "field_name": suggestions_result.get("field_name", field_name),
+
+                    "field_code": field_code
                 })
+
+        except Exception as e:
+            logger.error(f"Error in AI_FILL endpoint: {str(e)}", exc_info=True)
+            return jsonify({'error': 'Internal server error'}), 500
+
+    @app.route('/AI_REWRITE', methods=['POST'])
+    def AI_REWRITE():
+        try:
+            data = request.get_json()
+            field_code = data.get("field_code")
+            user_input = data.get("user_input")
+            
+            if not all([field_code, user_input]):
+                return jsonify({"error": "Field code and user input are required"}), 400
+                
+            # Get document context if available
+            doc_path = get_doc_path()
+            form_context = ""
+            if doc_path:
+                text = load_document(doc_path)
+                form_context = ai_matcher.extract_context_from_form_text(text)
+            
+            # Get field name
+            field_name = field_code  # Default to field_code if we can't find the name
+            if doc_path:
+                fields = extract_fields(text)
+                field_info = next((f for f in fields if f['field_code'] == field_code), None)
+                if field_info:
+                    field_name = field_info['field_name']
+            
+            # Get improved text
+            improved_text = ai_matcher.rewrite_user_input(
+                field_name=field_name,
+                user_input=user_input,
+                context=form_context
+            )
+            
+            return jsonify({
+                "original": user_input,
+                "improved": improved_text,
+                "field_code": field_code,
+                "field_name": field_name
+            })
             
         except Exception as e:
-            logger.error(f"Lỗi khi tự động điền biểu mẫu: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            logger.error(f"Error in AI_REWRITE: {str(e)}", exc_info=True)
+            return jsonify({'error': str(e)}), 500
+            
+    @app.route('/AI_ANALYZE_FORM', methods=['POST'])
+    def AI_ANALYZE_FORM():
+        """Phân tích biểu mẫu để hiểu ngữ cảnh và đưa ra gợi ý tổng thể"""
+        try:
+            # Get current document
+            doc_path = get_doc_path()
+            if not doc_path:
+                return jsonify({"error": "No document loaded"}), 400
+                
+            # Extract fields from document
+            text = load_document(doc_path)
+            fields = extract_all_fields(doc_path)
+            
+            # Extract context from form text
+            form_context = ai_matcher.extract_context_from_form_text(text)
+            
+            # Lấy thông tin phân tích ngữ cảnh biểu mẫu
+            form_analysis = ai_matcher.form_context_analysis.get(hash(text), {})
+            
+            return jsonify({
+                "form_context": form_context,
+                "form_type": form_analysis.get("form_type", ""),
+                "important_fields": form_analysis.get("important_fields", []),
+                "field_relationships": form_analysis.get("field_relationships", {}),
+                "user_characteristics": form_analysis.get("user_characteristics", ""),
+                "field_count": len(fields)
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in AI_ANALYZE_FORM: {str(e)}", exc_info=True)
+            return jsonify({'error': str(e)}), 500
