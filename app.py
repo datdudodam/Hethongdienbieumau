@@ -25,7 +25,8 @@ app.config['SESSION_COOKIE_NAME'] = 'My Flask App'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Session lifetime in seconds
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 # Disable secure cookie for local development
-app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax' 
 # Enable session persistence
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
@@ -89,7 +90,7 @@ def load_user(user_id):
         # Use query.get instead of session.get to ensure the object stays attached to the session
         return db.session.get(User, int(user_id))
 
-# Register context processor to make config values available to all templates
+#Register context processor to make config values available to all templates
 @app.context_processor
 def inject_config():
     # Import here to avoid circular imports

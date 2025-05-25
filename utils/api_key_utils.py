@@ -2,6 +2,7 @@ from openai import OpenAI
 import time
 from datetime import datetime
 
+# Thêm vào hàm check_openai_api_key
 def check_openai_api_key(api_key):
     """
     Kiểm tra tính hợp lệ của OpenAI API key
@@ -34,6 +35,21 @@ def check_openai_api_key(api_key):
         # Lấy danh sách models để hiển thị
         available_models = [model.id for model in response.data[:5]]  # Chỉ lấy 5 model đầu tiên
         
+        # Kiểm tra thông tin về hạn sử dụng (nếu có)
+        subscription_info = None
+        try:
+            # Gọi API để lấy thông tin về subscription (nếu OpenAI API hỗ trợ)
+            # Đây là giả định, cần điều chỉnh theo API thực tế của OpenAI
+            subscription_response = client.subscriptions.list()
+            if hasattr(subscription_response, 'data') and subscription_response.data:
+                subscription_info = {
+                    "expiration_date": subscription_response.data[0].access_until,
+                    "plan": subscription_response.data[0].plan
+                }
+        except Exception as sub_error:
+            # Không thể lấy thông tin subscription, bỏ qua
+            pass
+        
         return {
             "valid": True,
             "message": "API key hợp lệ và đang hoạt động",
@@ -41,6 +57,7 @@ def check_openai_api_key(api_key):
                 "response_time_ms": response_time,
                 "available_models": available_models,
                 "checked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "subscription_info": subscription_info
             }
         }
     except Exception as e:

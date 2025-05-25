@@ -38,6 +38,7 @@ class WebConfig(db.Model):
         """Get all configuration values"""
         return cls.query.all() 
     
+# Thêm trường expiration_date vào model APIKey
 class APIKey(db.Model):
     """Model for storing API keys with their status"""
     id = db.Column(db.Integer, primary_key=True)
@@ -85,9 +86,17 @@ class APIKey(db.Model):
         }
     @classmethod
     def get_active_key(cls, provider='openai'):
-        """Lấy API key đang hoạt động của một provider"""
-        return cls.query.filter_by(provider=provider, is_active=True, is_valid=True).first()
-    
+        """Lấy API key đang hoạt động cho provider"""
+        try:
+            return cls.query.filter_by(
+                provider=provider,
+                is_active=True,
+                is_valid=True
+            ).order_by(cls.created_at.desc()).first()
+        except Exception as e:
+            current_app.logger.error(f"Error getting active API key: {str(e)}")
+            return None
+        
     @classmethod
     def get_all_keys(cls, provider=None):
         """Lấy tất cả API key, có thể lọc theo provider"""
@@ -96,19 +105,37 @@ class APIKey(db.Model):
         return cls.query.order_by(cls.provider, cls.is_active.desc(), cls.updated_at.desc()).all()
     
     @classmethod
-    def update_key_status(cls, key_id, is_valid, status_message=None, response_time=None, available_models=None, error_details=None):
+    def update_key_status(cls, key_id, is_valid, status_message, response_time=None, available_models=None, error_details=None, expiration_date=None, plan_info=None):
         """Cập nhật trạng thái của API key"""
-        api_key = cls.query.get(key_id)
-        if api_key:
+        try:
+            api_key = cls.query.get(key_id)
+            if not api_key:
+                return None
+                
             api_key.is_valid = is_valid
             api_key.status_message = status_message
-            api_key.last_checked = datetime.utcnow()
-            api_key.response_time = response_time
-            api_key.available_models = available_models
-            api_key.error_details = error_details
+            api_key.last_checked = datetime.now()
+            
+            if response_time is not None:
+                api_key.response_time = response_time
+                
+            if available_models is not None:
+                api_key.available_models = available_models
+                
+            if error_details is not None:
+                api_key.error_details = error_details
+                
+            if expiration_date is not None:
+                api_key.expiration_date = expiration_date
+                
+            if plan_info is not None:
+                api_key.plan_info = plan_info
+                
             db.session.commit()
             return api_key
-        return None
+        except Exception as e:
+            db.session.rollback()
+            return None
     
     @classmethod
     def set_active_key(cls, key_id, provider='openai'):

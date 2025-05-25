@@ -1,11 +1,11 @@
 from openai import OpenAI
 from models.web_config import WebConfig, APIKey
+from models.user import db  # Thêm dòng này để import db
 from datetime import datetime
 import time
 import logging
 import json
 from flask import current_app
-
 logger = logging.getLogger(__name__)
 
 class APIKeyManager:
@@ -31,36 +31,47 @@ class APIKeyManager:
     def get_client(self):
         """Lấy client OpenAI hiện tại, khởi tạo nếu cần"""
         try:
+            print("DEBUG: Initializing APIKeyManager")  # Debug
             self._initialize()
             
-            # Lấy API key đang hoạt động từ bảng APIKey
+            print("DEBUG: Getting active API key")  # Debug
             active_key = self._get_active_api_key()
+            print(f"DEBUG: Active key result: {active_key}")  # Debug
             
-            # Nếu không có key đang hoạt động, thử lấy từ WebConfig (tương thích ngược)
             if not active_key:
+                print("DEBUG: No active key, trying to get from WebConfig")  # Debug
                 db_api_key = self._get_api_key_from_config()
+                print(f"DEBUG: WebConfig key: {db_api_key}")  # Debug
                 
-                if db_api_key is None:  # Không có application context
+                if db_api_key is None:
+                    print("DEBUG: No application context available")  # Debug
                     logger.warning("No application context available. Returning None client.")
                     return None
                     
-                # Nếu có key trong WebConfig nhưng không có trong bảng APIKey, thêm vào
                 if db_api_key and db_api_key.strip() != "":
+                    print("DEBUG: Adding legacy API key to database")  # Debug
                     self.add_api_key(db_api_key, "Legacy API Key")
                     active_key = self._get_active_api_key()
+                    print(f"DEBUG: New active key after adding legacy: {active_key}")  # Debug
             
-            # Nếu có key đang hoạt động và khác với key hiện tại, cập nhật client
-            if active_key and active_key.key != self._current_api_key:
-                logger.info("API key changed, reinitializing OpenAI client")
-                self._current_api_key = active_key.key
-                if self._current_api_key and self._current_api_key.strip() != "":
-                    self._client = OpenAI(api_key=self._current_api_key)
-                else:
-                    self._client = None
-                    logger.warning("Empty OpenAI API key provided")
+            if active_key:
+                print(f"DEBUG: Current API key: {self._current_api_key}, New active key: {active_key.key}")  # Debug
+                if active_key.key != self._current_api_key:
+                    print("DEBUG: API key changed, reinitializing client")  # Debug
+                    self._current_api_key = active_key.key
+                    if self._current_api_key and self._current_api_key.strip() != "":
+                        print("DEBUG: Creating new OpenAI client")  # Debug
+                        self._client = OpenAI(api_key=self._current_api_key)
+                        print("DEBUG: Client created successfully")  # Debug
+                    else:
+                        print("DEBUG: Empty API key provided")  # Debug
+                        self._client = None
+                        logger.warning("Empty OpenAI API key provided")
             
+            print(f"DEBUG: Returning client: {self._client}")  # Debug
             return self._client
         except Exception as e:
+            print(f"DEBUG: Error in get_client: {str(e)}")  # Debug
             logger.error(f"Error getting OpenAI client: {str(e)}")
             return None
     
@@ -80,14 +91,20 @@ class APIKeyManager:
     def _get_active_api_key(self):
         """Lấy API key đang hoạt động từ bảng APIKey"""
         try:
+            print("DEBUG: Checking for application context")  # Debug
             if current_app and hasattr(current_app, 'app_context'):
-                return APIKey.get_active_key('openai')
+                print("DEBUG: Getting active key from database")  # Debug
+                active_key = APIKey.get_active_key('openai')
+                print(f"DEBUG: Active key: {active_key}")  # Debug
+                if active_key:
+                    print(f"DEBUG: Active key details - ID: {active_key.id}, Key: {active_key.key[:4]}...")  # Debug
+                return active_key
+            print("DEBUG: No application context")  # Debug
             return None
-        except RuntimeError as e:
-            if "working outside of application context" in str(e).lower():
-                logger.warning("Working outside of application context")
-                return None
-            raise
+        except Exception as e:
+            print(f"DEBUG: Error getting active API key: {str(e)}")  # Debug
+            logger.error(f"Error getting active API key: {str(e)}")
+            return None
     
     def check_api_key_validity(self, api_key=None):
         """Kiểm tra tính hợp lệ của API key
@@ -273,27 +290,89 @@ class APIKeyManager:
         except Exception as e:
             logger.error(f"Error getting key details: {str(e)}")
             return None
-    def update_api_key(self, new_api_key):
-        """Cập nhật API key mới vào cơ sở dữ liệu (tương thích ngược)"""
+    def test_api_key(self, key_id):
+        """
+        Kiểm tra tính hợp lệ của API key và cập nhật trạng thái
+        
+        Args:
+            key_id (int): ID của API key cần kiểm tra
+            
+        Returns:
+            tuple: (success: bool, result: dict/str)
+        """
         try:
-            if new_api_key and new_api_key.strip() != "":
-                # Kiểm tra application context trước khi cập nhật
-                if current_app and hasattr(current_app, 'app_context'):
-                    # Thêm API key mới
-                    api_key = self.add_api_key(new_api_key, "Legacy API Key")
-                    
-                    if api_key and api_key.is_valid:
-                        # Cập nhật WebConfig cho tương thích ngược
-                        WebConfig.set_value('openai_api_key', new_api_key, 'api')
-                        return True
-                    return False
-                else:
-                    logger.warning("Cannot update API key - no application context")
-                    return False
-            return False
+            # Lấy thông tin API key từ database
+            api_key = APIKey.query.get(key_id)
+            if not api_key:
+                return False, "API key không tồn tại"
+            
+            # Kiểm tra tính hợp lệ của key
+            validity_result = self.check_api_key_validity(api_key.key)
+            
+            # Chuẩn bị dữ liệu để cập nhật
+            is_valid = validity_result['valid']
+            status_message = validity_result['message']
+            response_time = validity_result['details'].get('response_time_ms')
+            available_models = json.dumps(validity_result['details'].get('available_models', [])) if is_valid else None
+            error_details = validity_result['details'].get('error') if not is_valid else None
+            
+            # Cập nhật trạng thái key trong database
+            updated_key = APIKey.update_key_status(
+                key_id,
+                is_valid=is_valid,
+                status_message=status_message,
+                response_time=response_time,
+                available_models=available_models,
+                error_details=error_details
+            )
+            
+            if not updated_key:
+                return False, "Không thể cập nhật trạng thái API key"
+            
+            # Trả về kết quả chi tiết nếu key hợp lệ
+            if is_valid:
+                return True, {
+                    "status": "valid",
+                    "message": status_message,
+                    "available_models": json.loads(available_models) if available_models else [],
+                    "response_time": response_time
+                }
+            else:
+                return False, status_message
+                
         except Exception as e:
-            logger.error(f"Error updating API key: {str(e)}")
-            return False
+            logger.error(f"Error testing API key {key_id}: {str(e)}")
+            return False, f"Lỗi hệ thống khi kiểm tra API key: {str(e)}"
+    def update_api_key(self, new_api_key):
+            """Cập nhật API key mới vào cơ sở dữ liệu (tương thích ngược)"""
+            try:
+                if new_api_key and new_api_key.strip() != "":
+                    # Kiểm tra application context trước khi cập nhật
+                    if not (current_app and hasattr(current_app, 'app_context')):
+                        logger.warning("Cannot update API key - no application context")
+                        return None
+
+                    # Kiểm tra key đã tồn tại chưa
+                    existing_key = APIKey.query.filter_by(key=new_api_key).first()
+                    if existing_key:
+                        logger.info("API key already exists, setting as active")
+                        APIKey.set_active_key(existing_key.id, provider='openai')
+                        self._current_api_key = new_api_key
+                        self._client = OpenAI(api_key=new_api_key)
+                    else:
+                        # Thêm và kiểm tra key mới
+                        self.add_api_key(new_api_key, name="Updated Key")
+
+                    # Cập nhật trong WebConfig để tương thích ngược
+                    WebConfig.set_value('openai_api_key', new_api_key, 'api')
+                    return True
+                else:
+                    logger.warning("Empty API key provided for update")
+                    return False
+            except Exception as e:
+                logger.error(f"Error updating API key: {str(e)}")
+                return False
+
             
     def get_all_api_keys(self, provider='openai'):
         """Lấy tất cả API key của một provider
@@ -357,6 +436,77 @@ class APIKeyManager:
             logger.error(f"Error deleting API key: {str(e)}")
             return False
     
+    def deactivate_api_key(self, key_id):
+        """Vô hiệu hóa một API key (không xóa)
+        
+        Args:
+            key_id (int): ID của API key
+            
+        Returns:
+            bool: True nếu thành công, False nếu thất bại
+        """
+        try:
+            if current_app and hasattr(current_app, 'app_context'):
+                api_key = APIKey.query.get(key_id)
+                if not api_key:
+                    return False
+                    
+                # Đánh dấu key là không hoạt động
+                api_key.is_active = False
+                db.session.commit()
+                
+                # Nếu đây là key đang hoạt động, cần chọn key khác
+                if api_key.is_active:
+                    # Tìm key hợp lệ khác để đặt làm active
+                    other_key = APIKey.query.filter_by(
+                        provider=api_key.provider, 
+                        is_valid=True, 
+                        is_active=True
+                    ).filter(APIKey.id != key_id).first()
+                    
+                    if other_key:
+                        self.set_active_api_key(other_key.id, api_key.provider)
+                    else:
+                        # Đánh dấu không có key nào đang hoạt động
+                        api_key.is_active = False
+                        db.session.commit()
+                
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error deactivating API key: {str(e)}")
+            return False
+
+    def reactivate_api_key(self, key_id):
+        """Kích hoạt lại một API key đã bị vô hiệu hóa
+        
+        Args:
+            key_id (int): ID của API key
+            
+        Returns:
+            bool: True nếu thành công, False nếu thất bại
+        """
+        try:
+            if current_app and hasattr(current_app, 'app_context'):
+                api_key = APIKey.query.get(key_id)
+                if not api_key:
+                    return False
+                    
+                # Kiểm tra lại tính hợp lệ của key trước khi kích hoạt
+                api_key = self.refresh_api_key_status(key_id)
+                if not api_key or not api_key.is_valid:
+                    return False
+                    
+                # Đánh dấu key là đang hoạt động
+                api_key.is_active = True
+                db.session.commit()
+                
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error reactivating API key: {str(e)}")
+            return False
+
     def refresh_api_key_status(self, key_id):
         """Cập nhật trạng thái của một API key
         

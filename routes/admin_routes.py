@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import  render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from models.user import db, User, Role
 from models.data_model import load_db, save_db, load_form_history, save_form_history
@@ -361,11 +361,13 @@ def register_admin_routes(app):
                     key_name = request.form.get('key_name').strip()
                     description = request.form.get('description', '').strip()
                     
-                    if api_key_manager.update_key_info(
-                        key_id,
-                        name=key_name,
-                        description=description
-                    ):
+                    # Sử dụng refresh_api_key_status thay vì update_key_info
+                    api_key = api_key_manager.refresh_api_key_status(key_id)
+                    if api_key:
+                        # Cập nhật thông tin mô tả
+                        api_key.name = key_name
+                        api_key.description = description
+                        db.session.commit()
                         flash('Cập nhật thông tin API key thành công', 'success')
                     else:
                         flash('Không thể cập nhật thông tin API key', 'error')
@@ -395,20 +397,48 @@ def register_admin_routes(app):
                 if key_id and key_id.isdigit():
                     api_key = api_key_manager.refresh_api_key_status(int(key_id))
                     if api_key:
-                        flash(f'Đã cập nhật trạng thái API key "{api_key.name}"', 'success')
+                        status = "hợp lệ" if api_key.is_valid else "không hợp lệ"
+                        flash(f'Đã cập nhật trạng thái API key "{api_key.name}" - Key {status}: {api_key.status_message}', 
+                            'success' if api_key.is_valid else 'warning')
                     else:
                         flash('Không thể cập nhật trạng thái API key', 'error')
+                else:
+                    flash('ID API key không hợp lệ', 'error')
+            
+            elif action == 'deactivate_key':
+                key_id = request.form.get('key_id')
+                if key_id and key_id.isdigit():
+                    if api_key_manager.deactivate_api_key(int(key_id)):
+                        flash('Vô hiệu hóa API key thành công', 'success')
+                    else:
+                        flash('Không thể vô hiệu hóa API key', 'error')
+                else:
+                    flash('ID API key không hợp lệ', 'error')
+            
+            elif action == 'reactivate_key':
+                key_id = request.form.get('key_id')
+                if key_id and key_id.isdigit():
+                    if api_key_manager.reactivate_api_key(int(key_id)):
+                        flash('Kích hoạt lại API key thành công', 'success')
+                    else:
+                        flash('Không thể kích hoạt lại API key hoặc key không hợp lệ', 'error')
                 else:
                     flash('ID API key không hợp lệ', 'error')
             
             elif action == 'test_key':
                 key_id = request.form.get('key_id')
                 if key_id and key_id.isdigit():
-                    test_result = api_key_manager.test_api_key(int(key_id))
-                    if test_result:
-                        flash(f'Kết quả kiểm tra: {test_result["message"]}', 'success' if test_result["valid"] else 'warning')
+                    success, result = api_key_manager.test_api_key(int(key_id))
+                    if success:
+                        flash(f'Kiểm tra thành công: {result.get("message")}', 'success')
+                        # Hiển thị thông tin models nếu có
+                        if 'available_models' in result:
+                            models_count = len(result['available_models'])
+                            flash(f'Key hỗ trợ {models_count} models', 'info')
                     else:
-                        flash('Không thể kiểm tra API key', 'error')
+                        flash(f'Lỗi khi kiểm tra: {result}', 'error')
+                else:
+                    flash('ID API key không hợp lệ', 'error')
             
             return redirect(url_for('admin_api_settings'))
         
@@ -416,8 +446,8 @@ def register_admin_routes(app):
         active_key_details = None
         if active_key:
             active_key_details = api_key_manager.get_key_details(active_key.id)
-            # Nếu không có chi tiết, thử refresh lại trạng thái
-            if not active_key_details:
+            # Nếu không có chi tiết hoặc chưa được kiểm tra gần đây, refresh lại
+            if not active_key_details or (datetime.now() - active_key.last_checked).total_seconds() > 3600:
                 api_key_manager.refresh_api_key_status(active_key.id)
                 active_key_details = api_key_manager.get_key_details(active_key.id)
         
@@ -426,4 +456,5 @@ def register_admin_routes(app):
                             current_api_key=current_api_key,
                             active_key=active_key,
                             active_key_details=active_key_details,
-                            now=datetime.now())
+                            now=datetime.now(),
+                            has_permission=True)

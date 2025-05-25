@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
+     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ site_title }}</title>
     <meta name="description" content="{{ site_description }}">
-    <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
+    <meta name="keywords" content="nhập liệu, AI, tự động, biểu mẫu, thông minh, quản lý">
     <meta property="og:title" content=" {{ site_title }}">
     <meta property="og:description" content="{{ site_description }}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://yourdomain.com/dashboard">
-    <meta property="og:image" content="{{ og_image }}">
-    <link rel="icon" type="image/png" href="{{ site_logo }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family={{ font_family|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
+    <meta property="og:url" content="https://yourdomain.com/">
+    <meta property="og:image" content="/static/images/og-image.png">
+    {% if site_logo %}
+        <link rel="icon" type="image/png" href="{{ site_logo }}">
+    {% else %}
+        <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    {% endif %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: #3b82f6;
@@ -409,7 +408,11 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <i class="fas fa-shield-alt"></i>
+                {% if site_logo %}
+                    <img src="{{ site_logo }}" alt="Logo" style="height: 30px; margin-right: 10px;">
+                {% else %}
+                    <i class="fas fa-shield-alt"></i>
+                {% endif %}
                 <h2>Admin Panel</h2>
             </div>
             <ul class="sidebar-menu">

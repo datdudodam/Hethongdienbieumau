@@ -1,24 +1,20 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
+     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ site_title }} - Quản lý API</title>
+    <title>{{ site_title }}</title>
     <meta name="description" content="{{ site_description }}">
-    <meta name="keywords" content="quản lý API, OpenAI, API key, cấu hình hệ thống">
-    <meta property="og:title" content="{{ site_title }} - Quản lý API">
+    <meta name="keywords" content="nhập liệu, AI, tự động, biểu mẫu, thông minh, quản lý">
+    <meta property="og:title" content=" {{ site_title }}">
     <meta property="og:description" content="{{ site_description }}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://yourdomain.com/admin/api-settings">
-    <meta property="og:image" content="{{ og_image }}">
+    <meta property="og:url" content="https://yourdomain.com/">
+    <meta property="og:image" content="/static/images/og-image.png">
     <link rel="icon" type="image/png" href="{{ site_logo }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
     <style>
         :root {
             --primary: #3b82f6;
@@ -64,14 +60,14 @@
 
         .sidebar-header {
             padding: 0 20px 20px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border);
             margin-bottom: 20px;
             display: flex;
             align-items: center;
         }
 
         .sidebar-header h2 {
-            color: var(--primary-color);
+            color: var(--primary);
             margin: 0;
             font-size: 1.5rem;
             font-weight: 600;
@@ -291,6 +287,10 @@
             gap: 1rem;
             margin-top: 1.5rem;
         }
+        .status-paused {
+                background-color: rgba(245, 158, 11, 0.1);
+                color: #f59e0b;
+            }
 
         .api-button {
             display: inline-flex;
@@ -327,47 +327,6 @@
             font-size: 0.875rem;
         }
 
-        @media (max-width: 1024px) {
-            .sidebar {
-                width: 240px;
-            }
-            .main-content {
-                margin-left: 240px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .admin-container {
-                flex-direction: column;
-            }
-            .sidebar {
-                width: 100%;
-                position: relative;
-                height: auto;
-                padding: 1rem 0;
-            }
-            .main-content {
-                margin-left: 0;
-                padding: 1.5rem;
-            }
-            .api-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .main-content {
-                padding: 1rem;
-            }
-            .api-title {
-                font-size: 1.5rem;
-                margin-bottom: 1.5rem;
-            }
-            .api-actions {
-                flex-direction: column;
-            }
-        }
-        /* Thêm các style mới */
         .api-key-table {
             width: 100%;
             border-collapse: collapse;
@@ -513,16 +472,90 @@
             font-weight: 600;
             color: var(--text);
         }
+
+        .alert {
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .alert-error {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .access-denied {
+            border-left: 4px solid #ef4444;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+            .main-content {
+                margin-left: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+                padding: 1rem 0;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 1.5rem;
+            }
+            .api-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 1rem;
+            }
+            .api-title {
+                font-size: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            .api-actions {
+                flex-direction: column;
+            }
+            .key-actions {
+                flex-direction: column;
+            }
+            .action-btn {
+                width: 100%;
+                margin-bottom: 0.25rem;
+            }
+            .api-key-table th, 
+            .api-key-table td {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+        }
     </style>
 </head>
 <body>
+    {% if has_permission %}
     <div class="admin-container">
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-shield-alt"></i>
                 <h2>Admin Panel</h2>
-            </div>
+            </div   >
             <ul class="sidebar-menu">
                 <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
                 <li><a href="{{ url_for('admin_users') }}"><i class="fas fa-users"></i> <span>Quản lý người dùng</span></a></li>
@@ -535,12 +568,23 @@
             </ul>
         </div>
 
-         <!-- Main Content -->
+        <!-- Main Content -->
         <div class="main-content">
             <div class="api-container">
                 <h1 class="api-title">Quản Lý API Keys</h1>
                 
-                {% if current_user.role_id == 1 %}
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+               
                 <!-- Thống kê sử dụng -->
                 <div class="usage-stats">
                     <div class="stat-card">
@@ -597,18 +641,25 @@
                                     {{ key.key[:4] }}...{{ key.key[-4:] }}
                                 </td>
                                 <td>
-                                    {% if key.is_valid %}
-                                    <span class="status-badge status-valid">
-                                        <i class="fas fa-check-circle status-icon"></i>
-                                        Hoạt động
-                                    </span>
-                                    {% else %}
-                                    <span class="status-badge status-invalid">
-                                        <i class="fas fa-exclamation-circle status-icon"></i>
-                                        {{ key.status_message or 'Lỗi' }}
-                                    </span>
-                                    {% endif %}
-                                </td>
+                                        {% if key.is_valid %}
+                                            {% if key.is_active %}
+                                            <span class="status-badge status-valid">
+                                                <i class="fas fa-check-circle status-icon"></i>
+                                                Hoạt động
+                                            </span>
+                                            {% else %}
+                                            <span class="status-badge status-paused">
+                                                <i class="fas fa-pause-circle status-icon"></i>
+                                                Tạm dừng
+                                            </span>
+                                            {% endif %}
+                                        {% else %}
+                                        <span class="status-badge status-invalid">
+                                            <i class="fas fa-exclamation-circle status-icon"></i>
+                                            {{ key.status_message or 'Lỗi' }}
+                                        </span>
+                                        {% endif %}
+                                    </td>
                                 <td>
                                     <div class="key-actions">
                                         {% if not key.is_active %}
@@ -619,6 +670,14 @@
                                                 <i class="fas fa-power-off"></i>
                                             </button>
                                         </form>
+                                        {% else %}
+                                        <form method="POST" action="{{ url_for('admin_api_settings') }}" style="display: inline;">
+                                            <input type="hidden" name="action" value="deactivate_key">
+                                            <input type="hidden" name="key_id" value="{{ key.id }}">
+                                            <button type="submit" class="action-btn" title="Vô hiệu hóa">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        </form>
                                         {% endif %}
                                         
                                         <button class="action-btn"
@@ -627,10 +686,8 @@
                                             data-name="{{ key.name }}"
                                             data-description="{{ key.description }}"
                                             onclick="handleEditClick(this)">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-
-
+                                            <i class="fas fa-edit"></i>
+                                        </button>
                                         
                                         <form method="POST" action="{{ url_for('admin_api_settings') }}" style="display: inline;">
                                             <input type="hidden" name="action" value="test_key">
@@ -681,6 +738,12 @@
                                         <span class="status-details-label">Lần kiểm tra cuối:</span>
                                         <span class="status-details-value">{{ active_key.last_checked.strftime('%d/%m/%Y %H:%M') }}</span>
                                     </li>
+                                    {% if active_key_details.expiration_date %}
+                                    <li class="status-details-item">
+                                        <span class="status-details-label">Ngày hết hạn:</span>
+                                        <span class="status-details-value">{{ active_key_details.expiration_date.strftime('%d/%m/%Y') }}</span>
+                                    </li>
+                                    {% endif %}
                                 </ul>
                             </div>
                             
@@ -705,6 +768,12 @@
                                             {% endif %}
                                         </span>
                                     </li>
+                                    {% if active_key_details.plan_info %}
+                                    <li class="status-details-item">
+                                        <span class="status-details-label">Gói dịch vụ:</span>
+                                        <span class="status-details-value">{{ active_key_details.plan_info }}</span>
+                                    </li>
+                                    {% endif %}
                                 </ul>
                             </div>
                         </div>
@@ -730,7 +799,7 @@
                             <h3 class="modal-title">Thêm API Key mới</h3>
                             <button class="modal-close" onclick="closeModal('add-key-modal')">&times;</button>
                         </div>
-                        <form method="POST" action="{{ url_for('admin_api_settings') }}">
+                        <form method="POST" action="{{ url_for('admin_api_settings') }}" id="add-key-form">
                             <input type="hidden" name="action" value="add_key">
                             
                             <div class="form-field">
@@ -815,41 +884,118 @@
                     </div>
                 </div>
                 {% else %}
-                <div class="api-card access-denied">
-                    <div class="api-card-header">
-                        <i class="fas fa-lock api-icon"></i>
-                        <h2 class="api-card-title">Quyền truy cập bị giới hạn</h2>
+                <div class="access-denied-container">
+                    <div class="api-card access-denied">
+                        <div class="api-card-header">
+                            <i class="fas fa-lock api-icon"></i>
+                            <h2 class="api-card-title">Quyền truy cập bị giới hạn</h2>
+                        </div>
+                        <p class="api-card-description">Bạn không có quyền truy cập vào trang quản lý API. Chỉ quản trị viên mới có thể thực hiện các thay đổi cấu hình API.</p>
+                        <a href="{{ url_for('profile') }}" class="back-button">
+                            <i class="fas fa-user"></i> Quay lại trang hồ sơ cá nhân
+                        </a>
+                        <a href="{{ url_for('index') }}" class="back-button" style="margin-left: 10px; background: var(--bg); color: var(--text); border: 1px solid var(--border);">
+                            <i class="fas fa-home"></i> Về trang chủ
+                        </a>
                     </div>
-                    <p class="api-card-description">Bạn không có quyền truy cập vào trang quản lý API. Chỉ quản trị viên mới có thể thực hiện các thay đổi cấu hình API.</p>
-                    <p>Bạn có thể quay lại <a href="{{ url_for('profile') }}" style="color: var(--primary);">trang hồ sơ cá nhân</a> để cập nhật thông tin của mình.</p>
                 </div>
-                {% endif %}
+               
+                
             </div>
         </div>
     </div>
-      <script>
+    {% endif %}
+    
+    <script>
         // Hàm mở modal
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
+         function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
         }
         
-        // Hàm đóng modal
+        // Hàm đóng modal với kiểm tra tồn tại
         function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
         }
         
-        // Hàm mở modal chỉnh sửa với dữ liệu
+        // Xử lý sự kiện phím Esc để đóng modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal');
+                modals.forEach(modal => {
+                    if (modal.style.display === 'flex') {
+                        closeModal(modal.id);
+                    }
+                });
+            }
+        });
+        
+        // Hàm xử lý click nút chỉnh sửa với kiểm tra dữ liệu
+        function handleEditClick(element) {
+            if (!element) return;
+            
+            const id = element.getAttribute('data-id');
+            const name = element.getAttribute('data-name') || '';
+            const description = element.getAttribute('data-description') || '';
+            
+            if (!id) {
+                console.error('Không tìm thấy ID key');
+                return;
+            }
+            
+            openEditModal(id, name, description);
+        }
+        
+        // Hàm mở modal chỉnh sửa với kiểm tra input
         function openEditModal(id, name, description) {
-            document.getElementById('edit-key-id').value = id;
-            document.getElementById('edit-key-name').value = name;
-            document.getElementById('edit-key-description').value = description || '';
-            openModal('edit-key-modal');
+            const idInput = document.getElementById('edit-key-id');
+            const nameInput = document.getElementById('edit-key-name');
+            const descInput = document.getElementById('edit-key-description');
+            
+            if (idInput && nameInput && descInput) {
+                idInput.value = id;
+                nameInput.value = name;
+                descInput.value = description;
+                openModal('edit-key-modal');
+            } else {
+                console.error('Không tìm thấy các phần tử input trong modal chỉnh sửa');
+            }
+        }
+        
+        // Validation cho form thêm API key với kiểm tra form tồn tại
+        const addKeyForm = document.getElementById('add-key-form');
+        if (addKeyForm) {
+            addKeyForm.addEventListener('submit', function(e) {
+                const apiKeyInput = this.querySelector('input[name="new_api_key"]');
+                if (apiKeyInput && !apiKeyInput.value.startsWith('sk-')) {
+                    alert('API Key phải bắt đầu bằng "sk-"');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                const keyNameInput = this.querySelector('input[name="key_name"]');
+                if (keyNameInput && !keyNameInput.value.trim()) {
+                    alert('Vui lòng nhập tên cho API Key');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                return true;
+            });
         }
         
         // Đóng modal khi click bên ngoài nội dung modal
         window.onclick = function(event) {
-            if (event.target.className === 'modal') {
+            if (event.target.classList.contains('modal')) {
                 event.target.style.display = 'none';
+                document.body.style.overflow = 'auto';
             }
         }
     </script>

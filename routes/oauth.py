@@ -14,14 +14,13 @@ def register_oauth_routes(app):
     
     # Đăng ký Google OAuth
     google = oauth.register(
-        name='google',
-        client_id="30787395526-jqgac7lj9usbv356ho35cahvcokq7868.apps.googleusercontent.com",
-        client_secret="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",
-        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-        client_kwargs={
-            'scope': 'openid email profile'
-        }
-    )
+    name='google',
+    client_id=app.config['GOOGLE_CLIENT_ID'],
+    client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={'scope': 'openid email profile'}
+)
+
     
     @app.route('/login/google')
     def login_google():
@@ -35,8 +34,12 @@ def register_oauth_routes(app):
         return google.authorize_redirect(redirect_uri)
 
 
-    @app.route('/auth/google/callback')
+    @app.route('/login/google/callback') 
     def login_google_callback():
+        if request.args.get('error'):
+            error = request.args.get('error_description') or request.args.get('error')
+            flash(f'Google login error: {error}', 'error')
+            return redirect(url_for('login'))
         try:
             token = google.authorize_access_token()
         except Exception as e:

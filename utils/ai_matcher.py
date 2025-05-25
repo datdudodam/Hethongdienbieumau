@@ -93,10 +93,11 @@ class AIFieldMatcher:
             if self._client is None:
                 raise RuntimeError("Failed to initialize OpenAI client. Check API key configuration.")
         return self._client
-
+    def _generate_cache_key(self, text: str) -> str:
+            return hashlib.sha256(text.encode('utf-8')).hexdigest()
     def extract_context_from_form_text(self, form_text: str) -> str:
         """Extract context from form text with caching"""
-        cache_key = hashlib.sha256(form_text.encode('utf-8')).hexdigest()
+        cache_key = self._generate_cache_key(form_text)
         if cache_key in self.context_cache:
             return self.context_cache[cache_key]
             
@@ -128,58 +129,73 @@ class AIFieldMatcher:
             )
 
             context = response.choices[0].message.content.strip() if response and response.choices else ""
-            self.context_cache[cache_key] = context
-            self._analyze_form_context(form_text, context)
+           # self.context_cache[cache_key] = context
+            self._enhance_context_analysis(form_text, context)
             return context
         except Exception as e:
             logger.error(f"Error extracting context: {str(e)}")
             return ""
 
-    def _analyze_form_context(self, form_text: str, context: str):
-        """Deep analyze form context"""
+    def _enhance_context_analysis(self, form_text: str, context: str) -> Dict:
+        """Phân tích ngữ cảnh nâng cao với mô hình embedding"""
+        cache_key = hashlib.sha256(form_text.encode()).hexdigest()
+        if cache_key in self.context_cache:
+            return self.context_cache[cache_key]
+        
+        # Sử dụng embedding để phân tích ngữ cảnh
+        embeddings = self.sbert_model.encode([form_text, context])
+        form_embedding, context_embedding = embeddings[0], embeddings[1]
+        
+        # Phân tích cấu trúc form
+        structure_prompt = f"""Phân tích cấu trúc form sau và phản hồi bằng JSON:
+{form_text[:2000]}
+
+Yêu cầu phản hồi JSON với định dạng:
+{{
+  "form_type": "Đơn xin việc",
+  "sections": ["Thông tin cá nhân", "Kinh nghiệm làm việc", "Học vấn"],
+  "field_relationships": "‘Vị trí’ nằm trong phần Kinh nghiệm, liên quan đến công ty và thời gian làm việc.",
+  "field_importance": {{
+    "Họ tên": "Cao",
+    "Vị trí": "Cao",
+    "Công ty": "Trung bình",
+    "Thời gian": "Trung bình"
+  }},
+  "field_extraction": {{
+    "Công ty": "Công ty một thành viên Hữu Phước",
+    "Vị trí": "Văn phòng",
+    "Địa điểm": "Thương mại",
+    "Thời gian bắt đầu": "27/09/2003"
+  }}
+}}
+
+Phản hồi JSON này phải đầy đủ và đúng định dạng.
+"""
+        
+        # Gọi API phân tích
         try:
-            cache_key = hash(form_text)
-            if cache_key in self.form_context_analysis:
-                return
-                
-            prompt = (
-                "Based on form content and context:\n\n"
-                f"Form:\n{form_text[:500]}...\n\n"
-                f"Context:\n{context}\n\n"
-                "Return JSON with:\n"
-                "1. form_type\n"
-                "2. important_fields\n"
-                "3. field_relationships\n"
-                "4. user_characteristics"
-            )
-            
             response = self.client.chat.completions.create(
                 model="gpt-4-1106-preview",
                 messages=[
-                    {"role": "system", "content": "Professional form analysis assistant."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": "Bạn là chuyên gia phân tích biểu mẫu."},
+                    {"role": "user", "content": structure_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=500,
                 response_format={"type": "json_object"}
             )
             
-            content = response.choices[0].message.content
-            try:
-                result = json.loads(content)
-            except json.JSONDecodeError:
-                json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
-                result = json.loads(json_match.group(1)) if json_match else {
-                    "form_type": "unknown",
-                    "important_fields": [],
-                    "field_relationships": {},
-                    "user_characteristics": "Unknown"
-                }
+            analysis = json.loads(response.choices[0].message.content)
             
-            self.form_context_analysis[cache_key] = result
-            logger.info(f"Form context analysis completed: {result.get('form_type')}")
+            analysis.update({
+                "form_embedding": form_embedding.tolist(),
+                "context_embedding": context_embedding.tolist()
+            })
+            logger.info("Phân tích trường: %s", analysis.get("field_extraction", {}))
+            self.context_cache[cache_key] = analysis
+            return analysis
         except Exception as e:
-            logger.error(f"Error analyzing form context: {e}")
+            logger.error(f"Lỗi phân tích ngữ cảnh: {e}")
+            return {}
 
     def _extract_key_fields(self, form_text: str) -> str:
         """Extract key fields using field matcher"""
@@ -393,6 +409,9 @@ class AIFieldMatcher:
                 f"{k}: {v}" for k, v in form_data.items() if v and k != "form_type"
             )
             if context_snippet:
+                if not isinstance(enhanced_context, str):
+                    enhanced_context = str(enhanced_context)
+
                 enhanced_context += f"\nNgữ cảnh từ mẫu trước: {context_snippet}"
         
         return enhanced_context.strip()

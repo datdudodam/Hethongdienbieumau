@@ -28,6 +28,13 @@
             --error-color: #ef4444;
             --card-bg: rgba(255, 255, 255, 0.98);
         }
+        input.loading {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-6.219-8.56'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px 16px;
+            padding-right: 36px;
+        }
         
         body {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -306,6 +313,34 @@
                 background-color: rgba(79, 70, 229, 0.2);
             }
         }
+        .auto-fill-all-btn-ai {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px -3px rgba(124, 58, 237, 0.4);
+            background: linear-gradient(to right, #7c3aed, #3b82f6);
+        }
+
+        .auto-fill-all-btn-ai:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -3px rgba(124, 58, 237, 0.5);
+        }
+        /* Thêm vào phần CSS */
+        .form-input:focus, .form-input:active {
+            transform: scale(1.01);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .suggestions-list {
+            /* Đảm bảo dropdown không bị che */
+            z-index: 100;
+            /* Thêm hiệu ứng xuất hiện */
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
     </style>
 </head>
 <body class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -336,24 +371,39 @@
                         </div>
                         
                         <div class="flex flex-col sm:flex-row gap-3 items-center">
-                            <button 
-                                type="button" 
-                                onclick="autoFillAllFields()" 
-                                class="auto-fill-all-btn px-5 py-2.5 text-white rounded-lg transition-all flex items-center justify-center font-medium group relative overflow-hidden"
-                            >
-                                <span class="relative z-10 flex items-center">
-                                    <span class="auto-fill-loading hidden mr-2">
-                                        <i class="fas fa-spinner fa-spin"></i>
-                                    </span>
-                                    <span class="auto-fill-icon flex items-center">
-                                        <i class="fas fa-bolt mr-2"></i>
-                                        Điền tất cả tự động
-                                    </span>
+                        <button 
+                            type="button" 
+                            onclick="autoFillAllFields()" 
+                            class="auto-fill-all-btn px-5 py-2.5 text-white rounded-lg transition-all flex items-center justify-center font-medium group relative overflow-hidden"
+                        >
+                            <span class="relative z-10 flex items-center">
+                                <span class="auto-fill-loading hidden mr-2">
+                                    <i class="fas fa-spinner fa-spin"></i>
                                 </span>
-                            </button>
-                            
-                            
+                                <span class="auto-fill-icon flex items-center">
+                                    <i class="fas fa-bolt mr-2"></i>
+                                    Điền tất cả tự động
+                                </span>
+                            </span>
+                        </button>
+                        
+                        <button 
+                            type="button" 
+                            onclick="autoFillAllFieldsAI()" 
+                            class="auto-fill-all-btn-ai px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg transition-all flex items-center justify-center font-medium group relative overflow-hidden"
+                        >
+                            <span class="relative z-10 flex items-center">
+                                <span class="auto-fill-loading hidden mr-2">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </span>
+                                <span class="auto-fill-icon flex items-center">
+                                    <i class="fas fa-robot mr-2"></i>
+                                    Điền tất cả bằng AI
+                                </span>
+                            </span>
+                        </button>
                     </div>
+                        
                     
                     <!-- Progress indicator for auto-fill -->
                     <div id="auto-fill-progress" class="mt-4 hidden">
@@ -392,23 +442,6 @@
                                 
                                 <div class="button-group">
                                     <!-- Auto-fill button -->
-                                    <button 
-                                        type="button" 
-                                        onclick="autoFillField('{{ field.field_code }}')" 
-                                        class="action-button px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-300 rounded-lg flex items-center justify-center shadow-sm focus:ring-2 focus:ring-indigo-200 relative group"
-                                        title="Điền tự động"
-                                        aria-label="Điền tự động cho {{ field.field_name }}"
-                                    >
-                                        <span class="auto-fill-loading hidden">
-                                            <i class="fas fa-spinner fa-spin mr-1"></i>
-                                        </span>
-                                        <span class="auto-fill-icon flex items-center">
-                                            <i class="fas fa-bolt mr-1.5"></i>
-                                            <span class="hidden sm:inline">Tự động</span>
-                                        </span>
-                                        <div class="tooltip">Điền tự động cho {{ field.field_name }}</div>
-                                    </button>
-                                    
                                     <!-- Nhóm nút AI -->
                                     <button 
                                         type="button" 
@@ -435,8 +468,10 @@
                                             Điền tự động bằng AI cho {{ field.field_name }}
                                         </div>
                                     </button>
+
                                 </div>
                             </div>
+                            
                             
                             <ul id="suggestions-{{ field.field_code }}" class="suggestions-list absolute z-10 w-full mt-2 rounded-lg border border-gray-100 hidden max-h-60 overflow-y-auto divide-y divide-gray-100">
                                 <!-- Suggestions will be populated here -->
@@ -471,13 +506,23 @@
 
     <script>
         // Thêm các hàm xử lý tự động điền vào phần script
-        function autoFillField(fieldName) {
+       function autoFillField(fieldName) {
             const input = document.getElementById(fieldName);
-            const button = input.closest('.form-input-group').querySelector('button[onclick*="autoFillField"]');
-            const loadingIcon = button.querySelector('.auto-fill-loading');
-            const fillIcon = button.querySelector('.auto-fill-icon');
             const errorDiv = document.getElementById(`error-${fieldName}`);
             const suggestionsList = document.getElementById(`suggestions-${fieldName}`);
+
+            // Nếu dropdown đang hiển thị thì ẩn đi và không làm gì thêm
+            if (!suggestionsList.classList.contains('hidden')) {
+                suggestionsList.classList.add('hidden');
+                return;
+            }
+
+            // Thêm class loading để tránh gọi nhiều lần
+            input.classList.add('loading');
+            errorDiv.classList.add('hidden');
+            
+            // Ẩn dropdown nếu đang hiển thị
+            suggestionsList.classList.add('hidden');
 
             // Lấy dữ liệu form hiện tại
             const formData = {};
@@ -487,79 +532,35 @@
                 }
             });
 
-            loadingIcon.classList.remove('hidden');
-            fillIcon.classList.add('hidden');
-            button.disabled = true;
-            errorDiv.classList.add('hidden');
-
-            fetch('/auto_fill_field', {
+            // Thêm delay tối thiểu để hiệu ứng loading rõ ràng
+            const loadingPromise = new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Gọi API
+            const apiPromise = fetch('/auto_fill_field', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ 
-                    field_name: fieldName,        // ✅ Đã sửa từ field_code => field_name
+                    field_name: fieldName,
                     partial_form: formData
                 })
-            })
-            .then(response => {
+            });
+
+            Promise.all([loadingPromise, apiPromise])
+            .then(([_, response]) => {
                 if (!response.ok) {
                     return response.json().then(err => { throw err; });
                 }
                 return response.json();
             })
             .then(data => {
-                if (data.all_suggestions && data.all_suggestions.length > 0) {
-                    // Hiển thị tất cả các gợi ý trả về dưới dạng dropdown
-                    suggestionsList.innerHTML = ''; // Xóa danh sách cũ
-                    
-                    // Tạo tiêu đề cho dropdown
-                    const dropdownHeader = document.createElement('li');
-                    dropdownHeader.className = 'px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm';
-                    dropdownHeader.textContent = 'Chọn một giá trị phù hợp:';
-                    suggestionsList.appendChild(dropdownHeader);
-                    
-                    // Thêm các gợi ý vào dropdown
-                    data.all_suggestions.forEach((suggestion, index) => {
-                        const suggestionItem = document.createElement('li');
-                        suggestionItem.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200';
-                        suggestionItem.innerHTML = `
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <span class="font-medium">${suggestion.value}</span>
-                                </div>
-                                <div class="text-xs text-gray-500">
-                                    <span>${suggestion.matched_field}</span>
-                                    <span class="ml-1">(${Math.round(suggestion.similarity * 100)}%)</span>
-                                </div>
-                            </div>
-                        `;
-                        suggestionItem.setAttribute('role', 'option');
-                        suggestionItem.setAttribute('tabindex', '0');
-                        suggestionItem.onclick = () => {
-                            input.value = suggestion.value;
-                            suggestionsList.classList.add('hidden');
-                            input.focus();
-                        };
-                        suggestionItem.onkeypress = (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                input.value = suggestion.value;
-                                suggestionsList.classList.add('hidden');
-                                input.focus();
-                            }
-                        };
-                        suggestionsList.appendChild(suggestionItem);
-                    });
-                    
-                    // Hiển thị dropdown
+                if (data.all_suggestions?.length > 0) {
+                    renderSuggestions(input, suggestionsList, data.all_suggestions);
                     suggestionsList.classList.remove('hidden');
-                    suggestionsList.setAttribute('role', 'listbox');
-                    suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý');
                     
-                    // Tự động điền giá trị đầu tiên vào input nhưng vẫn hiển thị dropdown để người dùng có thể chọn
-                    input.value = data.all_suggestions[0].value;
-                    showAutoFillDetails(input, data);
-                   
+                    // Focus vào dropdown để có thể dùng keyboard navigation
+                    suggestionsList.querySelector('li')?.focus();
                 } else {
                     errorDiv.textContent = data.error || 'Không tìm thấy giá trị phù hợp';
                     errorDiv.classList.remove('hidden');
@@ -571,11 +572,108 @@
                 errorDiv.classList.remove('hidden');
             })
             .finally(() => {
-                loadingIcon.classList.add('hidden');
-                fillIcon.classList.remove('hidden');
-                button.disabled = false;
+                input.classList.remove('loading');
             });
         }
+
+        function renderSuggestions(input, container, suggestions) {
+            container.innerHTML = '';
+            
+            // Tạo tiêu đề cho dropdown
+            const dropdownHeader = document.createElement('li');
+            dropdownHeader.className = 'px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm';
+            dropdownHeader.textContent = 'Chọn một giá trị phù hợp:';
+            container.appendChild(dropdownHeader);
+            
+            // Thêm các gợi ý vào dropdown
+            suggestions.forEach((suggestion, index) => {
+                const suggestionItem = document.createElement('li');
+                suggestionItem.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200';
+                suggestionItem.tabIndex = 0; // Cho phép focus
+                suggestionItem.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="font-medium">${suggestion.value}</span>
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            <span>${suggestion.matched_field}</span>
+                            <span class="ml-1">(${Math.round(suggestion.similarity * 100)}%)</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Xử lý click
+                suggestionItem.onclick = () => selectSuggestion(input, container, suggestion.value);
+                
+                // Xử lý keyboard
+                suggestionItem.onkeydown = (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        selectSuggestion(input, container, suggestion.value);
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const next = suggestionItem.nextElementSibling;
+                        if (next) next.focus();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prev = suggestionItem.previousElementSibling;
+                        (prev || container.querySelector('li:last-child')).focus();
+                    }
+                };
+                
+                container.appendChild(suggestionItem);
+            });
+        }
+        function handleInputClick(event) {
+            const input = event.target;
+            const suggestionsList = document.getElementById(`suggestions-${input.id}`);
+            
+            // Đóng tất cả dropdown khác trước khi mở dropdown mới
+            document.querySelectorAll('.suggestions-list').forEach(dropdown => {
+                if (dropdown.id !== `suggestions-${input.id}`) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+            
+            // Nếu có giá trị, hiển thị dropdown với giá trị hiện tại
+            if (input.value.trim()) {
+                suggestionsList.innerHTML = `
+                    <li class="px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm">
+                        Giá trị hiện tại
+                    </li>
+                    <li class="px-4 py-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center">
+                        <span>${input.value.trim()}</span>
+                        <span class="text-xs text-gray-500">Nhấn để giữ nguyên</span>
+                    </li>
+                    <li class="px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm">
+                        Tùy chọn khác
+                    </li>
+                    <li class="px-4 py-3 hover:bg-blue-50 cursor-pointer" onclick="autoFillField('${input.id}')">
+                        <span class="text-indigo-600 flex items-center">
+                            <i class="fas fa-magic mr-2"></i>
+                            Điền tự động
+                        </span>
+                    </li>
+                `;
+                suggestionsList.classList.remove('hidden');
+            } 
+            // Nếu không có giá trị, thực hiện auto-fill
+            else {
+                autoFillField(input.id);
+            }
+        }
+
+        function selectSuggestion(input, container, value) {
+            input.value = value;
+            container.classList.add('hidden');
+            input.focus();
+            
+            // Thêm hiệu ứng để người dùng biết giá trị đã được chọn
+            input.classList.add('bg-green-50', 'border-green-200');
+            setTimeout(() => {
+                input.classList.remove('bg-green-50', 'border-green-200');
+            }, 1000);
+        }
+        
 
         function autoFillAllFields() {
             const inputs = document.querySelectorAll('form input[type="text"]');
@@ -649,29 +747,37 @@
 
 
     function initializeEventListeners() {
-        document.querySelector('form')?.addEventListener('submit', handleFormSubmit);
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', handleFormSubmit);
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
         initializeEventListeners();
-        
-        // Thêm hiệu ứng khi trang load
-        document.querySelectorAll('.form-input-group').forEach((group, index) => {
-            group.style.opacity = '0';
-            group.style.transform = 'translateY(10px)';
-            group.style.animation = `fadeInUp 0.3s ease forwards ${index * 0.1}s`;
+
+        const inputs = document.querySelectorAll('form input[type="text"]');
+
+        inputs.forEach(input => {
+            const fillIfEmpty = () => {
+                if (!input.value.trim()) {
+                    autoFillField(input.id);
+                }
+            };
+
+            input.addEventListener('click', handleInputClick);
+            input.addEventListener('focus', handleInputClick);
         });
-        
+
         // Đóng dropdown khi click ra ngoài
         document.addEventListener('click', function(event) {
-            const dropdowns = document.querySelectorAll('.suggestions-list:not(.hidden)');
-            dropdowns.forEach(dropdown => {
-                // Kiểm tra xem click có nằm trong dropdown hay không
-                if (!dropdown.contains(event.target) && 
-                    !event.target.closest('button[onclick*="autoFillField"]')) {
+            const isInput = event.target.matches('input[type="text"]');
+            const isSuggestion = event.target.closest('.suggestions-list');
+
+            if (!isInput && !isSuggestion) {
+                document.querySelectorAll('.suggestions-list').forEach(dropdown => {
                     dropdown.classList.add('hidden');
-                }
-            });
+                });
+            }
         });
     });
 
@@ -760,6 +866,127 @@
             if (button) button.disabled = false;
         });
     }
+        function autoFillAllFieldsAI() {
+            const button = document.querySelector('button[onclick="autoFillAllFieldsAI()"]');
+            const loadingIcon = button?.querySelector('.auto-fill-loading');
+            const fillIcon = button?.querySelector('.auto-fill-icon');
+            const progressContainer = document.getElementById('auto-fill-progress');
+            const progressBar = document.getElementById('auto-fill-progress-bar');
+            const progressText = document.getElementById('auto-fill-progress-text');
+
+            // Lấy dữ liệu form hiện tại
+            const formData = {};
+            document.querySelectorAll('form input[type="text"]').forEach(input => {
+                if (input.value.trim()) {
+                    formData[input.id] = input.value.trim();
+                }
+            });
+
+            // Hiển thị trạng thái loading
+            if (loadingIcon) loadingIcon.classList.remove('hidden');
+            if (fillIcon) fillIcon.classList.add('hidden');
+            if (button) button.disabled = true;
+            if (progressContainer) progressContainer.classList.remove('hidden');
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressText) progressText.textContent = '0%';
+
+            // Gọi API AI_FILL_ALL
+            fetch('/AI_FILL_ALL', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    partial_form: formData
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                if (data.fields && typeof data.fields === 'object') {
+                    let filledCount = 0;
+                    const totalFields = data.total_fields || Object.keys(data.fields).length;
+                    
+                    // Cập nhật progress bar
+                    const updateProgress = () => {
+                        const progress = Math.round((filledCount / totalFields) * 100);
+                        if (progressBar) progressBar.style.width = `${progress}%`;
+                        if (progressText) progressText.textContent = `${progress}%`;
+                    };
+                    
+                    // Điền từng trường với hiệu ứng tuần tự
+                    const fieldKeys = Object.keys(data.fields);
+                    fieldKeys.forEach((fieldCode, index) => {
+                        setTimeout(() => {
+                            const fieldData = data.fields[fieldCode];
+                            const input = document.getElementById(fieldCode);
+                            const errorDiv = document.getElementById(`error-${fieldCode}`);
+                            
+                            if (input && fieldData.value) {
+                                input.value = fieldData.value;
+                                // Hiệu ứng highlight
+                                input.classList.add('bg-blue-50', 'border-blue-200');
+                                setTimeout(() => {
+                                    input.classList.remove('bg-blue-50', 'border-blue-200');
+                                }, 2000);
+                                
+                                // Hiển thị tooltip lý do
+                                if (fieldData.reason) {
+                                    showAutoFillTooltip(input, fieldData.reason);
+                                }
+                                
+                                filledCount++;
+                                updateProgress();
+                            }
+                        }, index * 200); // Delay mỗi trường 200ms để tạo hiệu ứng tuần tự
+                    });
+                    
+                    // Hiển thị thông báo khi hoàn thành
+                    setTimeout(() => {
+                        showToast(`Đã điền tự động ${filledCount}/${totalFields} trường bằng AI`, 'success');
+                    }, fieldKeys.length * 200 + 500);
+                } else {
+                    showToast('Không có trường nào được điền tự động', 'info');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+                showToast(error.message || 'Có lỗi khi điền tự động tất cả bằng AI', 'error');
+            })
+            .finally(() => {
+                if (loadingIcon) loadingIcon.classList.add('hidden');
+                if (fillIcon) fillIcon.classList.remove('hidden');
+                if (button) button.disabled = false;
+                
+                // Ẩn progress bar sau 3 giây
+                setTimeout(() => {
+                    if (progressContainer) progressContainer.classList.add('hidden');
+                }, 3000);
+            });
+        }
+
+        function showAutoFillTooltip(input, reason) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'absolute z-50 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-normal max-w-xs';
+            tooltip.textContent = `AI gợi ý: ${reason}`;
+            tooltip.style.top = `${input.offsetTop - 30}px`;
+            tooltip.style.left = `${input.offsetLeft}px`;
+            
+            input.parentNode.appendChild(tooltip);
+            
+            // Tự động ẩn sau 5 giây
+            setTimeout(() => {
+                tooltip.remove();
+            }, 5000);
+        }
 
         
         function generateDocx() { 

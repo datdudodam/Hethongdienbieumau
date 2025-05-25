@@ -5,7 +5,12 @@ import uuid
 from werkzeug.utils import secure_filename
 from config.config import UPLOADS_DIR
 from flask import session
-
+from transformers import AutoTokenizer, AutoModelForTokenClassification
+from transformers import pipeline
+model_name = "Davlan/bert-base-multilingual-cased-ner-hrl"  # hỗ trợ nhiều ngôn ngữ
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForTokenClassification.from_pretrained(model_name)
+ner_pipeline = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
 # Biến toàn cục để lưu đường dẫn tài liệu hiện tại
 doc_path = None
@@ -15,56 +20,84 @@ def load_document(doc_path):
     Tải nội dung từ tài liệu docx
     """
     doc = Document(doc_path)
-    return "\n".join([para.text.strip() for para in doc.paragraphs])
+    return "\n".join([para.text.strip() for para in doc.paragraphs if para.text.strip()])
 
 
-
-def extract_fields(text):
+def clean_label(text):
     """
-    Trích xuất các trường từ văn bản, với nhiều mẫu mã trường khác nhau.
-    Các mẫu mã trường: [_123_], ...., ____, [fill]
-    Nếu có các từ khóa đặc biệt như "ngày", "tháng", "năm" đứng ngay trước mã trường, 
-    thì trường được lấy là từ khóa đó.
-    Nếu không, lấy chuỗi bắt đầu từ ký tự viết hoa gần nhất trước mã trường đến vị trí mã trường.
+    Làm sạch nhãn để tránh nhiễu đầu ra
     """
-    patterns = [r"\[_\d+_\]", r"\.{4,}", r"_{4,}", r"\[fill\]"]
+    text = re.sub(r"\[_\d+_\]", "", text)
+    text = re.sub(r"[^\w\sÀ-ỹ]", "", text)
+    text = text.strip()
+    return text
+
+def extract_fields(text,window_size=50):
+    """
+    Trích xuất tên trường chính xác từ văn bản, tách phần context thật sự gần mã trường nhất.
+    """
+    field_pattern = r"\[_\d+_\]|_{4,}|\.{4,}|\[fill\]"
+    lines = text.splitlines()
     fields = []
-    
-    for pattern in patterns:
-        for match in re.finditer(pattern, text):
-            end_index = match.start()
-            
-            # Bỏ khoảng trắng ngay trước vị trí mã trường
-            i = end_index - 1
-            while i >= 0 and text[i] == " ":
-                i -= 1
-            
+    special_keywords = ["ngày", "tháng", "năm"]
+
+    for i, line in enumerate(lines):
+        matches = list(re.finditer(field_pattern, line))
+        prev_match_end = 0
+
+        for match in matches:
+            field_code = match.group()
+            match_start = match.start()
+            match_end = match.end()
+
+            # Lấy đoạn trước mã trường
+            raw_context = line[prev_match_end:match_start].strip()
+            prev_match_end = match_end
+
+            # Fallback nếu không có context
+            if not raw_context and i > 0:
+                raw_context = lines[i - 1].strip()
+
+            # 👉 Tách cụm cuối cùng nếu có dấu phẩy
+            if "," in raw_context:
+                context_segment = raw_context.split(",")[-1].strip()
+            else:
+                context_segment = raw_context
+
+            cleaned_context = clean_label(context_segment)
+            cleaned_context_lower = cleaned_context.lower()
             field_name = ""
-            special_words = {"ngày", "tháng", "năm"}
-            
-            # Kiểm tra từ khóa đặc biệt
-            for word in special_words:
-                start_word = i - len(word) + 1
-                if start_word >= 0:
-                    segment = text[start_word:i+1].lower()
-                    if segment == word:
-                        field_name = word
+
+            # Nếu là cụm ngắn gọn → giữ nguyên
+            if len(cleaned_context.split()) <= 4 and not re.search(r"[:\.\-]", cleaned_context):
+                field_name = cleaned_context
+            else:
+                # Ưu tiên từ khóa đặc biệt
+                for kw in special_keywords:
+                    if kw in cleaned_context_lower:
+                        field_name = kw.capitalize()
                         break
-            
-            # Nếu không có từ khóa đặc biệt, tìm chuỗi bắt đầu từ chữ in hoa gần nhất trước mã trường
-            if not field_name:
-                for j in range(i, -1, -1):
-                    if text[j].isupper():
-                        field_name = text[j:end_index].strip()
-                        break
-            
+
+                # Nếu không có từ khóa, dùng AI
+                if not field_name:
+                    limited_context = cleaned_context_lower[-window_size:]
+                    label_text = ""
+                    ner_results = ner_pipeline(limited_context)
+                    for entity in ner_results:
+                        if entity["entity_group"] in {"PER", "ORG", "LOC", "MISC"}:
+                            label_text += entity["word"] + " "
+                    if not label_text:
+                        label_text = cleaned_context
+                    field_name = label_text.strip()
+
             if field_name:
                 fields.append({
                     "field_name": field_name,
-                    "field_code": match.group()
+                    "field_code": field_code
                 })
 
     return fields
+
 
 def upload_document(file):
     """
@@ -150,31 +183,60 @@ def set_doc_path(path):
         print(f"Error setting doc_path in session: {str(e)}")
     # Vẫn lưu vào biến toàn cục để đảm bảo tương thích ngược
     doc_path = path
-def extract_table_fields(doc_path): 
+def extract_table_fields(doc_path,window_size=40): 
     """
-    Trích xuất các trường từ bảng trong tài liệu docx.
-    Trường hợp bảng có dạng: | Tên trường | [_123_] hoặc ____ hoặc .... hoặc [fill] |
+    Trích xuất các trường từ bảng với độ chính xác cao hơn, tránh rút ngắn nhãn sai lệch.
     """
     doc = Document(doc_path)
     fields = []
-    
-    patterns = [r"\[_\d+_\]", r"\.{4,}", r"_{4,}", r"\[fill\]"]
-    
+
+    field_patterns = [r"\[_\d+_\]", r"\.{4,}", r"_{4,}", r"\[fill\]"]
+    special_keywords = ["ngày", "tháng", "năm"]
+
     for table in doc.tables:
         for row in table.rows:
             if len(row.cells) >= 2:
-                field_name = row.cells[0].text.strip()
+                raw_label = row.cells[0].text.strip()
                 field_value = row.cells[1].text.strip()
-                
-                for pattern in patterns:
+
+                for pattern in field_patterns:
                     match = re.search(pattern, field_value)
                     if match:
                         field_code = match.group()
-                        fields.append({
-                            "field_name": field_name,
-                            "field_code": field_code
-                        })
-                        break  # Dừng nếu đã khớp một pattern
+                        field_name = ""
+
+                        cleaned_label = clean_label(raw_label)
+                        cleaned_label_lower = cleaned_label.lower()
+
+                        # Nếu nhãn ngắn gọn, không chứa ký tự gây nhiễu → giữ nguyên
+                        if len(cleaned_label.split()) <= 4 and not re.search(r"[:\.\-]", cleaned_label):
+                            field_name = cleaned_label
+                        else:
+                            # Ưu tiên từ khóa đặc biệt
+                            for kw in special_keywords:
+                                if kw in cleaned_label_lower:
+                                    field_name = kw.capitalize()
+                                    break
+
+                            # Nếu vẫn chưa có, dùng AI
+                            if not field_name:
+                                label_text = ""
+                                limited_context = cleaned_label_lower[-window_size:]
+                                ner_results = ner_pipeline(limited_context)
+                                for entity in ner_results:
+                                    if entity["entity_group"] in {"PER", "ORG", "LOC", "MISC"}:
+                                        label_text += entity["word"] + " "
+                                if not label_text:
+                                    label_text = cleaned_label
+                                field_name = label_text.strip()
+
+                        if field_name:
+                            fields.append({
+                                "field_name": field_name.strip(),
+                                "field_code": field_code
+                            })
+                        break
+
     return fields
 
 def extract_all_fields(doc_path):

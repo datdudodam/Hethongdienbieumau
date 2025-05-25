@@ -20,46 +20,47 @@ def GOI_Y_AI(app):
     def AI_FILL():
         try:
             data = request.get_json()
-            
+
             # Get required fields from request
-            field_code = data.get("field_code") or data.get("field_name")  # Handle both field_code and field_name
+            field_code = data.get("field_code") or data.get("field_name")
             if not field_code:
                 return jsonify({"error": "Field code is required"}), 400
-            
+
             # Get current document
             doc_path = get_doc_path()
             if not doc_path:
                 return jsonify({"error": "No document loaded"}), 400
-                
-            # Extract fields from document
+
+            # Extract fields and content from document
             text = load_document(doc_path)
             fields = extract_all_fields(doc_path)
-            
-            # Find matching field name - cải thiện cách tìm field_name
+
+            # Find matching field name
             field_name = None
             for field in fields:
                 if field.get('field_code') == field_code:
                     field_name = field['field_name']
                     break
-                    
-            # Nếu không tìm thấy, sử dụng field_code làm field_name
             if not field_name:
                 field_name = field_code
-            
+
             # Get form type and user info
             form_type = data.get('form_type') or data.get('form_data', {}).get('form_type')
             user_id = str(current_user.id) if current_user.is_authenticated else "anonymous"
-            
-            # Lấy thêm dữ liệu đã điền từ form hiện tại để cung cấp ngữ cảnh tốt hơn
+
+            # Partial form context
             partial_form_data = data.get('partial_form', {}) or data.get('form_data', {})
-            
-            # Load form history data
+
+            # Load form history
             form_history_data = load_form_history()
-            
+
+            # Initialize before try block
+            suggestions_result = {}
+
             try:
-                # Extract context from form text
+                # Extract context
                 form_context = ai_matcher.extract_context_from_form_text(text)
-                
+
                 # Get personalized suggestions
                 suggestions_result = ai_matcher.generate_personalized_suggestions(
                     db_data=form_history_data,
@@ -69,25 +70,25 @@ def GOI_Y_AI(app):
                     form_type=form_type,
                     field_name=field_name 
                 )
-                
-                # Prepare response data
+
+                # Prepare response
                 response_data = {
                     "value": suggestions_result.get("default_value", ""),
                     "suggestions": suggestions_result.get("ai_suggestion", {}).get("suggestions", []),
-                    "confidence": 0.95,  # Tăng độ tin cậy
+                    "confidence": 0.95,
                     "field_name": suggestions_result.get("field_name", field_name),
                     "field_code": field_code,
                     "recent_values": suggestions_result.get("recent_values", []),
                     "reason": suggestions_result.get("reason", "") or suggestions_result.get("ai_suggestion", {}).get("reason", "")
                 }
-                
-                # If no suggestions, try to get from recent values
+
+                # If no suggestions, fallback to recent values
                 if not response_data["suggestions"] and response_data["recent_values"]:
                     response_data["suggestions"] = response_data["recent_values"][:5]
                     response_data["value"] = response_data["recent_values"][0] if response_data["recent_values"] else ""
-                
+
                 return jsonify(response_data)
-                
+
             except Exception as inner_e:
                 logger.error(f"Error in suggestion generation: {str(inner_e)}", exc_info=True)
                 return jsonify({
@@ -95,14 +96,74 @@ def GOI_Y_AI(app):
                     "suggestions": [],
                     "confidence": 0.5,
                     "field_name": suggestions_result.get("field_name", field_name),
-
                     "field_code": field_code
                 })
 
         except Exception as e:
             logger.error(f"Error in AI_FILL endpoint: {str(e)}", exc_info=True)
             return jsonify({'error': 'Internal server error'}), 500
+    @app.route('/AI_FILL_ALL', methods=['POST'])
+    def AI_FILL_ALL():
+        try:
+            # Get current document
+            doc_path = get_doc_path()
+            if not doc_path:
+                return jsonify({"error": "No document loaded"}), 400
 
+            # Extract fields and content from document
+            text = load_document(doc_path)
+            fields = extract_all_fields(doc_path)
+
+            # Get form type and user info
+            data = request.get_json()
+            form_type = data.get('form_type') or data.get('form_data', {}).get('form_type')
+            user_id = str(current_user.id) if current_user.is_authenticated else "anonymous"
+            partial_form_data = data.get('partial_form', {}) or data.get('form_data', {})
+
+            # Extract context from form text
+            form_context = ai_matcher.extract_context_from_form_text(text)
+
+            # Load form history
+            form_history_data = load_form_history()
+
+            results = {}
+            for field in fields:
+                field_code = field.get('field_code')
+                field_name = field.get('field_name', field_code)
+                
+                try:
+                    suggestions_result = ai_matcher.generate_personalized_suggestions(
+                        db_data=form_history_data,
+                        field_code=field_code,
+                        user_id=user_id,
+                        context=form_context,
+                        form_type=form_type,
+                        field_name=field_name
+                       
+                    )
+
+                    if suggestions_result.get("default_value"):
+                        results[field_code] = {
+                            "value": suggestions_result.get("default_value", ""),
+                            "field_name": suggestions_result.get("field_name", field_name),
+                            "confidence": suggestions_result.get("confidence", 0.8),
+                            "reason": suggestions_result.get("reason", "")
+                        }
+
+                except Exception as e:
+                    logger.error(f"Error processing field {field_code}: {str(e)}", exc_info=True)
+                    continue
+
+            return jsonify({
+                "status": "success",
+                "filled_fields": len(results),
+                "total_fields": len(fields),
+                "fields": results
+            })
+
+        except Exception as e:
+            logger.error(f"Error in AI_FILL_ALL endpoint: {str(e)}", exc_info=True)
+            return jsonify({'error': 'Internal server error'}), 500
     @app.route('/AI_REWRITE', methods=['POST'])
     def AI_REWRITE():
         try:
