@@ -59,13 +59,23 @@ class APIKey(db.Model):
     usage_limit = db.Column(db.Integer, nullable=True)
     usage_reset_at = db.Column(db.DateTime, nullable=True)
     description = db.Column(db.Text, nullable=True)  # Thêm trường description
+    expiration_date = db.Column(db.DateTime, nullable=True)
+    plan_info = db.Column(db.Text, nullable=True)
+    
+
+   
     @classmethod
-    def add_key(cls, key, name=None,description=None, provider='openai'):
+    def add_key(cls, key, name=None, description=None, provider='openai'):
         """Thêm API key mới vào hệ thống"""
         if not name:
             name = f'{provider.capitalize()} API Key'
         
-        api_key = cls(key=key, name=name, provider=provider,description=description)
+        api_key = cls(
+            key=key, 
+            name=name, 
+            provider=provider,
+            description=description
+        )
         db.session.add(api_key)
         db.session.commit()
         return api_key

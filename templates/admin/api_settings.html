@@ -13,6 +13,7 @@
     <meta property="og:image" content="/static/images/og-image.png">
     <link rel="icon" type="image/png" href="{{ site_logo }}">
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -376,11 +377,13 @@
             margin-top: 0.25rem;
         }
         
+        /* Thêm vào phần style */
         .key-actions {
             display: flex;
             gap: 0.5rem;
+            flex-wrap: wrap;
         }
-        
+
         .action-btn {
             padding: 0.5rem;
             border-radius: var(--radius-sm);
@@ -389,11 +392,63 @@
             cursor: pointer;
             transition: var(--transition);
             color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            position: relative;
         }
-        
+
         .action-btn:hover {
             background: var(--bg-secondary);
             color: var(--primary);
+        }
+
+        .action-btn i {
+            font-size: 1rem;
+        }
+
+        .action-btn[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Màu sắc riêng cho từng nút */
+        .action-btn.edit-btn:hover {
+            color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .action-btn.activate-btn:hover {
+            color: #10b981;
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+
+        .action-btn.deactivate-btn:hover {
+            color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .action-btn.test-btn:hover {
+            color: #f59e0b;
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        .action-btn.delete-btn:hover {
+            color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.1);
         }
         
         .active-key {
@@ -545,6 +600,31 @@
                 font-size: 0.85rem;
             }
         }
+        .api-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .api-tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .api-tab:hover {
+            color: var(--primary);
+        }
+
+        .api-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -630,7 +710,8 @@
                         </thead>
                         <tbody>
                             {% for key in api_keys %}
-                            <tr {% if key.is_active %}class="active-key"{% endif %}>
+                            <tr {% if key.is_active %}class="active-key"{% endif %} data-provider="{{ key.provider }}">
+
                                 <td>
                                     <div class="key-name">{{ key.name }}</div>
                                     {% if key.description %}
@@ -666,33 +747,33 @@
                                         <form method="POST" action="{{ url_for('admin_api_settings') }}" style="display: inline;">
                                             <input type="hidden" name="action" value="activate_key">
                                             <input type="hidden" name="key_id" value="{{ key.id }}">
-                                            <button type="submit" class="action-btn" title="Kích hoạt">
-                                                <i class="fas fa-power-off"></i>
+                                            <button type="submit" class="action-btn activate-btn" title="Kích hoạt">
+                                               <i class="fa-solid fa-toggle-on"></i>
                                             </button>
                                         </form>
                                         {% else %}
                                         <form method="POST" action="{{ url_for('admin_api_settings') }}" style="display: inline;">
                                             <input type="hidden" name="action" value="deactivate_key">
                                             <input type="hidden" name="key_id" value="{{ key.id }}">
-                                            <button type="submit" class="action-btn" title="Vô hiệu hóa">
+                                            <button type="submit" class="action-btn deactivate-btn" title="Vô hiệu hóa">
                                                 <i class="fas fa-ban"></i>
                                             </button>
                                         </form>
                                         {% endif %}
                                         
-                                        <button class="action-btn"
+                                        <button class="action-btn edit-btn"
                                             title="Chỉnh sửa"
                                             data-id="{{ key.id }}"
                                             data-name="{{ key.name }}"
                                             data-description="{{ key.description }}"
                                             onclick="handleEditClick(this)">
-                                            <i class="fas fa-edit"></i>
+                                            <i class="fas fa-pencil-alt"></i>
                                         </button>
                                         
                                         <form method="POST" action="{{ url_for('admin_api_settings') }}" style="display: inline;">
                                             <input type="hidden" name="action" value="test_key">
                                             <input type="hidden" name="key_id" value="{{ key.id }}">
-                                            <button type="submit" class="action-btn" title="Kiểm tra">
+                                            <button type="submit" class="action-btn test-btn" title="Kiểm tra">
                                                 <i class="fas fa-check"></i>
                                             </button>
                                         </form>
@@ -701,7 +782,7 @@
                                             onsubmit="return confirm('Bạn có chắc chắn muốn xóa API key này?');">
                                             <input type="hidden" name="action" value="delete_key">
                                             <input type="hidden" name="key_id" value="{{ key.id }}">
-                                            <button type="submit" class="action-btn" title="Xóa">
+                                            <button type="submit" class="action-btn delete-btn" title="Xóa">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -791,44 +872,68 @@
                     </div>
                 </div>
                 {% endif %}
+                <!-- Thêm tab để chuyển đổi giữa các loại API -->
+                <div class="api-tabs" style="margin-bottom: 1.5rem;">
+                    <button class="api-tab active" onclick="switchApiTab('openai')">OpenAI</button>
+                    <button class="api-tab" onclick="switchApiTab('gemini')">Google Gemini</button>
+                </div>
+
+                <!-- Thêm phần hướng dẫn cho Gemini -->
+                <div id="gemini-guide" class="api-card" style="display: none;">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Cách lấy Google Gemini API Key</h3>
+                    <ol style="padding-left: 1.5rem; margin-bottom: 1.5rem;">
+                        <li style="margin-bottom: 0.5rem;">Truy cập Google AI Studio tại <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary);">aistudio.google.com</a></li>
+                        <li style="margin-bottom: 0.5rem;">Đăng nhập bằng tài khoản Google của bạn</li>
+                        <li style="margin-bottom: 0.5rem;">Tạo API key mới trong phần API Keys</li>
+                        <li style="margin-bottom: 0.5rem;">Sao chép key và dán vào form thêm key mới (chọn provider là Gemini)</li>
+                    </ol>
+                </div>
                 
                 <!-- Modal thêm API Key mới -->
                 <div id="add-key-modal" class="modal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="modal-title">Thêm API Key mới</h3>
-                            <button class="modal-close" onclick="closeModal('add-key-modal')">&times;</button>
-                        </div>
-                        <form method="POST" action="{{ url_for('admin_api_settings') }}" id="add-key-form">
-                            <input type="hidden" name="action" value="add_key">
-                            
-                            <div class="form-field">
-                                <label class="form-label">Tên Key</label>
-                                <input type="text" class="form-input" name="key_name" required placeholder="Ví dụ: OpenAI Production Key">
-                            </div>
-                            
-                            <div class="form-field" style="margin-top: 1rem;">
-                                <label class="form-label">Mô tả (tùy chọn)</label>
-                                <input type="text" class="form-input" name="description" placeholder="Mô tả công dụng của key này">
-                            </div>
-                            
-                            <div class="form-field" style="margin-top: 1rem;">
-                                <label class="form-label">API Key</label>
-                                <input type="text" class="form-input" name="new_api_key" required placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                                <small class="form-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
-                            </div>
-                            
-                            <div class="api-actions" style="margin-top: 1.5rem;">
-                                <button type="submit" class="api-button">
-                                    <i class="fas fa-save api-button-icon"></i> Lưu Key mới
-                                </button>
-                                <button type="button" class="api-button api-button-secondary" onclick="closeModal('add-key-modal')">
-                                    <i class="fas fa-times api-button-icon"></i> Hủy bỏ
-                                </button>
-                            </div>
-                        </form>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Thêm API Key mới</h3>
+                        <button class="modal-close" onclick="closeModal('add-key-modal')">&times;</button>
                     </div>
+                    <form method="POST" action="{{ url_for('admin_api_settings') }}" id="add-key-form">
+                        <input type="hidden" name="action" value="add_key">
+                        
+                        <div class="form-field">
+                            <label class="form-label">Nhà cung cấp</label>
+                            <select class="form-input" name="provider" required id="provider-select">
+                                <option value="openai">OpenAI</option>
+                                <option value="gemini">Google Gemini</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label class="form-label">Tên Key</label>
+                            <input type="text" class="form-input" name="key_name" required placeholder="Ví dụ: Gemini Production Key">
+                        </div>
+                        
+                        <div class="form-field" style="margin-top: 1rem;">
+                            <label class="form-label">Mô tả (tùy chọn)</label>
+                            <input type="text" class="form-input" name="description" placeholder="Mô tả công dụng của key này">
+                        </div>
+                        
+                        <div class="form-field" style="margin-top: 1rem;">
+                            <label class="form-label">API Key</label>
+                            <input type="text" class="form-input" name="new_api_key" required placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" id="api-key-input">
+                            <small class="form-hint" id="api-key-hint">API key có dạng: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
+                        </div>
+                        
+                        <div class="api-actions" style="margin-top: 1.5rem;">
+                            <button type="submit" class="api-button">
+                                <i class="fas fa-save api-button-icon"></i> Lưu Key mới
+                            </button>
+                            <button type="button" class="api-button api-button-secondary" onclick="closeModal('add-key-modal')">
+                                <i class="fas fa-times api-button-icon"></i> Hủy bỏ
+                            </button>
+                        </div>
+                    </form>
                 </div>
+            </div>
                 
                 <!-- Modal chỉnh sửa API Key -->
                 <div id="edit-key-modal" class="modal">
@@ -907,6 +1012,32 @@
     {% endif %}
     
     <script>
+        function switchApiTab(provider) {
+            // Xử lý active tab
+            document.querySelectorAll('.api-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Hiển thị hướng dẫn phù hợp
+            if (provider === 'openai') {
+                document.getElementById('openai-guide').style.display = 'block';
+                document.getElementById('gemini-guide').style.display = 'none';
+            } else {
+                document.getElementById('openai-guide').style.display = 'none';
+                document.getElementById('gemini-guide').style.display = 'block';
+            }
+            
+            // Lọc bảng hiển thị theo provider
+            const rows = document.querySelectorAll('.api-key-table tbody tr');
+            rows.forEach(row => {
+                if (provider === 'all' || row.dataset.provider === provider) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
         // Hàm mở modal
          function openModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -971,25 +1102,39 @@
         
         // Validation cho form thêm API key với kiểm tra form tồn tại
         const addKeyForm = document.getElementById('add-key-form');
-        if (addKeyForm) {
-            addKeyForm.addEventListener('submit', function(e) {
-                const apiKeyInput = this.querySelector('input[name="new_api_key"]');
-                if (apiKeyInput && !apiKeyInput.value.startsWith('sk-')) {
-                    alert('API Key phải bắt đầu bằng "sk-"');
+    if (addKeyForm) {
+        addKeyForm.addEventListener('submit', function(e) {
+            const provider = this.querySelector('select[name="provider"]').value;
+            const apiKeyInput = this.querySelector('input[name="new_api_key"]');
+            const keyNameInput = this.querySelector('input[name="key_name"]');
+            
+            // Kiểm tra tên key
+            if (!keyNameInput.value.trim()) {
+                alert('Vui lòng nhập tên cho API Key');
+                e.preventDefault();
+                return false;
+            }
+            
+            // Validation khác nhau tùy provider
+            if (provider === 'openai') {
+                if (!apiKeyInput.value.startsWith('sk-')) {
+                    alert('OpenAI API Key phải bắt đầu bằng "sk-"');
                     e.preventDefault();
                     return false;
                 }
-                
-                const keyNameInput = this.querySelector('input[name="key_name"]');
-                if (keyNameInput && !keyNameInput.value.trim()) {
-                    alert('Vui lòng nhập tên cho API Key');
+            } else if (provider === 'gemini') {
+                if (apiKeyInput.value.trim() === '') {
+                    alert('Vui lòng nhập Google Gemini API Key');
                     e.preventDefault();
                     return false;
                 }
-                
-                return true;
-            });
-        }
+                // Có thể thêm các validation khác cho Gemini nếu cần
+            }
+            
+            return true;
+        });
+    }
+
         
         // Đóng modal khi click bên ngoài nội dung modal
         window.onclick = function(event) {

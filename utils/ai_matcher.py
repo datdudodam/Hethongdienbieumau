@@ -4,12 +4,14 @@ from config.config import FORM_HISTORY_PATH
 from utils.api_key_manager import get_api_key_manager
 from collections import defaultdict, Counter
 import re
+import google.generativeai as genai
 import json
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 from .field_matcher import EnhancedFieldMatcher
 import hashlib
 from sentence_transformers import SentenceTransformer
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -18,72 +20,221 @@ class AIFieldMatcher:
         self.field_matcher = EnhancedFieldMatcher(form_history_path)
         self.context_cache = {}
         self.suggestion_cache = {}
+        self._openai_client = None
+        self._gemini_client = None
         self._client = None
         self.form_context_analysis = {}
         self.field_relationships = defaultdict(list)
         self.field_name_mapping = {}
         self.similar_fields_cache = {}
         self.sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
-        self._initialize()
+        self.last_api_call = datetime.min
+        self.api_call_count = 0
+        self.MAX_API_CALLS_PER_MINUTE = 30
+        self.current_provider = None
+        self.provider_priority = ["openai", "gemini"]
+        self.gemini_model_name = "gemini-2.0-flash"
+        
+        # Initialize providers first
+        self._initialize_providers()
+        
+        # Then initialize other components
+        self._initialize_components()
+        
+        # Verify initialization
+        self._verify_initialization()
 
-    def _initialize(self):
-        """Initialize all components"""
-        self.field_matcher._build_models()
-        self.field_matcher._load_user_preferences()
-        self._analyze_field_relationships()
-        self._build_field_name_mapping()
+    def _initialize_providers(self):
+        """Initialize available AI providers with proper error handling"""
+        api_key_manager = get_api_key_manager()
+        self.current_provider = None
+        
+        # Initialize API key manager if needed
+        try:
+            if not hasattr(api_key_manager, '_initialized') or not api_key_manager._initialized:
+                api_key_manager._initialize()
+        except Exception as e:
+            logger.error(f"API key manager initialization failed: {str(e)}")
+
+        # Try each provider in priority order
+        for provider in self.provider_priority:
+            try:
+                if provider == "openai":
+                    client = api_key_manager._get_openai_client()
+                    print
+                    if client is not None:
+                        # Test the OpenAI connection
+                        try:
+                            if client.models.list():  # Test connection
+                                self._openai_client = client
+                                self.current_provider = "openai"
+                                logger.info("OpenAI provider initialized and verified")
+                                break
+                        except Exception as e:
+                            logger.warning(f"OpenAI connection test failed: {str(e)}")
+                            continue
+                            
+                elif provider == "gemini":
+                    client = api_key_manager._get_gemini_client()
+                    if client is not None:
+                        # Test the Gemini connection
+                        try:
+                            response = client.generate_content("Test connection") 
+                            if response.text:
+                                self._gemini_client = client
+                                self.current_provider = "gemini"
+                                logger.info("Gemini provider initialized and verified")
+                                break
+                        except Exception as e:
+                            logger.warning(f"Gemini connection test failed: {str(e)}")
+                            continue
+                            
+            except Exception as e:
+                logger.error(f"Failed to initialize {provider}: {str(e)}")
+                continue
+                
+        # If still no provider, try direct initialization from environment
+        if self.current_provider is None:
+            self._try_direct_initialization()
+            
+        # Final check
+        if self.current_provider is None:
+            logger.error("No working AI providers available - falling back to local mode")
+    def _try_direct_initialization(self):
+        """Try to initialize clients directly from environment variables"""
+        import os
+        try:
+            # Try OpenAI first
+            openai_key = os.getenv('OPENAI_API_KEY')
+            if openai_key:
+                self._openai_client = OpenAI(api_key=openai_key)
+                self.current_provider = "openai"
+                logger.info("Direct OpenAI initialization from env succeeded")
+                return
+                
+            # Then try Gemini
+            gemini_key = os.getenv('GEMINI_API_KEY')
+            if gemini_key:
+                genai.configure(api_key=gemini_key)
+                self._gemini_client = genai.GenerativeModel('gemini-pro')
+                self.current_provider = "gemini"
+                logger.info("Direct Gemini initialization from env succeeded")
+                return
+                
+        except Exception as e:
+            logger.error(f"Direct initialization failed: {str(e)}")
+    def _verify_initialization(self):
+            """Verify that critical components are initialized"""
+            if self.current_provider is None:
+                logger.warning("Running in local-only mode - no AI providers available")
+                
+            # Verify field matcher initialization
+            if not hasattr(self.field_matcher, 'form_history'):
+                logger.error("Field matcher initialization failed - form history not loaded")
+
+    def _initialize_components(self):
+        """Initialize all internal components"""
+        try:
+            self.field_matcher._build_models()
+            self.field_matcher._load_user_preferences()
+            self._analyze_field_relationships()
+            self._build_field_name_mapping()
+            logger.info("All components initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing components: {str(e)}")
+            raise RuntimeError(f"Initialization failed: {str(e)}")
 
     def _build_field_name_mapping(self):
-        """Build mapping between field name variants"""
+        """Build mapping between field name variants with validation"""
         try:
+            if not hasattr(self.field_matcher, 'form_history'):
+                raise AttributeError("Form history not loaded")
+                
             field_variants = defaultdict(set)
             
             for form in self.field_matcher.form_history:
-                if isinstance(form, dict) and 'form_data' in form:
-                    for field_name in form['form_data'].keys():
-                        normalized_name = self._normalize_field_name(field_name)
-                        if normalized_name:
-                            field_variants[normalized_name].add(field_name)
+                if not isinstance(form, dict):
+                    continue
+                    
+                form_data = form.get('form_data', {})
+                if not isinstance(form_data, dict):
+                    continue
+                    
+                for field_name in form_data.keys():
+                    if not isinstance(field_name, str):
+                        continue
+                        
+                    normalized_name = self._normalize_field_name(field_name)
+                    if normalized_name:
+                        field_variants[normalized_name].add(field_name)
             
+            # Build two-way mapping
             for norm_name, variants in field_variants.items():
-                for variant in variants:
-                    self.field_name_mapping[variant] = list(variants)
+                variants_list = list(variants)
+                for variant in variants_list:
+                    self.field_name_mapping[variant] = variants_list
             
             logger.info(f"Built field name mapping with {len(self.field_name_mapping)} entries")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error building field name mapping: {e}")
+            logger.error(f"Error building field name mapping: {str(e)}")
+            return False
 
     def _normalize_field_name(self, field_name: str) -> str:
-        """Normalize field name for comparison"""
-        if not field_name or not isinstance(field_name, str):
+        """Normalize field name for comparison with validation"""
+        if not isinstance(field_name, str) or not field_name.strip():
             return ""
         
-        normalized = re.sub(r'[^\w\s]', '', field_name.lower())
-        normalized = re.sub(r'\b(field|input|text|form|data)\b', '', normalized)
-        return re.sub(r'\s+', ' ', normalized).strip()
+        try:
+            # Remove special chars and common field words
+            normalized = re.sub(r'[^\w\s]', '', field_name.lower())
+            normalized = re.sub(r'\b(field|input|text|form|data)\b', '', normalized)
+            return re.sub(r'\s+', ' ', normalized).strip()
+        except Exception as e:
+            logger.warning(f"Error normalizing field name '{field_name}': {str(e)}")
+            return field_name.lower().strip()
 
     def _analyze_field_relationships(self):
-        """Analyze relationships between fields based on co-occurrence"""
+        """Analyze relationships between fields with proper error handling"""
         try:
+            if not hasattr(self.field_matcher, 'form_history'):
+                raise AttributeError("Form history not loaded")
+                
             field_co_occurrence = defaultdict(lambda: defaultdict(int))
+            processed_forms = 0
             
             for form in self.field_matcher.form_history:
-                if isinstance(form, dict) and 'form_data' in form:
-                    fields = [f for f in form['form_data'].keys() 
-                             if f not in ['form_id', 'document_name', 'form_type']]
+                if not isinstance(form, dict):
+                    continue
                     
-                    for i, field1 in enumerate(fields):
-                        for field2 in fields[i+1:]:
-                            field_co_occurrence[field1][field2] += 1
-                            field_co_occurrence[field2][field1] += 1
+                form_data = form.get('form_data', {})
+                if not isinstance(form_data, dict):
+                    continue
+                    
+                fields = [f for f in form_data.keys() 
+                         if isinstance(f, str) and f not in ['form_id', 'document_name', 'form_type']]
+                processed_forms += 1
+                
+                # Update co-occurrence counts
+                for i, field1 in enumerate(fields):
+                    for field2 in fields[i+1:]:
+                        field_co_occurrence[field1][field2] += 1
+                        field_co_occurrence[field2][field1] += 1
             
+            # Store top 5 related fields
             for field, related_fields in field_co_occurrence.items():
-                sorted_related = sorted(related_fields.items(), key=lambda x: x[1], reverse=True)
+                sorted_related = sorted(related_fields.items(), 
+                                      key=lambda x: x[1], 
+                                      reverse=True)
                 self.field_relationships[field] = [f[0] for f in sorted_related[:5]]
                 
-            logger.info(f"Analyzed relationships between {len(self.field_relationships)} fields")
+            logger.info(f"Analyzed relationships for {len(self.field_relationships)} fields from {processed_forms} forms")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error analyzing field relationships: {e}")
+            logger.error(f"Error analyzing field relationships: {str(e)}")
+            return False
 
     @property
     def client(self):
@@ -93,133 +244,324 @@ class AIFieldMatcher:
             if self._client is None:
                 raise RuntimeError("Failed to initialize OpenAI client. Check API key configuration.")
         return self._client
-    def _generate_cache_key(self, text: str) -> str:
-            return hashlib.sha256(text.encode('utf-8')).hexdigest()
-    def extract_context_from_form_text(self, form_text: str) -> str:
-        """Extract context from form text with caching"""
-        cache_key = self._generate_cache_key(form_text)
+    def _switch_provider(self):
+        """Safely switch to the next available provider"""
+        if not self.current_provider:
+            self._initialize_providers()
+            return
+            
+        current_index = self.provider_priority.index(self.current_provider)
+        
+        for next_index in range(current_index + 1, len(self.provider_priority)):
+            next_provider = self.provider_priority[next_index]
+            try:
+                if next_provider == "openai" and self._openai_client is not None:
+                    self.current_provider = next_provider
+                    logger.info("Switched to OpenAI provider")
+                    return
+                    
+                elif next_provider == "gemini" and self._gemini_client is not None:
+                    self.current_provider = next_provider
+                    logger.info("Switched to Gemini provider")
+                    return
+                    
+            except Exception as e:
+                logger.error(f"Error switching to {next_provider}: {str(e)}")
+                continue
+                
+        logger.error("No available AI providers could be initialized")
+        self.current_provider = None
+
+    def _rate_limit_check(self):
+        """Enforce API rate limiting with time window"""
+        now = datetime.now()
+        time_since_last = now - self.last_api_call
+        
+        # Reset counter if more than 1 minute has passed
+        if time_since_last > timedelta(minutes=1):
+            self.last_api_call = now
+            self.api_call_count = 1
+            return
+            
+        # Check if we've exceeded the limit
+        if self.api_call_count >= self.MAX_API_CALLS_PER_MINUTE:
+            time_to_wait = timedelta(minutes=1) - time_since_last
+            logger.warning(f"Rate limit exceeded. Waiting {time_to_wait.total_seconds()} seconds")
+            raise RuntimeError(f"API rate limit exceeded. Please wait {time_to_wait.seconds} seconds")
+            
+        self.api_call_count += 1
+    def _call_openai_api(self, prompt: str, system_message: str, is_json: bool, max_tokens: int):
+        """Handle OpenAI API calls"""
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt}
+        ]
+        
+        response = self._openai_client.chat.completions.create(
+            model="gpt-4-1106-preview",
+            messages=messages,
+            temperature=0.5,
+            max_tokens=max_tokens,
+            response_format="json" if is_json else "text"
+
+        )
+        message_content = response.choices[0].message.content
+        if message_content is None:
+            raise ValueError("No content received from OpenAI API.")
+        return message_content.strip()
+    def _call_gemini_api(self, prompt: str, system_message: str, max_tokens: int):
+        """Handle Gemini API calls"""
+        model = genai.GenerativeModel(self.gemini_model_name)
+        response = model.generate_content(
+            f"{system_message}\n\n{prompt}",
+            generation_config={
+                "temperature": 0.3,
+                "max_output_tokens": max_tokens,
+            }
+        )
+        return response.text
+    def _call_ai_api(self, prompt: str, system_message: str, is_json: bool = False, max_tokens: int = 200):
+        """Call AI API with robust error handling"""
+        if not self.client:
+            logger.error("No AI client available for API call")
+            raise RuntimeError("No AI providers available")
+            
+        try:
+            self._rate_limit_check()
+            
+            if self.current_provider == "openai":
+                try:
+                    response = self._call_openai_api(prompt, system_message, is_json, max_tokens)
+                    if response is None:
+                        raise ValueError("OpenAI returned None response")
+                    return response
+                except Exception as e:
+                    logger.error(f"OpenAI API call failed: {str(e)}")
+                    # Mark OpenAI as unavailable
+                    self._openai_client = None
+                    self._switch_provider()
+                    
+            if self.current_provider == "gemini":
+                try:
+                    response = self._call_gemini_api(prompt, system_message, max_tokens)
+                    if response is None:
+                        raise ValueError("Gemini returned None response")
+                    return response
+                except Exception as e:
+                    logger.error(f"Gemini API call failed: {str(e)}")
+                    # Mark Gemini as unavailable
+                    self._gemini_client = None
+                    self._switch_provider()
+                    
+            # If we get here, all providers failed
+            raise RuntimeError("All AI providers failed")
+            
+        except Exception as e:
+            logger.error(f"API call completely failed: {str(e)}")
+            raise RuntimeError(f"AI service unavailable: {str(e)}")
+
+    def _generate_cache_key(self, *args) -> str:
+        """Generate consistent cache key from multiple inputs"""
+        key_string = "|".join(str(arg) for arg in args)
+        return hashlib.sha256(key_string.encode('utf-8')).hexdigest()
+    def _extract_context_locally(self, form_text: str) -> str:
+        """Local fallback for context extraction"""
+        # Implement basic regex-based extraction
+        patterns = {
+            'purpose': r'(Mục đích|Purpose):?\s*(.+?)\n',
+            'form_type': r'(Loại|Type)\s*(biểu mẫu|form):?\s*(.+?)\n'
+        }
+        
+        context = {}
+        for key, pattern in patterns.items():
+            match = re.search(pattern, form_text, re.IGNORECASE)
+            if match:
+                context[key] = match.group(2 if key == 'purpose' else 3).strip()
+                
+        return json.dumps(context, ensure_ascii=False) if context else "No context extracted"
+    def _extract_context_with_ai(self, form_text: str) -> str:
+        """Extract form context using AI with proper error handling and caching"""
+        cache_key = self._generate_cache_key("context_extraction", form_text)
         if cache_key in self.context_cache:
             return self.context_cache[cache_key]
-            
-        key_fields = self._extract_key_fields(form_text)
-        
-        prompt = (
-            "Analyze this form and provide:\n\n"
-            f"{form_text}\n\n"
-            "Key fields:\n"
-            f"{key_fields}\n\n"
-            "Provide:\n"
-            "1. Main purpose\n"
-            "2. Target users\n"
-            "3. Usage context\n"
-            "4. Typical values\n"
-            "5. Form classification\n\n"
-            "Return concise Vietnamese summary."
-        )
         
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=[
-                    {"role": "system", "content": "You're an AI form analysis assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.6,
+            # Prepare the prompt for AI
+            prompt = f"""Analyze this form text and extract key context information in JSON format:
+    {form_text[:5000]}  # Limit to first 5000 chars to avoid token limits
+
+    Respond with JSON containing:
+    - "form_purpose": Main purpose of the form
+    - "form_type": Type/category of form
+    - "key_fields": List of important fields
+    - "target_audience": Who the form is for
+    - "form_structure": Brief description of sections"""
+            
+            # Call AI API with proper error handling
+            response = self._call_ai_api(
+                prompt=prompt,
+                system_message="You are a form analysis expert. Extract key context from form text.",
+                is_json=True,
                 max_tokens=300
             )
-
-            context = response.choices[0].message.content.strip() if response and response.choices else ""
-           # self.context_cache[cache_key] = context
-            self._enhance_context_analysis(form_text, context)
-            return context
+            
+            # Ensure we got a response
+            if response is None:
+                raise ValueError("AI API returned None response")
+            
+            # Parse and validate the response
+            try:
+                context_data = json.loads(response)
+                if not isinstance(context_data, dict):
+                    raise ValueError("Invalid response format")
+                    
+                # Ensure required fields exist
+                context_data.setdefault("form_purpose", "Unknown")
+                context_data.setdefault("form_type", "General")
+                context_data.setdefault("key_fields", [])
+                context_data.setdefault("target_audience", "General")
+                context_data.setdefault("form_structure", "Standard")
+                
+                # Cache the result
+                self.context_cache[cache_key] = json.dumps(context_data, ensure_ascii=False)
+                return self.context_cache[cache_key]
+                
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(f"Failed to parse AI context response: {str(e)}")
+                return self._fallback_context_extraction(form_text)
+                
         except Exception as e:
-            logger.error(f"Error extracting context: {str(e)}")
+            logger.error(f"AI context extraction failed: {str(e)}")
+            return self._extract_context_locally(form_text)
+    def extract_context_from_form_text(self, form_text: str) -> str:
+        """Extract context with proper fallback to local methods"""
+        try:
+            # First try AI extraction if available
+            if self.client:
+                return self._extract_context_with_ai(form_text)
+                
+            # Fallback to local extraction
+            return self._extract_context_locally(form_text)
+            
+        except Exception as e:
+            logger.error(f"Context extraction completely failed: {str(e)}")
             return ""
 
+    def _fallback_context_extraction(self, form_text: str) -> str:
+        """Fallback method for context extraction when AI fails"""
+        # Simple regex-based extraction
+        patterns = {
+            "purpose": r"(mục đích|purpose):?\s*(.+?)\n",
+            "target": r"(đối tượng|dành cho|target):?\s*(.+?)\n",
+            "form_type": r"(loại|type)\s*(biểu mẫu|form):?\s*(.+?)\n"
+        }
+        
+        context = {}
+        for key, pattern in patterns.items():
+            match = re.search(pattern, form_text, re.IGNORECASE)
+            if match:
+                context[key] = match.group(2 if key == "purpose" else -1).strip()
+                
+        return "\n".join(f"- {k}: {v}" for k, v in context.items()) if context else "No context extracted"
+
     def _enhance_context_analysis(self, form_text: str, context: str) -> Dict:
-        """Phân tích ngữ cảnh nâng cao với mô hình embedding"""
-        cache_key = hashlib.sha256(form_text.encode()).hexdigest()
+        """Enhanced context analysis with embeddings"""
+        cache_key = self._generate_cache_key("enhanced_context", form_text)
         if cache_key in self.context_cache:
             return self.context_cache[cache_key]
-        
-        # Sử dụng embedding để phân tích ngữ cảnh
-        embeddings = self.sbert_model.encode([form_text, context])
-        form_embedding, context_embedding = embeddings[0], embeddings[1]
-        
-        # Phân tích cấu trúc form
-        structure_prompt = f"""Phân tích cấu trúc form sau và phản hồi bằng JSON:
+            
+        try:
+            # Generate embeddings
+            embeddings = self.sbert_model.encode([form_text, context])
+            form_embedding, context_embedding = embeddings[0], embeddings[1]
+            
+            # Structure analysis prompt
+            structure_prompt = f"""Analyze this form structure and respond with JSON:
 {form_text[:2000]}
 
-Yêu cầu phản hồi JSON với định dạng:
+Response JSON format:
 {{
-  "form_type": "Đơn xin việc",
-  "sections": ["Thông tin cá nhân", "Kinh nghiệm làm việc", "Học vấn"],
-  "field_relationships": "‘Vị trí’ nằm trong phần Kinh nghiệm, liên quan đến công ty và thời gian làm việc.",
+  "form_type": "Job Application",
+  "sections": ["Personal Info", "Work Experience", "Education"],
+  "field_relationships": "Position relates to company and duration",
   "field_importance": {{
-    "Họ tên": "Cao",
-    "Vị trí": "Cao",
-    "Công ty": "Trung bình",
-    "Thời gian": "Trung bình"
+    "Name": "High",
+    "Position": "High",
+    "Company": "Medium",
+    "Duration": "Medium"
   }},
   "field_extraction": {{
-    "Công ty": "Công ty một thành viên Hữu Phước",
-    "Vị trí": "Văn phòng",
-    "Địa điểm": "Thương mại",
-    "Thời gian bắt đầu": "27/09/2003"
+    "Company": "Example Company",
+    "Position": "Office",
+    "Location": "Commercial",
+    "Start Date": "27/09/2003"
   }}
-}}
-
-Phản hồi JSON này phải đầy đủ và đúng định dạng.
-"""
-        
-        # Gọi API phân tích
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=[
-                    {"role": "system", "content": "Bạn là chuyên gia phân tích biểu mẫu."},
-                    {"role": "user", "content": structure_prompt}
-                ],
-                temperature=0.3,
-                response_format={"type": "json_object"}
+}}"""
+            
+            response = self._call_ai_api(
+                prompt=structure_prompt,
+                system_message="You are a form structure analysis expert.",
+                is_json=True,
+                max_tokens=300
             )
             
-            analysis = json.loads(response.choices[0].message.content)
-            
+            analysis = json.loads(response)
             analysis.update({
                 "form_embedding": form_embedding.tolist(),
                 "context_embedding": context_embedding.tolist()
             })
-            logger.info("Phân tích trường: %s", analysis.get("field_extraction", {}))
+            
             self.context_cache[cache_key] = analysis
             return analysis
+            
         except Exception as e:
-            logger.error(f"Lỗi phân tích ngữ cảnh: {e}")
+            logger.error(f"Enhanced context analysis failed: {str(e)}")
             return {}
 
     def _extract_key_fields(self, form_text: str) -> str:
-        """Extract key fields using field matcher"""
-        fields = self.field_matcher.find_most_similar_field(form_text, top_n=5)
-        return "\n".join([f"- {field[0]} (confidence: {field[1]:.2f})" for field in fields])
+        """Extract key fields using field matcher with validation"""
+        if not form_text or not isinstance(form_text, str):
+            return ""
+            
+        try:
+            fields = self.field_matcher.find_most_similar_field(form_text, top_n=5)
+            if not fields:
+                return ""
+                
+            return "\n".join([f"- {field[0]} (confidence: {field[1]:.2f})" for field in fields])
+        except Exception as e:
+            logger.error(f"Key field extraction failed: {str(e)}")
+            return ""
 
     def find_similar_fields(self, field_name: str, threshold: float = 0.6, max_results: int = 5) -> List[str]:
-        """Find similar fields with caching"""
-        cache_key = f"{field_name}_{threshold}_{max_results}"
+        """Find similar fields with caching and validation"""
+        if not field_name or not isinstance(field_name, str):
+            return []
+            
+        cache_key = self._generate_cache_key("similar_fields", field_name, threshold, max_results)
         if cache_key in self.similar_fields_cache:
             return self.similar_fields_cache[cache_key]
-        
-        if field_name in self.field_name_mapping:
-            similar_fields = self.field_name_mapping[field_name]
-            if similar_fields:
-                self.similar_fields_cache[cache_key] = similar_fields[:max_results]
-                return similar_fields[:max_results]
-        
-        similar_fields = [f[0] for f in 
-                         self.field_matcher.find_most_similar_field(field_name, top_n=max_results) 
-                         if f[1] >= threshold]
-        
-        self.similar_fields_cache[cache_key] = similar_fields
-        return similar_fields
+            
+        try:
+            # First check name mapping
+            if field_name in self.field_name_mapping:
+                similar_fields = self.field_name_mapping[field_name]
+                if similar_fields:
+                    result = similar_fields[:max_results]
+                    self.similar_fields_cache[cache_key] = result
+                    return result
+                    
+            # Fall back to field matcher
+            similar_fields = [f[0] for f in 
+                            self.field_matcher.find_most_similar_field(field_name, top_n=max_results) 
+                            if f[1] >= threshold]
+                            
+            self.similar_fields_cache[cache_key] = similar_fields
+            return similar_fields
+            
+        except Exception as e:
+            logger.error(f"Similar fields lookup failed: {str(e)}")
+            return []
 
     def generate_suggestions(
         self,
@@ -229,152 +571,207 @@ Phản hồi JSON này phải đầy đủ và đúng định dạng.
         form_type: Optional[str] = None,
         related_fields_data: Optional[Dict] = None
     ) -> Dict[str, Any]:
-        """Generate smart suggestions for form field"""
-        cache_key = f"{field_name}_{hash(str(historical_values))}_{hash(context) if context else ''}"
+        """Generate smart suggestions with provider-specific optimization"""
+        if not field_name or not isinstance(historical_values, list):
+            return {"suggestions": [], "default": "", "reason": "Invalid input"}
+            
+        cache_key = self._generate_cache_key(
+            "suggestions", 
+            field_name, 
+            tuple(historical_values), 
+            context, 
+            form_type, 
+            json.dumps(related_fields_data, sort_keys=True) if related_fields_data else ""
+        )
+        
         if cache_key in self.suggestion_cache:
             return self.suggestion_cache[cache_key]
+            
+        try:
+            if self.current_provider == "gemini":
+                return self._generate_with_gemini(field_name, historical_values, context, form_type, related_fields_data)
+            else:
+                return self._generate_with_openai(field_name, historical_values, context, form_type, related_fields_data)
+                
+        except Exception as e:
+            logger.error(f"Suggestion generation failed: {str(e)}")
+            return self._generate_local_suggestions(field_name, historical_values)
+    def _generate_local_suggestions(self, field_name: str, historical_values: List[str]) -> Dict[str, Any]:
+        """Generate simple suggestions locally when AI services are unavailable"""
+        if not historical_values:
+            return {"suggestions": [], "default": "", "reason": "No historical data available"}
+        
+        # Simple frequency-based suggestions
+        counter = Counter(historical_values)
+        most_common = counter.most_common(2)
+        
+        suggestions = [
+            {"text": value, "reason": f"Frequently used ({count} times)"}
+            for value, count in most_common
+        ]
+        
+        return {
+            "suggestions": suggestions,
+            "default": most_common[0][0] if most_common else "",
+            "reason": "Generated from local frequency analysis"
+        }
+    def _parse_suggestion_response(self, content: str) -> Dict[str, Any]:
+        """Robust parsing of AI suggestion response"""
+        if content is None:
+            logger.warning("Received None content in suggestion response")
+            return {
+                "suggestions": [],
+                "default": "",
+                "reason": "No response from AI service"
+            }
         
         try:
-            similar_fields = self.find_similar_fields(field_name)
-            related_fields = self._get_related_fields(field_name, similar_fields, related_fields_data)
+            # First try direct JSON parse
+            try:
+                result = json.loads(content)
+            except json.JSONDecodeError:
+                # Try extracting JSON from markdown code block
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
+                if json_match:
+                    result = json.loads(json_match.group(1))
+                else:
+                    # Try to find any JSON-like structure
+                    json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                    if json_match:
+                        result = json.loads(json_match.group(0))
+                    else:
+                        raise ValueError("No valid JSON found in response")
             
-            prompt = self._build_suggestion_prompt(
-                field_name,
-                similar_fields,
-                historical_values,
-                context,
-                related_fields
-            )
+            # Validate the result structure
+            if not isinstance(result, dict):
+                raise ValueError("Response is not a JSON object")
+                
+            return {
+                "suggestions": result.get("suggestions", [])[:3],
+                "default": result.get("default", ""),
+                "reason": result.get("reason", "No reason provided")
+            }
             
-            response = self.client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=[
-                    {"role": "system", "content": "Smart form suggestion assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=400
-            )
-            
-            return self._parse_suggestion_response(response.choices[0].message.content)
-        
         except Exception as e:
-            logger.error(f"Error generating suggestions: {e}")
-            return {"suggestions": [], "default": "", "reason": ""}
-
-    def _get_related_fields(self, field_name: str, similar_fields: List[str], related_data: Optional[Dict]) -> str:
-        """Get information about related fields"""
-        related_fields = self.field_relationships.get(field_name, [])
-        if not related_fields and similar_fields:
-            for similar_field in similar_fields:
-                if similar_field in self.field_relationships:
-                    related_fields = self.field_relationships[similar_field]
-                    break
+            logger.error(f"Failed to parse suggestion response: {str(e)}")
+            return {
+                "suggestions": [],
+                "default": "",
+                "reason": f"Error parsing response: {str(e)}"
+            }
+    def _generate_with_gemini(
+        self,
+        field_name: str,
+        historical_values: List[str],
+        context: Optional[str],
+        form_type: Optional[str],
+        related_fields_data: Optional[Dict]
+    ) -> Dict[str, Any]:
+        """Generate suggestions optimized for Gemini"""
+        prompt = (
+            f"For field '{field_name}' in {form_type if form_type else 'a form'}, "
+            f"based on these historical values:\n{', '.join(historical_values[:5])}\n\n"
+            "Provide 2-3 best suggestions in JSON format:\n"
+            "{\"suggestions\": [{\"text\": \"...\", \"reason\": \"...\"}], \"default\": \"...\"}"
+        )
         
-        if not related_fields or not related_data:
-            return ""
+        if context:
+            prompt += f"\nContext: {context[:200]}"
             
-        related_info = []
-        for rel_field in related_fields[:3]:
-            if rel_field in related_data:
-                related_info.append(f"{rel_field}: {related_data[rel_field]}")
+        if related_fields_data:
+            prompt += f"\nRelated fields data: {json.dumps(related_fields_data, ensure_ascii=False)[:200]}"
+            
+        response = self._call_ai_api(
+            prompt=prompt,
+            system_message="You are a professional form filling assistant.",
+            is_json=True,
+            max_tokens=250
+        )
         
-        return "\nRelated fields:\n- " + "\n- ".join(related_info) if related_info else ""
-
-    def _build_suggestion_prompt(
+        result = self._parse_suggestion_response(response)
+        return result
+    def _get_related_fields(self, field_name: str, similar_fields: List[str], related_data: Optional[Dict]) -> str:
+            """Get information about related fields"""
+            related_fields = self.field_relationships.get(field_name, [])
+            if not related_fields and similar_fields:
+                for similar_field in similar_fields:
+                    if similar_field in self.field_relationships:
+                        related_fields = self.field_relationships[similar_field]
+                        break
+            
+            if not related_fields or not related_data:
+                return ""
+                
+            related_info = []
+            for rel_field in related_fields[:3]:
+                if rel_field in related_data:
+                    related_info.append(f"{rel_field}: {related_data[rel_field]}")
+            return "\nRelated fields:\n- " + "\n- ".join(related_info) if related_info else ""
+    def _build_optimized_prompt(
         self,
         field_name: str,
         similar_fields: List[str],
         historical_values: List[str],
         context: Optional[str],
-        related_fields: str
+        related_fields: str,
+        form_type: Optional[str]
     ) -> str:
-        """Construct suggestion prompt"""
+        """Construct optimized suggestion prompt with reduced tokens"""
         prompt_parts = [
-            f"Field: '{field_name}'",
-            f"Similar fields: {', '.join(similar_fields) if similar_fields else 'None'}",
+            f"Gợi ý cho trường '{field_name}'",
+            f"Loại form: {form_type}" if form_type else "",
+            f"Trường tương tự: {', '.join(similar_fields[:2])}" if similar_fields else "",
         ]
         
-        if historical_values:
-            prompt_parts.append(f"\nHistory:\n- " + "\n- ".join(historical_values[:10]))
-        
+        # Add context if available, but limit length
         if context:
-            prompt_parts.append(f"\nContext:\n{context}")
+            prompt_parts.append(f"Ngữ cảnh: {context[:100]}...")
+        
+        # Add historical values if available, limit to 3 most recent
+        if historical_values:
+            prompt_parts.append(f"Giá trị gần đây: {', '.join(historical_values[:3])}")
         
         if related_fields:
-            prompt_parts.append(related_fields)
+            prompt_parts.append(f"Trường liên quan: {related_fields[:100]}...")
         
         prompt_parts.extend([
-            "\nGenerate 3 different suggestions in JSON format:",
-            "{\"suggestions\": [{\"text\": \"suggestion1\", \"reason\": \"...\"}, ...],",
-            "\"default\": \"best default value\"}"
+            "\nYêu cầu:",
+            "- 2 gợi ý phù hợp (JSON format)",
+            "- Giá trị mặc định tốt nhất",
+            "- Lý do ngắn gọn",
+            "Ví dụ: {\"suggestions\": [{\"text\": \"...\", \"reason\": \"...\"}], \"default\": \"...\", \"reason\": \"...\"}"
         ])
         
-        return "\n".join(prompt_parts)
-
-    def _parse_suggestion_response(self, content: str) -> Dict[str, Any]:
-        """Parse AI suggestion response"""
-        try:
-            result = json.loads(content)
-        except json.JSONDecodeError:
-            json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
-            result = json.loads(json_match.group(1)) if json_match else {
-                "suggestions": [],
-                "default": "",
-                "reason": "Failed to parse response"
-            }
+        return "\n".join([p for p in prompt_parts if p])
+    def _generate_with_openai(
+        self,
+        field_name: str,
+        historical_values: List[str],
+        context: Optional[str],
+        form_type: Optional[str],
+        related_fields_data: Optional[Dict]
+    ) -> Dict[str, Any]:
+        """Generate suggestions optimized for OpenAI"""
+        similar_fields = self.find_similar_fields(field_name)
+        related_fields = self._get_related_fields(field_name, similar_fields, related_fields_data)
         
-        if not isinstance(result, dict):
-            result = {"suggestions": [], "default": "", "reason": "Invalid response format"}
+        prompt = self._build_optimized_prompt(
+            field_name,
+            similar_fields,
+            historical_values,
+            context,
+            related_fields,
+            form_type
+        )
         
-        return {
-            "suggestions": result.get("suggestions", [])[:3],
-            "default": result.get("default", ""),
-            "reason": result.get("reason", "")
-        }
-
-    def rewrite_user_input(self, field_name: str, user_input: str, context: Optional[str] = None) -> str:
-        """Improve user input for form field"""
-        if not user_input:
-            return ""
-            
-        try:
-            similar_fields = self.find_similar_fields(field_name)
-            
-            prompt = (
-                f"Improve this form input for field '{field_name}':\n"
-                f"Similar fields: {', '.join(similar_fields) if similar_fields else 'None'}\n"
-                f"User input: \"{user_input}\"\n"
-            )
-            
-            if context:
-                prompt += f"\nContext:\n{context}\n"
-                
-            prompt += (
-                "\nImprove to be:\n"
-                "1. Grammatically correct\n"
-                "2. Field-appropriate\n"
-                "3. Professional\n"
-                "4. Preserve original meaning\n\n"
-                "Return only improved text."
-            )
-            
-            response = self.client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=[
-                    {"role": "system", "content": "Form input improvement assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,
-                max_tokens=200
-            )
-            
-            improved_text = response.choices[0].message.content.strip() if response and response.choices else user_input
-            return improved_text.strip('"')
-            
-        except Exception as e:
-            logger.error(f"Error rewriting input: {e}")
-            return user_input
+        response = self._call_ai_api(
+            prompt=prompt,
+            system_message="You are a form filling assistant. Provide concise suggestions.",
+            is_json=True,
+            max_tokens=200
+        )
+        
+        return self._parse_suggestion_response(response)
     def _get_enhanced_context(
         self,
         context: Optional[str],
@@ -529,9 +926,6 @@ Phản hồi JSON này phải đầy đủ và đúng định dạng.
                 "similarity_score": round(best_similarity, 3)
             }
         }
-
-
-
     def _calculate_field_similarity(self, field1: str, field2: str) -> float:
         """Calculate similarity between two field names (0-1)"""
         # Simple implementation - can be enhanced with more sophisticated algorithms
@@ -605,27 +999,56 @@ Phản hồi JSON này phải đầy đủ và đúng định dạng.
         return ai_suggestion.get("default", "")
 
     def update_field_value(self, field_name: str, field_value: str, user_id: Optional[str] = None):
-        """Update field value and clear related caches"""
+        """Update field value with cache invalidation"""
+        if not field_name or not isinstance(field_name, str):
+            return
+            
         try:
+            # Update in field matcher
             self.field_matcher.update_field_value(field_name, field_value, user_id)
             
-            # Clear relevant caches
-            for key in list(self.suggestion_cache.keys()):
-                if field_name in key:
-                    del self.suggestion_cache[key]
+            # Invalidate relevant caches
+            self._invalidate_caches_for_field(field_name)
             
-            # Update field name mapping
-            similar_fields = self.find_similar_fields(field_name)
-            if similar_fields:
-                if field_name not in self.field_name_mapping:
-                    self.field_name_mapping[field_name] = similar_fields
-                
-                for similar_field in similar_fields:
-                    if similar_field not in self.field_name_mapping:
-                        self.field_name_mapping[similar_field] = []
-                    if field_name not in self.field_name_mapping[similar_field]:
-                        self.field_name_mapping[similar_field].append(field_name)
+            # Update field relationships if needed
+            self._update_field_relationships(field_name)
             
             logger.info(f"Updated field {field_name} for user {user_id}")
+            
         except Exception as e:
-            logger.error(f"Error updating field: {e}")
+            logger.error(f"Field update failed: {str(e)}")
+
+    def _invalidate_caches_for_field(self, field_name: str):
+        """Invalidate all caches related to a field"""
+        # Invalidate suggestion cache
+        for key in list(self.suggestion_cache.keys()):
+            if field_name in str(key):
+                del self.suggestion_cache[key]
+                
+        # Invalidate similar fields cache
+        for key in list(self.similar_fields_cache.keys()):
+            if field_name in str(key):
+                del self.similar_fields_cache[key]
+                
+        # Invalidate context cache if it contains this field
+        for key in list(self.context_cache.keys()):
+            if field_name in str(key):
+                del self.context_cache[key]
+
+    def _update_field_relationships(self, field_name: str):
+        """Update field relationships after modification"""
+        try:
+            # Rebuild name mapping for this field
+            normalized_name = self._normalize_field_name(field_name)
+            if normalized_name:
+                if normalized_name not in self.field_name_mapping:
+                    self.field_name_mapping[normalized_name] = []
+                    
+                if field_name not in self.field_name_mapping[normalized_name]:
+                    self.field_name_mapping[normalized_name].append(field_name)
+            
+            # Trigger partial relationship rebuild
+            self._analyze_field_relationships()
+            
+        except Exception as e:
+            logger.error(f"Failed to update field relationships: {str(e)}")

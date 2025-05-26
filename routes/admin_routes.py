@@ -319,8 +319,8 @@ def register_admin_routes(app):
         from utils.api_key_manager import get_api_key_manager
         
         api_key_manager = get_api_key_manager()
-        api_keys = api_key_manager.get_all_api_keys('openai')
-        current_api_key = WebConfig.get_value('openai_api_key', '')
+        api_keys = APIKey.query.order_by(APIKey.provider, APIKey.is_active.desc(), APIKey.updated_at.desc()).all()
+       
         
         # Kiểm tra trạng thái tất cả API key
         active_key = None
@@ -334,16 +334,19 @@ def register_admin_routes(app):
             
             if action == 'add_key':
                 new_api_key = request.form.get('new_api_key').strip()
-                key_name = request.form.get('key_name', 'OpenAI API Key').strip()
+                key_name = request.form.get('key_name').strip()
                 description = request.form.get('description', '').strip()
-                
+                provider = request.form['provider']
+                if provider == 'openai' and not new_api_key.startswith('sk-'):
+                    flash('OpenAI API Key phải bắt đầu bằng "sk-"', 'error')
+                    return redirect(url_for('admin_api_settings'))
                 if new_api_key:
                     # Thêm API key mới với đầy đủ thông tin
                     api_key = api_key_manager.add_api_key(
                         new_api_key, 
                         key_name,
                         description=description,
-                        provider='openai'
+                        provider=provider
                     )
                     
                     if api_key:
@@ -384,14 +387,19 @@ def register_admin_routes(app):
             
             elif action == 'activate_key':
                 key_id = request.form.get('key_id')
+                provider = request.form.get('provider', 'openai')  # Thêm provider từ form
+                
                 if key_id and key_id.isdigit():
-                    if api_key_manager.set_active_api_key(int(key_id)):
-                        flash('Kích hoạt API key thành công', 'success')
+                    key = APIKey.query.get(int(key_id))
+                    if not key:
+                        flash('Không tìm thấy API key với ID này', 'error')
+                    elif api_key_manager.set_active_api_key(int(key_id), provider=key.provider):
+                        flash(f'Kích hoạt API key "{key.name}" thành công', 'success')
                     else:
-                        flash('Không thể kích hoạt API key', 'error')
+                        flash('Không thể kích hoạt API key. Vui lòng kiểm tra logs.', 'error')
                 else:
                     flash('ID API key không hợp lệ', 'error')
-            
+                        
             elif action == 'refresh_key':
                 key_id = request.form.get('key_id')
                 if key_id and key_id.isdigit():
@@ -453,7 +461,6 @@ def register_admin_routes(app):
         
         return render_template('admin/api_settings.html', 
                             api_keys=api_keys,
-                            current_api_key=current_api_key,
                             active_key=active_key,
                             active_key_details=active_key_details,
                             now=datetime.now(),
