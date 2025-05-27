@@ -96,16 +96,27 @@ class APIKey(db.Model):
         }
     @classmethod
     def get_active_key(cls, provider='openai'):
-        """Lấy API key đang hoạt động cho provider"""
+        """
+        Lấy API key đang hoạt động cho provider cụ thể.
+        Hỗ trợ: 'openai', 'gemini'
+        Ưu tiên key được tạo gần nhất và đang active.
+        """
         try:
+            if provider not in ['openai', 'gemini']:
+                from flask import current_app
+                current_app.logger.warning(f"Unsupported provider '{provider}'")
+                return None
+
             return cls.query.filter_by(
                 provider=provider,
-                is_active=True,
-                is_valid=True
+                is_active=True
             ).order_by(cls.created_at.desc()).first()
+
         except Exception as e:
-            current_app.logger.error(f"Error getting active API key: {str(e)}")
+            from flask import current_app
+            current_app.logger.error(f"Error getting active API key for provider '{provider}': {str(e)}")
             return None
+
         
     @classmethod
     def get_all_keys(cls, provider=None):

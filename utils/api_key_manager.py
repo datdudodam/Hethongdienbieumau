@@ -6,6 +6,8 @@ import time
 import logging
 import json
 from flask import current_app
+from typing import Optional
+
 import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
@@ -141,7 +143,8 @@ class APIKeyManager:
                     self._current_gemini_key = active_key.key
                     if self._current_gemini_key and self._current_gemini_key.strip() != "":
                         genai.configure(api_key=self._current_gemini_key)
-                        self._gemini_client = genai.GenerativeModel('gemini-2.5-flash-preview-04-17')
+                        # Cập nhật thành bản gemini-2.0-flash
+                        self._gemini_client = genai.GenerativeModel('gemini-2.0-flash')
                     else:
                         self._gemini_client = None
                         logger.warning("Empty Gemini API key provided")
@@ -150,16 +153,69 @@ class APIKeyManager:
         except Exception as e:
             logger.error(f"Error getting Gemini client: {str(e)}")
             return None
+    def get_available_provider(self, preferred_provider: str = None) -> Optional[str]:
+        """Kiểm tra và trả về provider khả dụng (ưu tiên provider được chỉ định)"""
+        try:
+            # Kiểm tra preferred_provider trước
+            if preferred_provider:
+                key = self._get_active_api_key(preferred_provider)
+                if key and key.is_active:
+                    logger.info(f"Using preferred provider: {preferred_provider}")
+                    return preferred_provider
+
+            # Ưu tiên OpenAI nếu không có preferred_provider hoặc preferred_provider không khả dụng
+            openai_key = self._get_active_api_key('openai')
+            if openai_key and openai_key.is_active:
+                logger.info("Using OpenAI as provider")
+                return 'openai'
+
+            # Thử Gemini nếu OpenAI không có
+            gemini_key = self._get_active_api_key('gemini')
+            if gemini_key and gemini_key.is_active:
+                logger.info("Using Gemini as provider")
+                return 'gemini'
+
+            logger.error("No available providers with active and valid API keys")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error in get_available_provider: {str(e)}", exc_info=True)
+            return None
+
 
     def _get_active_api_key(self, provider='openai'):
-        """Lấy API key đang hoạt động từ bảng APIKey"""
+        """
+        Lấy API key đang hoạt động từ bảng APIKey cho nhà cung cấp cụ thể.
+        Hỗ trợ: 'openai', 'gemini'
+        """
         try:
-            if current_app and hasattr(current_app, 'app_context'):
-                return APIKey.get_active_key(provider)
+            if provider not in ['openai', 'gemini']:
+                logger.warning(f"Unsupported provider '{provider}'")
+                return None
+
+            # Kiểm tra application context
+            if not hasattr(APIKey, 'query'):
+                logger.error("No application context or APIKey model not properly initialized")
+                return None
+
+            # Sử dụng query.filter_by thay vì objects.filter
+            active_key = APIKey.query.filter_by(
+                provider=provider,
+                is_active=True
+            ).order_by(APIKey.created_at.desc()).first()
+            
+            if active_key:
+                logger.info(f"Found active {provider} key: {active_key.name}")
+                return active_key
+
+            logger.warning(f"No active API key found for provider {provider}")
             return None
+
         except Exception as e:
-            logger.error(f"Error getting active API key for {provider}: {str(e)}")
+            logger.error(f"Error getting active API key for {provider}: {str(e)}", exc_info=True)
             return None
+
+
     
     def _get_api_key_from_config(self, provider='openai'):
         """Lấy API key từ WebConfig với xử lý application context"""
@@ -249,7 +305,7 @@ class APIKeyManager:
                 client = self._get_gemini_client()
             else:
                 genai.configure(api_key=api_key)
-                client = genai.GenerativeModel('gemini-2.5-flash-preview-04-17')
+                client = genai.GenerativeModel('gemini-2.0-flash')
             
             if not client:
                 return {
@@ -377,7 +433,7 @@ class APIKeyManager:
                     elif provider == 'gemini':
                         self._current_gemini_key = new_api_key
                         genai.configure(api_key=new_api_key)
-                        self._gemini_client = genai.GenerativeModel('gemini-2.5-flash-preview-04-17')
+                        self._gemini_client = genai.GenerativeModel('gemini-2.0-flash')
             
             if is_valid and not active_key and provider == 'openai':
                 WebConfig.set_value('openai_api_key', new_api_key, 'api')
@@ -476,7 +532,7 @@ class APIKeyManager:
                     elif provider == 'gemini':
                         self._current_gemini_key = new_api_key
                         genai.configure(api_key=new_api_key)
-                        self._gemini_client = genai.GenerativeModel('gemini-2.5-flash-preview-04-17')
+                        self._gemini_client = genai.GenerativeModel('gemini-2.0-flash')
                 else:
                     self.add_api_key(new_api_key, f"Updated {provider} Key", provider=provider)
 
@@ -539,7 +595,7 @@ class APIKeyManager:
             elif provider == 'gemini':
                 self._current_gemini_key = key_value
                 genai.configure(api_key=key_value)
-                self._gemini_client = genai.GenerativeModel('gemini-pro')
+                self._gemini_client = genai.GenerativeModel('gemini-2.0-flash')
                 logger.info(f"Đã kích hoạt Gemini key: {api_key.name}")
 
             return True
