@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_title }}</title>
+    <meta name="description" content="{{ site_description }}">
+    <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
+    <meta property="og:title" content="{{ site_title }}">
+    <meta property="og:description" content="{{ site_description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/dashboard">
+    <meta property="og:image" content="{{ og_image }}">
+    <link rel="icon" type="image/png" href="{{ site_logo }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family={{ font_family|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius-card: 12px;
+            --radius-button: 8px;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at top right, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at bottom left, rgba(96, 165, 250, 0.05) 0%, transparent 40%);
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 10;
+            transition: var(--transition);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-header h1 i {
+            font-size: 1.5rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 1rem 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: var(--transition);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu li a:hover,
+        .sidebar-menu li a.active {
+            background-color: rgba(59, 130, 246, 0.05);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .sidebar-menu li a i {
+            width: 24px;
+            text-align: center;
+            font-size: 1.1rem;
+            margin-right: 0.75rem;
+        }
+
+        .user-profile {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+
+        .user-profile-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin: 0.25rem 0 0 0;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            width: 100%;
+            background: white;
+            border-radius: var(--radius-card);
+            box-shadow: var(--card-shadow-hover);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: var(--transition);
+            z-index: 20;
+        }
+
+        .user-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: var(--transition);
+            font-size: 0.9375rem;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 0.5rem 0;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+            transition: var(--transition);
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .search-bar {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-button);
+            font-size: 0.9375rem;
+            transition: var(--transition);
+            background-color: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        /* Upload section */
+        .upload-section {
+            background: white;
+            border-radius: var(--radius-card);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            border: 2px dashed var(--border-color);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-section:hover {
+            border-color: var(--primary-color);
+        }
+
+        .upload-section.drag-over {
+            background-color: rgba(59, 130, 246, 0.05);
+            border-color: var(--primary-color);
+        }
+
+        .upload-title {
+            font-size: 1.125rem;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .upload-description {
+            color: var(--text-secondary);
+            margin: 0 0 1.5rem 0;
+            font-size: 0.9375rem;
+        }
+
+        .upload-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: var(--radius-button);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .upload-button i {
+            font-size: 1.1rem;
+        }
+
+        #file-upload {
+            display: none;
+        }
+
+        /* Forms section */
+        .forms-section {
+            background: white;
+            border-radius: var(--radius-card);
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .filter-button {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-button);
+            background: white;
+            color: var(--text-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-button:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .filter-button.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Forms grid */
+        .forms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: var(--radius-card);
+            border: 1px solid var(--border-color);
+            padding: 1.25rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 140px;
+        }
+
+        .form-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--card-shadow-hover);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: var(--transition);
+        }
+
+        .form-card:hover::before {
+            width: 6px;
+        }
+
+        .form-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        .form-card:hover .form-title {
+            color: var(--primary-color);
+        }
+
+        .form-meta {
+            margin-top: auto;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .form-actions {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+            border-top: 1px solid var(--border-color);
+            transform: translateY(100%);
+            transition: var(--transition);
+            opacity: 0;
+        }
+
+        .form-card:hover .form-actions {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: var(--radius-button);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .action-button i {
+            font-size: 0.875rem;
+        }
+
+        .edit-button {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .delete-button {
+            background: var(--gradient-danger);
+            color: white;
+        }
+
+        .view-button {
+            background: var(--gradient-success);
+            color: white;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            color: #d1d5db;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state-text {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 1.5rem auto 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background-color: rgba(229, 231, 235, 0.5);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        /* Messages */
+        .message {
+            max-width: 400px;
+            margin: 1rem auto 0;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-button);
+            font-size: 0.875rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .message.success {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .message.error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            grid-column: 1 / -1;
+        }
+
+        .loading-spinner {
+            font-size: 2rem;
+            color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1.5rem;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .search-bar {
+                width: 100%;
+            }
+            
+            .forms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+              
+                <h1>{{ site_title }}</h1>
+            </div>
+            
+             <ul class="sidebar-menu">
+                <li><a href="{{ url_for('admin_dashboard') }}" class="active"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+                <li><a href="{{ url_for('admin_users') }}"><i class="fas fa-users"></i> <span>Quản lý người dùng</span></a></li>
+                <li><a href="{{ url_for('admin_forms') }}"><i class="fas fa-file-alt"></i> <span>Quản lý biểu mẫu</span></a></li>
+                <li><a href="{{ url_for('admin_form_history') }}"><i class="fas fa-history"></i> <span>Lịch sử biểu mẫu</span></a></li>
+                <li><a href="{{ url_for('web_config') }}"><i class="fas fa-cog"></i> <span>Cấu hình website</span></a></li>
+                <li><a href="{{ url_for('admin_api_settings') }}"><i class="fas fa-key"></i> <span>Quản lý API</span></a></li>
+                <li><a href="{{ url_for('admin_index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
+                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a></li>
+            </ul>
+            
+            <div class="user-profile">
+                <div class="user-profile-container" id="userProfile">
+                    <div class="user-avatar">
+                        {% if current_user.is_authenticated %}
+                            {{ current_user.fullname[:1] | upper }}
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="user-info">
+                        <p class="user-name">
+                            {% if current_user.is_authenticated %}
+                                {{ current_user.fullname | truncate(15) }}
+                            {% else %}
+                                Khách
+                            {% endif %}
+                        </p>
+                        <p class="user-role">
+                            {% if current_user.is_authenticated %}
+                                {% if current_user.role_id == 1 %}Admin{% else %}Người dùng{% endif %}
+                            {% else %}
+                                Chưa đăng nhập
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="user-dropdown" id="userDropdown">
+                        {% if current_user.is_authenticated %}
+                            <div class="dropdown-header">
+                                <p class="user-name">{{ current_user.fullname }}</p>
+                                <p class="user-email">{{ current_user.email }}</p>
+                            </div>
+                            
+                            <div class="dropdown-divider"></div>
+                            
+                            <a href="/profile" class="dropdown-item">
+                                <i class="fas fa-user-circle"></i>
+                                Thông tin cá nhân
+                            </a>
+                            
+                            <a href="/settings" class="dropdown-item">
+                                <i class="fas fa-cog"></i>
+                                Cài đặt
+                            </a>
+                            
+                            <div class="dropdown-divider"></div>
+                            
+                            <a href="/logout" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Đăng xuất
+                            </a>
+                        {% else %}
+                            <a href="/login" class="dropdown-item">
+                                <i class="fas fa-sign-in-alt"></i>
+                                Đăng nhập
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Chào mừng đến với {{ site_title }}</h1>
+                <p>{{ site_description }}</p>
+                
+                <div class="search-bar">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Tìm kiếm biểu mẫu..." id="searchInput">
+                </div>
+            </div>
+            
+            <!-- Upload section -->
+            <section class="upload-section" id="uploadSection">
+                <h3 class="upload-title"><i class="fas fa-cloud-upload-alt"></i> Tải lên biểu mẫu mới</h3>
+                <p class="upload-description">Kéo thả file DOCX vào đây hoặc nhấn nút bên dưới</p>
+                
+                <button class="upload-button" id="uploadButton">
+                    <i class="fas fa-file-word"></i>
+                    Chọn file DOCX
+                </button>
+                <input type="file" id="fileUpload" accept=".docx" style="display: none;">
+                
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress" id="progressBar"></div>
+                    </div>
+                </div>
+                
+                <div class="message" id="uploadMessage"></div>
+            </section>
+            
+            <!-- Recent forms -->
+            <section class="forms-section">
+                <div class="section-header">
+                    <h3 class="section-title"><i class="fas fa-history"></i> Biểu mẫu gần đây</h3>
+                </div>
+                
+                <div class="forms-grid" id="formsGrid">
+                    <!-- Forms will be loaded here -->
+                    <div class="loading">
+                        <i class="fas fa-spinner loading-spinner"></i>
+                        <p class="loading-text">Đang tải biểu mẫu...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // User dropdown toggle
+            $('#userProfile').on('click', function(e) {
+                e.stopPropagation();
+                $('#userDropdown').toggleClass('show');
+            });
+            
+            $(document).on('click', function() {
+                $('#userDropdown').removeClass('show');
+            });
+            
+            // File upload handling
+            const uploadSection = $('#uploadSection');
+            const fileUpload = $('#fileUpload');
+            const uploadButton = $('#uploadButton');
+            const progressContainer = $('#progressContainer');
+            const progressBar = $('#progressBar');
+            const uploadMessage = $('#uploadMessage');
+            
+            // Click handler for upload button
+            uploadButton.on('click', function() {
+                fileUpload.click();
+            });
+            
+            // Drag and drop handling
+            uploadSection.on('dragover', function(e) {
+                e.preventDefault();
+                uploadSection.addClass('drag-over');
+            });
+            
+            uploadSection.on('dragleave', function(e) {
+                e.preventDefault();
+                uploadSection.removeClass('drag-over');
+            });
+            
+            uploadSection.on('drop', function(e) {
+                e.preventDefault();
+                uploadSection.removeClass('drag-over');
+                
+                if (e.originalEvent.dataTransfer.files.length) {
+                    fileUpload[0].files = e.originalEvent.dataTransfer.files;
+                    handleFileUpload();
+                }
+            });
+            
+            // File input change handler
+            fileUpload.on('change', handleFileUpload);
+            
+            function handleFileUpload() {
+                const file = fileUpload[0].files[0];
+                if (!file) return;
+                
+                // Validate file type
+                if (!file.name.toLowerCase().endsWith('.docx')) {
+                    showMessage('Vui lòng chọn file DOCX', 'error');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                progressContainer.show();
+                progressBar.css('width', '0%');
+                
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    xhr: function() {
+                        const xhr = new window.XMLHttpRequest();
+                        
+                        xhr.upload.addEventListener('progress', function(e) {
+                            if (e.lengthComputable) {
+                                const percent = Math.round((e.loaded / e.total) * 100);
+                                progressBar.css('width', percent + '%');
+                            }
+                        }, false);
+                        
+                        return xhr;
+                    },
+                    success: function(response) {
+                        showMessage('Tải lên thành công!', 'success');
+                        setTimeout(() => {
+                            progressContainer.hide();
+                            loadRecentForms();
+                        }, 1000);
+                        
+                        // Redirect to form editor
+                        setTimeout(() => {
+                            window.location.href = '/form';
+                        }, 1500);
+                    },
+                    error: function(xhr) {
+                        showMessage('Có lỗi xảy ra khi tải lên: ' + (xhr.responseJSON?.error || 'Vui lòng thử lại'), 'error');
+                        progressContainer.hide();
+                    }
+                });
+            }
+            
+            // Load recent forms
+            function loadRecentForms(searchQuery = '', filterType = 'all') {
+                const formsGrid = $('#formsGrid');
+                formsGrid.html(`
+                    <div class="loading">
+                        <i class="fas fa-spinner loading-spinner"></i>
+                        <p class="loading-text">Đang tải biểu mẫu...</p>
+                    </div>
+                `);
+                
+                $.get('/get-recent-forms', { query: searchQuery }, function(data) {
+                    if (data.forms && data.forms.length > 0) {
+                        // Filter forms based on selected filter
+                        let filteredForms = data.forms;
+                        
+                        if (filterType === 'filled') {
+                            filteredForms = data.forms.filter(form => {
+                                if (!form.form_data) return false;
+                                const filledFields = Object.values(form.form_data).filter(value => value && value.trim() !== '').length;
+                                return filledFields > 0;
+                            });
+                        } else if (filterType === 'unfilled') {
+                            filteredForms = data.forms.filter(form => {
+                                if (!form.form_data) return true;
+                                const filledFields = Object.values(form.form_data).filter(value => value && value.trim() !== '').length;
+                                return filledFields === 0;
+                            });
+                        }
+                        
+                        if (filteredForms.length === 0) {
+                            formsGrid.html(`
+                                <div class="empty-state">
+                                    <i class="far fa-folder-open empty-state-icon"></i>
+                                    <p class="empty-state-text">Không có biểu mẫu nào phù hợp</p>
+                                </div>
+                            `);
+                            return;
+                        }
+                        
+                        let formsHTML = '';
+                        
+                        filteredForms.forEach(form => {
+                            const hasFormData = !!form.form_data;
+                            let displayName = form.form_data.form_type;
+                            
+                            if (form.form_data?.form_type) {
+                                displayName = form.form_data.form_type;
+                            }
+                            
+                            let filledFields = 0;
+                            let totalFields = 0;
+                            
+                            if (form.form_data) {
+                                totalFields = Object.keys(form.form_data).length;
+                                filledFields = Object.values(form.form_data).filter(value => value && value.trim() !== '').length;
+                            }
+                            
+                            formsHTML += `
+                                <div class="form-card" data-id="${form.id}">
+                                    <h4 class="form-title">${displayName}</h4>
+                                    
+                                    <div class="form-meta">
+                                        <span class="form-meta-item">
+                                            <i class="far fa-clock"></i>
+                                            ${form.date}
+                                        </span>
+                                        
+                                        <span class="form-meta-item">
+                                            <i class="far fa-file-word"></i>
+                                            DOCX
+                                        </span>
+                                    </div>
+                                    
+                                    ${hasFormData ? `
+                                    <div class="form-meta">
+                                        <span class="form-meta-item">
+                                            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                            Đã điền ${filledFields}/${totalFields}
+                                        </span>
+                                    </div>
+                                    ` : ''}
+                                    
+                                    <div class="form-actions">
+                                        <button class="action-button edit-button" onclick="editForm('${form.id}')">
+                                            <i class="fas fa-edit"></i>
+                                            Chỉnh sửa
+                                        </button>
+                                        
+                                        ${hasFormData ? `
+                                        <button class="action-button view-button" onclick="viewFormDetails('${form.id}')">
+                                            <i class="fas fa-eye"></i>
+                                            Xem
+                                        </button>
+                                        ` : ''}
+                                        
+                                        <button class="action-button delete-button" onclick="deleteForm('${form.id}')">
+                                            <i class="fas fa-trash"></i>
+                                            Xóa
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        formsGrid.html(formsHTML);
+                    } else {
+                        formsGrid.html(`
+                            <div class="empty-state">
+                                <i class="far fa-folder-open empty-state-icon"></i>
+                                <p class="empty-state-text">Chưa có biểu mẫu nào. Hãy tải lên biểu mẫu đầu tiên!</p>
+                            </div>
+                        `);
+                    }
+                });
+            }
+            
+            // Search input handler
+            $('#searchInput').on('input', function() {
+                const searchQuery = $(this).val();
+                const filterType = $('.filter-button.active').data('filter');
+                
+                clearTimeout(window.searchTimeout);
+                window.searchTimeout = setTimeout(() => {
+                    loadRecentForms(searchQuery, filterType);
+                }, 300);
+            });
+            
+            // Filter buttons handler
+            $('.filter-button').on('click', function() {
+                $('.filter-button').removeClass('active');
+                $(this).addClass('active');
+                
+                const filterType = $(this).data('filter');
+                const searchQuery = $('#searchInput').val();
+                
+                loadRecentForms(searchQuery, filterType);
+            });
+            
+            // Initial load
+            loadRecentForms();
+        });
+        
+        // Helper function to show messages
+        function showMessage(text, type) {
+            const message = $('#uploadMessage');
+            message.removeClass('success error').addClass(type).text(text).fadeIn();
+            
+            setTimeout(() => {
+                message.fadeOut();
+            }, 5000);
+        }
+        
+        // Form actions
+        function editForm(formId) {
+            window.location.href = `/form/${formId}`;
+        }
+        
+        function viewFormDetails(formId) {
+            window.location.href = `/form/${formId}`;
+        }
+        
+        function deleteForm(formId) {
+            if (confirm('Bạn có chắc chắn muốn xóa biểu mẫu này?')) {
+                $.ajax({
+                    url: `/delete-form/${formId}`,
+                    type: 'DELETE',
+                    success: function() {
+                        showMessage('Đã xóa biểu mẫu thành công', 'success');
+                        loadRecentForms();
+                    },
+                    error: function() {
+                        showMessage('Có lỗi xảy ra khi xóa biểu mẫu', 'error');
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

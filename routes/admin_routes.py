@@ -8,7 +8,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 from config.config import BASE_DIR
 from utils.api_key_manager import get_api_key_manager
-
+from utils.document_utils import load_document, extract_all_fields, get_doc_path, set_doc_path
 
 def admin_required(f):
     """Decorator để kiểm tra quyền admin"""
@@ -32,6 +32,17 @@ def register_admin_routes(app):
         forms_data = load_form_history()
         form_count = len(forms_data)
         return render_template('admin/dashboard.html', user_count=user_count, form_count=form_count)
+    @app.route('/admin_index')
+    @login_required
+    @admin_required
+    def admin_index():
+        doc_path = get_doc_path()
+        if not doc_path:
+            return jsonify({'error': 'No document uploaded'}), 400
+        text = load_document(doc_path)
+        fields = extract_all_fields(doc_path)
+        db_data = load_db()
+        return render_template("admin/index_admin.html", fields=fields)
     @app.route('/web-config', methods=['GET', 'POST'])
     @login_required
     @admin_required
@@ -206,21 +217,22 @@ def register_admin_routes(app):
         user = User.query.get(form.get('user_id'))
         form['user_name'] = user.fullname if user else 'Unknown'
         
-        # Chuẩn bị dữ liệu form để hiển thị
+        # Chuẩn bị dữ liệu form để hiển thị (kèm kiểu dữ liệu)
         form_fields = []
         if 'form_data' in form:
             for field_name, field_value in form['form_data'].items():
                 if field_name not in ['form_id', 'document_name']:  # Bỏ qua các trường hệ thống
                     form_fields.append({
                         'name': field_name,
-                        'value': field_value
+                        'value': field_value,
+                        'type': type(field_value).__name__  # thêm loại dữ liệu
                     })
         
         return render_template('admin/form_detail.html', 
                             form=form, 
                             form_fields=form_fields,
                             document_name=form.get('form_data', {}).get('document_name', ''))
-    
+
     @app.route('/admin/forms/edit/<form_id>', methods=['POST'])
     @login_required
     @admin_required

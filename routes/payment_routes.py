@@ -10,13 +10,18 @@ def register_payment_routes(app):
     """ Đăng ký các route liên quan đến thanh toán """
     
     # Khởi tạo đối tượng MomoPayment với cấu hình từ biến môi trường
+    from flask import request
+    
+    # Lấy domain từ request hoặc sử dụng giá trị mặc định
+    host_url = os.environ.get('HOST_URL', 'http://localhost:55003')
+    
     momo_config = {
         'partner_code': os.environ.get('MOMO_PARTNER_CODE', 'MOMO'),
         'access_key': os.environ.get('MOMO_ACCESS_KEY', 'F8BBA842ECF85'),
         'secret_key': os.environ.get('MOMO_SECRET_KEY', 'K951B6PE1waDMi640xX08PD3vg6EkVlz'),
         'api_endpoint': os.environ.get('MOMO_API_ENDPOINT', 'https://test-payment.momo.vn/v2/gateway/api/create'),
-        'return_url': os.environ.get('MOMO_RETURN_URL', 'http://localhost:55003/payment/momo/return'),
-        'ipn_url': os.environ.get('MOMO_IPN_URL', 'http://localhost:55003/payment/momo/ipn'),
+        'return_url': os.environ.get('MOMO_RETURN_URL', f'{host_url}/payment/momo/return'),
+        'ipn_url': os.environ.get('MOMO_IPN_URL', f'{host_url}/payment/momo/ipn'),
     }
     momo_payment = MomoPayment(momo_config)
     
@@ -26,8 +31,15 @@ def register_payment_routes(app):
         """ Tạo yêu cầu thanh toán MoMo """
         try:
             # Lấy thông tin từ form
+            base_url = request.host_url.rstrip('/')
+            momo_payment.config.update({
+                'return_url': f"{base_url}/payment/momo/return",
+                'ipn_url': f"{base_url}/payment/momo/ipn"
+            })
             subscription_type = request.form.get('subscription_type', 'standard')
             phone_number = request.form.get('phone_number')
+            print("Phone:", phone_number)
+
             
             # Kiểm tra loại gói đăng ký
             if subscription_type not in ['standard', 'vip']:
@@ -63,6 +75,7 @@ def register_payment_routes(app):
                 user_id=current_user.id,
                 subscription_type=subscription_type
             )
+            print(">>> Momo response:", payment_response)
             
             # Kiểm tra kết quả từ MoMo
             if payment_response.get('errorCode') != 0:
@@ -162,25 +175,45 @@ def register_payment_routes(app):
         """ Xử lý yêu cầu thanh toán MoMo từ JavaScript """
         try:
             # Lấy thông tin từ request
-            data = request.json
-            phone_number = data.get('phone_number')
-            subscription_type = data.get('subscription_type', 'standard')
+            data = request.get_json()
+            print(">>> JSON data:", data)
+            print(">>> form data:", request.form)
+            print(">>> current_user:", current_user)
+            print(">>> is_authenticated:", current_user.is_authenticated)
+
+            if not data:
+                # Nếu không phải JSON, thử lấy từ form data
+                phone_number = request.form.get('phone_number')
+                subscription_type = request.form.get('subscription_type', 'standard')
+            else:
+                phone_number = data.get('phone_number')
+                subscription_type = data.get('subscription_type', 'standard')
+            
+            print(">>> phone_number:", phone_number)
+            print(">>> subscription_type:", subscription_type)
             
             # Kiểm tra số điện thoại
             if not phone_number or len(phone_number) < 10:
-                return jsonify({'success': False, 'message': 'Số điện thoại không hợp lệ'}), 400
+                error_msg = 'Số điện thoại không hợp lệ'
+                print(">>> Error:", error_msg)
+                return jsonify({'success': False, 'message': error_msg}), 400
             
             # Kiểm tra loại gói đăng ký
             if subscription_type not in ['standard', 'vip']:
-                return jsonify({'success': False, 'message': 'Loại gói đăng ký không hợp lệ'}), 400
+                error_msg = 'Loại gói đăng ký không hợp lệ'
+                print(">>> Error:", error_msg)
+                return jsonify({'success': False, 'message': error_msg}), 400
             
             # Lấy giá gói đăng ký
             amount = get_subscription_price(subscription_type)
             if amount <= 0:
-                return jsonify({'success': False, 'message': 'Giá gói đăng ký không hợp lệ'}), 400
+                error_msg = 'Giá gói đăng ký không hợp lệ'
+                print(">>> Error:", error_msg)
+                return jsonify({'success': False, 'message': error_msg}), 400
             
             # Tạo mã đơn hàng
             order_id = generate_order_id(current_user.id)
+            print(">>> order_id:", order_id)
             
             # Tạo thông tin đơn hàng
             order_info = f"Thanh toán gói {subscription_type} cho tài khoản {current_user.email}"
@@ -203,6 +236,8 @@ def register_payment_routes(app):
                 subscription_type=subscription_type
             )
             
+            print(">>> MoMo API response:", payment_response)
+            
             # Kiểm tra kết quả từ MoMo
             if payment_response.get('errorCode') != 0:
                 # Cập nhật trạng thái giao dịch
@@ -211,9 +246,11 @@ def register_payment_routes(app):
                     response_data=json.dumps(payment_response)
                 )
                 
+                error_msg = payment_response.get('message', 'Lỗi không xác định')
+                print(">>> MoMo error:", error_msg)
                 return jsonify({
                     'success': False, 
-                    'message': payment_response.get('message', 'Lỗi không xác định')
+                    'message': error_msg
                 }), 400
             
             # Cập nhật thông tin giao dịch
@@ -226,17 +263,22 @@ def register_payment_routes(app):
             # Trả về URL thanh toán
             pay_url = payment_response.get('payUrl')
             if pay_url:
+                print(">>> Success, pay_url:", pay_url)
                 return jsonify({
                     'success': True,
                     'pay_url': pay_url,
                     'order_id': order_id
                 }), 200
             else:
+                error_msg = 'Không thể tạo URL thanh toán'
+                print(">>> Error:", error_msg)
                 return jsonify({
                     'success': False,
-                    'message': 'Không thể tạo URL thanh toán'
+                    'message': error_msg
                 }), 400
                 
         except Exception as e:
-            current_app.logger.error(f"Error requesting MoMo payment: {str(e)}")
-            return jsonify({'success': False, 'message': str(e)}), 500
+            error_msg = str(e)
+            current_app.logger.error(f"Error requesting MoMo payment: {error_msg}")
+            print(">>> Exception:", error_msg)
+            return jsonify({'success': False, 'message': error_msg}), 500

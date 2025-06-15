@@ -1,0 +1,50 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore virtual environment folders
+env/
+venv/
+ENV/
+.venv/
+
+# Ignore environment variable files
+*.env
+
+# Ignore Flask instance folder (if using)
+instance/
+
+# Ignore uploads folder (chứa file upload)
+uploads/
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE/editor folders and files
+.vscode/
+.idea/
+*.swp
+
+# Ignore log files
+*.log
+
+# Ignore database files (nếu có SQLite)
+*.sqlite3
+*.db
+
+# Ignore compiled files
+*.so
+
+# Ignore test output
+htmlcov/
+coverage.xml
+*.cover
+
+# If using pytest
+.pytest_cache/
+
+# Ignore Jupyter Notebook checkpoints (if used)
+.ipynb_checkpoints/

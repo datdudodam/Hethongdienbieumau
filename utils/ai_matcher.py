@@ -146,6 +146,16 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
         related_fields: str
     ) -> str:
         """Construct suggestion prompt optimized for OpenAI"""
+        if self._is_date_field(field_name):
+            return self._format_date_suggestion(field_name)  # Sử dụng phương thức mới
+            
+        prompt_parts = [
+            "You are a smart form suggestion assistant.",
+            f"Field: '{field_name}'",
+            f"Similar fields: {', '.join(similar_fields) if similar_fields else 'None'}",
+            "IMPORTANT: If this field appears to be a date field (day, month, year, date), ALWAYS use the current date instead of historical values.",
+        ]
+
         prompt_parts = [
             "You are a smart form suggestion assistant.",
             f"Field: '{field_name}'",
@@ -221,7 +231,73 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
             }
         }
         return stats
-
+    def _format_date_suggestion(self, field_name: str, form_type: Optional[str] = None) -> Dict[str, Any]:
+            """Định dạng gợi ý ngày tháng năm dựa trên tên trường và loại biểu mẫu"""
+            today = datetime.datetime.now()
+            name_lower = field_name.lower()
+            
+            # Xác định định dạng phù hợp dựa trên loại biểu mẫu
+            date_format = "%d/%m/%Y"  # Định dạng mặc định
+            
+            # Điều chỉnh định dạng dựa trên loại biểu mẫu
+            if form_type:
+                form_type_lower = form_type.lower()
+                if "quốc tế" in form_type_lower or "international" in form_type_lower:
+                    date_format = "%Y-%m-%d"
+                elif "hợp đồng" in form_type_lower or "contract" in form_type_lower:
+                    date_format = "ngày %d tháng %m năm %Y"
+            
+            # Kiểm tra nếu là trường ngày sinh, tháng sinh, năm sinh
+            if any(birth_kw in name_lower for birth_kw in ["sinh", "birth", "dob"]):
+                # Trả về kết quả trống để sử dụng dữ liệu lịch sử hoặc gợi ý AI
+                return {
+                    "suggestions": [],
+                    "default": "",
+                    "reason": "Trường ngày sinh nên sử dụng dữ liệu cá nhân"
+                }
+            
+            # Xác định loại trường ngày tháng
+            if "ngày" in name_lower and not any(kw in name_lower for kw in ["tháng", "năm"]):
+                return {
+                    "suggestions": [
+                        {"text": today.strftime("%d"), "reason": "Ngày hiện tại"},
+                        {"text": today.strftime("%d/%m"), "reason": "Ngày/tháng hiện tại"},
+                        {"text": today.strftime(date_format), "reason": "Ngày đầy đủ theo định dạng phù hợp"}
+                    ],
+                    "default": today.strftime("%d"),
+                    "reason": "Tự động điền ngày hiện tại"
+                }
+            elif "tháng" in name_lower and not any(kw in name_lower for kw in ["ngày", "năm"]):
+                return {
+                    "suggestions": [
+                        {"text": today.strftime("%m"), "reason": "Tháng hiện tại"},
+                        {"text": f"Tháng {today.strftime('%m')}", "reason": "Tháng hiện tại (có tiền tố)"},
+                        {"text": today.strftime("%B"), "reason": "Tháng hiện tại (chữ)"}
+                    ],
+                    "default": today.strftime("%m"),
+                    "reason": "Tự động điền tháng hiện tại"
+                }
+            elif "năm" in name_lower and not any(kw in name_lower for kw in ["ngày", "tháng"]):
+                return {
+                    "suggestions": [
+                        {"text": today.strftime("%Y"), "reason": "Năm hiện tại"},
+                        {"text": today.strftime("%y"), "reason": "Năm hiện tại (2 chữ số)"},
+                        {"text": f"Năm {today.strftime('%Y')}", "reason": "Năm hiện tại (có tiền tố)"}
+                    ],
+                    "default": today.strftime("%Y"),
+                    "reason": "Tự động điền năm hiện tại"
+                }
+            else:
+                # Trường hợp ngày tháng năm đầy đủ
+                return {
+                    "suggestions": [
+                        {"text": today.strftime(date_format), "reason": "Ngày hiện tại theo định dạng phù hợp"},
+                        {"text": today.strftime("%d/%m/%Y"), "reason": "Ngày hiện tại (DD/MM/YYYY)"},
+                        {"text": today.strftime("%Y-%m-%d"), "reason": "Ngày hiện tại (YYYY-MM-DD)"}
+                    ],
+                    "default": today.strftime(date_format),
+                    "reason": "Tự động điền ngày hiện tại theo định dạng phù hợp"
+                }
     def batch_generate_suggestions(
         self,
         fields: List[Dict[str, Any]],
@@ -360,8 +436,33 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
             return ""
 
 
-    def _enhance_context_analysis(self, form_text: str, context: str) -> Dict:
+    def _enhance_context_analysis(self, form_text: str, context: str,tried_fallback: bool = False) -> Dict:
         """Phân tích ngữ cảnh nâng cao với kiểm tra provider hiện tại"""
+        context_lower = context.lower()
+        today = datetime.datetime.now()
+        
+        # Cải tiến phát hiện trường ngày tháng năm trong ngữ cảnh
+        date_patterns = {
+            "ngày": {"value": today.strftime("%d"), "format": "DD"},
+            "tháng": {"value": today.strftime("%m"), "format": "MM"},
+            "năm": {"value": today.strftime("%Y"), "format": "YYYY"},
+            "date": {"value": today.strftime("%d/%m/%Y"), "format": "DD/MM/YYYY"},
+            "day": {"value": today.strftime("%d"), "format": "DD"},
+            "month": {"value": today.strftime("%m"), "format": "MM"},
+            "year": {"value": today.strftime("%Y"), "format": "YYYY"},
+            "thời gian": {"value": today.strftime("%H:%M"), "format": "HH:MM"},
+            "time": {"value": today.strftime("%H:%M"), "format": "HH:MM"}
+        }
+        
+        # Kiểm tra từng mẫu ngày tháng trong ngữ cảnh
+        for pattern, data in date_patterns.items():
+            if pattern in context_lower and "sinh" not in context_lower and "birth" not in context_lower:
+                return {
+                    "contains_date_fields": True,
+                    "suggested_value": data["value"],
+                    "suggested_format": data["format"],
+                    "date_type": pattern
+                }
         cache_key = hashlib.sha256(form_text.encode()).hexdigest()
         if cache_key in self.context_cache:
             return self.context_cache[cache_key]
@@ -506,9 +607,20 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
 
     def _analyze_value_patterns(self, values: List[str]) -> str:
         """Analyze patterns in historical values"""
+        
         try:
+            date_patterns = [
+            r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}',  # DD/MM/YY hoặc DD-MM-YYYY
+            r'\d{4}[/-]\d{1,2}[/-]\d{1,2}',     # YYYY/MM/DD
+            r'\d{1,2}\s+[Tháng|tháng]\s+\d{4}'  # 15 Tháng 5 2023
+            ]
+            
+            date_count = sum(
+                1 for v in values 
+                if any(re.match(p, v) for p in date_patterns)
+            )
             # Simple pattern detection
-            date_count = sum(1 for v in values if re.match(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}', v))
+            
             email_count = sum(1 for v in values if '@' in v)
             numeric_count = sum(1 for v in values if v.isdigit())
             
@@ -645,28 +757,54 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
     related_fields_data: Optional[Dict] = None
 ) -> Dict[str, Any]:
         """Generate smart suggestions for form field with enhanced Gemini integration"""
+        name_lower = field_name.lower()
+        if self._is_date_field(field_name):
+            today = datetime.datetime.now()
+
+            # Tránh nhầm với ngày sinh, tháng sinh, năm sinh
+            if "sinh" not in name_lower:
+                if "ngày" in name_lower:
+                    suggestion = today.strftime("%d")
+                    return {
+                        "suggestions": [{"text": suggestion, "reason": "Ngày hiện tại"}],
+                        "default": suggestion,
+                        "reason": "Tự động điền ngày hiện tại"
+                    }
+                elif "tháng" in name_lower:
+                    suggestion = today.strftime("%m")
+                    return {
+                        "suggestions": [{"text": suggestion, "reason": "Tháng hiện tại"}],
+                        "default": suggestion,
+                        "reason": "Tự động điền tháng hiện tại"
+                    }
+                elif "năm" in name_lower:
+                    suggestion = today.strftime("%Y")
+                    return {
+                        "suggestions": [{"text": suggestion, "reason": "Năm hiện tại"}],
+                        "default": suggestion,
+                        "reason": "Tự động điền năm hiện tại"
+                    }
+
         cache_key = f"{field_name}_{hash(str(historical_values))}_{hash(context) if context else ''}"
         if cache_key in self.suggestion_cache:
             return self.suggestion_cache[cache_key]
-        
+
         try:
-            # Initialize client with proper provider
             if self._client is None or self._current_provider is None:
                 api_key_manager = get_api_key_manager()
                 self._current_provider = api_key_manager.get_available_provider('gemini') or api_key_manager.get_available_provider('openai')
                 if self._current_provider is None:
                     raise RuntimeError("No available AI provider")
                 self._client = api_key_manager.get_client(self._current_provider)
-            
+
             similar_fields = self.find_similar_fields(field_name)
             related_fields = self._get_related_fields(field_name, similar_fields, related_fields_data)
 
-            # Enhanced context analysis for Gemini
             enhanced_context = self._build_enhanced_context_for_gemini(
-                field_name, 
-                historical_values, 
-                context, 
-                form_type, 
+                field_name,
+                historical_values,
+                context,
+                form_type,
                 related_fields_data
             )
 
@@ -678,13 +816,12 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
                     enhanced_context,
                     related_fields
                 )
-                
-                # Initialize Gemini model if needed
-                if not hasattr(self.client, 'generate_content'):
+
+                if not hasattr(self._client, 'generate_content'):
                     from google.generativeai import GenerativeModel
-                    self._client = GenerativeModel("gemini-1.5-pro")  # Use more advanced model
-                
-                response = self.client.generate_content(
+                    self._client = GenerativeModel("gemini-1.5-pro")
+
+                response = self._client.generate_content(
                     contents=[{"role": "user", "parts": [prompt]}],
                     generation_config={
                         "temperature": 0.5,
@@ -692,12 +829,9 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
                         "top_p": 0.9
                     }
                 )
-                
-                # Enhanced response parsing for Gemini
                 content = response.candidates[0].content.parts[0].text.strip()
                 suggestions = self._parse_gemini_suggestion_response(content)
             else:
-                # Fallback to OpenAI
                 prompt = self._build_openai_suggestion_prompt(
                     field_name,
                     similar_fields,
@@ -705,7 +839,7 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
                     enhanced_context,
                     related_fields
                 )
-                response = self.client.chat.completions.create(
+                response = self._client.chat.completions.create(
                     model="gpt-4-1106-preview",
                     messages=[
                         {"role": "system", "content": "Smart form suggestion assistant."},
@@ -724,15 +858,35 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
         except Exception as e:
             logger.error(f"Error generating suggestions with {self._current_provider}: {e}")
             return {"suggestions": [], "default": "", "reason": str(e)}
+
     
 
-    def _is_date_field(field_name: str) -> bool:
-        """Kiểm tra tên trường có thể là ngày tháng hiện tại (không phải ngày sinh)"""
-        name_lower = field_name.lower()
-        return (
-            any(kw in name_lower for kw in ["ngày", "tháng", "năm"]) and
-            not any(kw in name_lower for kw in ["sinh", "ngày sinh", "birth"])
-        )
+    def _is_date_field(self, field_name: str) -> bool:
+            """Kiểm tra tên trường có thể là ngày/tháng/năm hiện tại (nhưng không phải ngày sinh, tháng sinh, năm sinh)"""
+            if not field_name or not isinstance(field_name, str):
+                return False
+
+            name_lower = field_name.lower()
+            # Mở rộng danh sách từ khóa để nhận diện tốt hơn
+            date_keywords = ["ngày", "tháng", "năm", "date", "day", "month", "year", "thời gian", "time"]
+            birth_keywords = ["sinh", "birth", "dob", "tuổi", "age"]
+            
+            # Từ khóa chỉ ngày hiện tại
+            current_date_keywords = ["hiện tại", "hôm nay", "hiện nay", "today", "current", "lập", "ký", "viết", "làm"]
+            
+            contains_date_part = any(kw in name_lower for kw in date_keywords)
+            contains_birth_info = any(kw in name_lower for kw in birth_keywords)
+            contains_current_date = any(kw in name_lower for kw in current_date_keywords)
+            
+            # Thêm nhận diện mẫu như "dd/mm/yyyy", "mm/dd/yyyy", v.v.
+            contains_date_pattern = bool(re.search(r'dd|mm|yyyy|yy', name_lower))
+            
+            # Nếu chứa từ khóa ngày hiện tại, ưu tiên xác định là trường ngày hiện tại
+            if contains_current_date and contains_date_part:
+                return True
+                
+            # Nếu chứa từ khóa ngày tháng nhưng không chứa từ khóa sinh
+            return (contains_date_part or contains_date_pattern) and not contains_birth_info
 
 
     def _build_gemini_suggestion_prompt(
@@ -744,6 +898,17 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
         related_fields: str
     ) -> str:
         """Construct suggestion prompt optimized for Gemini"""
+        if self._is_date_field(field_name):
+            today_str = datetime.datetime.now().strftime("%d/%m/%Y")
+            return json.dumps({
+                "suggestions": [
+                    {"text": today_str, "reason": "Ngày hiện tại theo định dạng DD/MM/YYYY"},
+                    {"text": today_str.replace("/", "-"), "reason": "Ngày hiện tại theo định dạng DD-MM-YYYY"},
+                    {"text": datetime.datetime.now().strftime("%Y-%m-%d"), "reason": "Ngày hiện tại theo định dạng quốc tế"}
+                ],
+                "default": today_str,
+                "reason": "Tự động điền ngày hiện tại cho trường ngày tháng"
+            }, ensure_ascii=False)
         prompt_parts = [
             "Bạn là trợ lý đề xuất thông minh cho biểu mẫu.",
             f"Trường: '{field_name}'",
@@ -1022,6 +1187,74 @@ Hãy tóm tắt ngữ cảnh trong 3-5 câu, tập trung vào mục đích và c
     form_type: Optional[str] = None
 ) -> Dict[str, Any]:
         """Generate personalized suggestions with enhanced context understanding"""
+        # Kiểm tra nếu là trường ngày tháng năm hiện tại
+        target_field = field_name or field_code or ""
+        
+        # Nếu là trường ngày tháng năm (không phải ngày sinh), ưu tiên sử dụng ngày hiện tại
+        if self._is_date_field(target_field):
+            today = datetime.datetime.now()
+            name_lower = target_field.lower()
+            
+            # Xác định định dạng phù hợp dựa trên loại biểu mẫu
+            date_format = "%d/%m/%Y"  # Định dạng mặc định
+            
+            # Điều chỉnh định dạng dựa trên loại biểu mẫu
+            if form_type:
+                form_type_lower = form_type.lower()
+                if "quốc tế" in form_type_lower or "international" in form_type_lower:
+                    date_format = "%Y-%m-%d"
+                elif "hợp đồng" in form_type_lower or "contract" in form_type_lower:
+                    date_format = "ngày %d tháng %m năm %Y"
+            
+            # Xác định loại trường ngày tháng
+            if "ngày" in name_lower and not any(kw in name_lower for kw in ["tháng", "năm"]):
+                default_value = today.strftime("%d")
+                reason = "Tự động điền ngày hiện tại"
+            elif "tháng" in name_lower and not any(kw in name_lower for kw in ["ngày", "năm"]):
+                default_value = today.strftime("%m")
+                reason = "Tự động điền tháng hiện tại"
+            elif "năm" in name_lower and not any(kw in name_lower for kw in ["ngày", "tháng"]):
+                default_value = today.strftime("%Y")
+                reason = "Tự động điền năm hiện tại"
+            else:
+                # Trường hợp ngày tháng năm đầy đủ
+                default_value = today.strftime(date_format)
+                reason = "Tự động điền ngày hiện tại theo định dạng phù hợp"
+            
+            # Tạo các gợi ý khác nhau cho trường ngày tháng
+            suggestions = [
+                {"text": default_value, "reason": reason}
+            ]
+            
+            # Thêm các định dạng khác nhau
+            if "ngày" in name_lower and "tháng" in name_lower and "năm" in name_lower:
+                suggestions.extend([
+                    {"text": today.strftime("%d/%m/%Y"), "reason": "Ngày hiện tại (DD/MM/YYYY)"},
+                    {"text": today.strftime("%Y-%m-%d"), "reason": "Ngày hiện tại (YYYY-MM-DD)"}
+                ])
+            
+            return {
+                "ai_suggestion": {
+                    "suggestions": suggestions,
+                    "default": default_value,
+                    "reason": reason
+                },
+                "recent_values": [default_value],
+                "default_value": default_value,
+                "matched_fields": [target_field],
+                "related_fields_data": {},
+                "reason": reason,
+                "field_mapping": {
+                    "requested_field_code": field_code,
+                    "matched_field_name": target_field,
+                    "similarity_score": 1.0,
+                    "similar_fields": [],
+                    "is_exact_match": True
+                },
+                "context_used": f"Trường ngày tháng năm hiện tại: {target_field}"
+            }
+        
+        # Xử lý các trường không phải ngày tháng năm như bình thường
         # Filter and sort user's historical entries
         filtered_entries = [
             entry for entry in db_data

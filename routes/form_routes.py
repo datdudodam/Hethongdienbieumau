@@ -45,10 +45,10 @@ def register_form_routes(app):
             if not doc_path:
                 return jsonify({"error": "Không tìm thấy tài liệu"}), 400
 
-            # Lưu dữ liệu form (phần này giữ nguyên như cũ)
+            # Lưu dữ liệu form
             form_id = str(uuid.uuid4())
             text = load_document(doc_path)
-            fields = extract_all_fields(doc_path)
+            fields = extract_all_fields(doc_path)  # Sẽ sử dụng tên trường đã cập nhật nếu có
             
             transformed_data = {
                 "form_id": form_id,

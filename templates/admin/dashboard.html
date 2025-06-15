@@ -15,6 +15,7 @@
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
             --primary-color: #3b82f6;
@@ -331,7 +332,7 @@
                 <li><a href="{{ url_for('admin_form_history') }}"><i class="fas fa-history"></i> <span>Lịch sử biểu mẫu</span></a></li>
                 <li><a href="{{ url_for('web_config') }}"><i class="fas fa-cog"></i> <span>Cấu hình website</span></a></li>
                 <li><a href="{{ url_for('admin_api_settings') }}"><i class="fas fa-key"></i> <span>Quản lý API</span></a></li>
-                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
+                <li><a href="{{ url_for('admin_index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
                 <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a></li>
             </ul>
         </div>

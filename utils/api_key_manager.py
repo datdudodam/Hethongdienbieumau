@@ -39,18 +39,54 @@ class APIKeyManager:
     # Add this at the top of your class
     @property
     def openai_client(self):
-        """Property to access OpenAI client with lazy initialization"""
-        if self._openai_client is None:
+        """Property để truy cập OpenAI client với kiểm tra trạng thái key"""
+        if self._openai_client is None or not self._validate_current_key('openai'):
             self._get_openai_client()
         return self._openai_client
 
     @property
     def gemini_client(self):
-        """Property to access Gemini client with lazy initialization"""
-        if self._gemini_client is None:
+        """Property để truy cập Gemini client với kiểm tra trạng thái key"""
+        if self._gemini_client is None or not self._validate_current_key('gemini'):
             self._get_gemini_client()
         return self._gemini_client
-
+    def _validate_current_key(self, provider):
+        """Kiểm tra xem key hiện tại còn hợp lệ và active không"""
+        try:
+            if provider == 'openai' and self._current_openai_key:
+                key = APIKey.query.filter_by(
+                    key=self._current_openai_key,
+                    provider='openai',
+                    is_active=True,
+                    is_valid=True
+                ).first()
+                return key is not None
+                
+            elif provider == 'gemini' and self._current_gemini_key:
+                key = APIKey.query.filter_by(
+                    key=self._current_gemini_key,
+                    provider='gemini',
+                    is_active=True,
+                    is_valid=True
+                ).first()
+                return key is not None
+                
+            return False
+        except Exception as e:
+            logger.error(f"Error validating current {provider} key: {str(e)}")
+            return False
+    def reset_client(self, provider='openai'):
+            """Reset client cache cho provider cụ thể"""
+            try:
+                if provider == 'openai':
+                    self._openai_client = None
+                    self._current_openai_key = None
+                elif provider == 'gemini':
+                    self._gemini_client = None
+                    self._current_gemini_key = None
+                logger.info(f"Reset {provider} client cache")
+            except Exception as e:
+                logger.error(f"Error resetting {provider} client: {str(e)}")
     def get_client(self, provider='openai'):
         """Lấy client AI hiện tại theo provider
         
@@ -557,24 +593,24 @@ class APIKeyManager:
             return []
 
     def set_active_api_key(self, key_id, provider='openai'):
-        """Đặt một API key làm key hoạt động chính"""
+        """Đặt một API key làm key hoạt động chính với reset client"""
         try:
-            # Đảm bảo chúng ta có app context
             if not current_app:
                 logger.error("Không có Flask app context")
                 return False
 
-            # Lấy key từ database
             api_key = APIKey.query.get(key_id)
             if not api_key:
                 logger.error(f"Không tìm thấy API key với ID {key_id}")
                 return False
 
-            # Kiểm tra provider có khớp không
             if api_key.provider != provider:
                 logger.error(f"Provider không khớp: key {api_key.provider} vs yêu cầu {provider}")
                 return False
 
+            # Reset client trước khi thay đổi
+            self.reset_client(provider)
+            
             # Deactivate tất cả các key khác cùng provider
             APIKey.query.filter_by(provider=provider).update({APIKey.is_active: False})
             
@@ -585,19 +621,17 @@ class APIKeyManager:
 
             key_value = api_key.key.strip()
             
-            # Cấu hình client tương ứng
+            # Cấu hình lại client
             if provider == 'openai':
                 self._current_openai_key = key_value
                 self._openai_client = OpenAI(api_key=key_value)
                 WebConfig.set_value('openai_api_key', key_value, 'api')
-                logger.info(f"Đã kích hoạt OpenAI key: {api_key.name}")
-
             elif provider == 'gemini':
                 self._current_gemini_key = key_value
                 genai.configure(api_key=key_value)
                 self._gemini_client = genai.GenerativeModel('gemini-2.0-flash')
-                logger.info(f"Đã kích hoạt Gemini key: {api_key.name}")
 
+            logger.info(f"Đã kích hoạt {provider} key: {api_key.name}")
             return True
 
         except Exception as e:
@@ -636,33 +670,42 @@ class APIKeyManager:
             return False
 
     def deactivate_api_key(self, key_id):
-        """Vô hiệu hóa một API key (không xóa)"""
+        """Vô hiệu hóa một API key (không xóa) với reset client"""
         try:
             if current_app and hasattr(current_app, 'app_context'):
                 api_key = APIKey.query.get(key_id)
                 if not api_key:
                     return False
-                    
-                api_key.is_active = False
-                db.session.commit()
                 
+                # Lưu provider trước khi thay đổi
+                provider = api_key.provider
+                
+                # Nếu key đang active thì mới cần xử lý
                 if api_key.is_active:
+                    api_key.is_active = False
+                    db.session.commit()
+                    
+                    # Reset client cache
+                    self.reset_client(provider)
+                    
+                    # Tìm key khác để kích hoạt
                     other_key = APIKey.query.filter_by(
-                        provider=api_key.provider, 
-                        is_valid=True, 
-                        is_active=True
-                    ).filter(APIKey.id != key_id).first()
+                        provider=provider, 
+                        is_valid=True
+                    ).filter(
+                        APIKey.id != key_id,
+                        APIKey.is_active == False
+                    ).first()
                     
                     if other_key:
-                        self.set_active_api_key(other_key.id, api_key.provider)
-                    else:
-                        api_key.is_active = False
-                        db.session.commit()
+                        # Kích hoạt key khác
+                        return self.set_active_api_key(other_key.id, provider)
                 
                 return True
             return False
         except Exception as e:
             logger.error(f"Error deactivating API key: {str(e)}")
+            db.session.rollback()
             return False
 
     def reactivate_api_key(self, key_id):

@@ -757,12 +757,6 @@
             <section class="forms-section">
                 <div class="section-header">
                     <h3 class="section-title"><i class="fas fa-history"></i> Biểu mẫu gần đây</h3>
-                    
-                    <div class="filter-buttons">
-                        <button class="filter-button active" data-filter="all">Tất cả</button>
-                        <button class="filter-button" data-filter="filled">Đã điền</button>
-                        <button class="filter-button" data-filter="unfilled">Chưa điền</button>
-                    </div>
                 </div>
                 
                 <div class="forms-grid" id="formsGrid">
@@ -921,10 +915,10 @@
                         
                         filteredForms.forEach(form => {
                             const hasFormData = !!form.form_data;
-                            let displayName = form.name;
+                            let displayName = form.form_data.form_type;
                             
-                            if (form.form_data?.document_name) {
-                                displayName = form.form_data.document_name;
+                            if (form.form_data?.form_type) {
+                                displayName = form.form_data.form_type;
                             }
                             
                             let filledFields = 0;

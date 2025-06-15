@@ -50,53 +50,45 @@ class MomoPayment:
     def create_payment_request(self, order_id, amount, order_info, user_id, subscription_type):
         """
         Tạo yêu cầu thanh toán MoMo
-        
-        Args:
-            order_id (str): Mã đơn hàng
-            amount (int): Số tiền thanh toán
-            order_info (str): Thông tin đơn hàng
-            user_id (int): ID của người dùng
-            subscription_type (str): Loại gói đăng ký
-            
-        Returns:
-            dict: Kết quả từ MoMo API
         """
-        # Tạo request ID
         request_id = str(uuid.uuid4())
-        
-        # Tạo dữ liệu cho request
+
+        # Tạo extraData đúng định dạng và mã hóa base64
+        extra_data_json = json.dumps({
+            'user_id': user_id,
+            'subscription_type': subscription_type
+        })
+        import base64
+        extra_data = base64.b64encode(extra_data_json.encode('utf-8')).decode('utf-8')
+
         request_data = {
             'partnerCode': self.partner_code,
             'accessKey': self.access_key,
             'requestId': request_id,
-            'amount': amount,
+            'amount': str(amount),  # 💡 nên ép thành chuỗi
             'orderId': order_id,
             'orderInfo': order_info,
             'redirectUrl': self.return_url,
             'ipnUrl': self.ipn_url,
-            'extraData': json.dumps({
-                'user_id': user_id,
-                'subscription_type': subscription_type
-            }),
+            'extraData': extra_data,
             'requestType': 'captureWallet',
             'lang': 'vi'
         }
-        
-        # Tạo chữ ký
+
+        # ✅ Tạo chữ ký chính xác từ raw data
         request_data['signature'] = self.create_signature(request_data)
-        
-        # Gửi request đến MoMo API
+
         try:
             response = requests.post(
                 self.api_endpoint,
                 json=request_data,
                 headers={'Content-Type': 'application/json'}
             )
-            
             return response.json()
         except Exception as e:
             current_app.logger.error(f"Error creating MoMo payment: {str(e)}")
             return {'errorCode': -1, 'message': str(e)}
+
     
     def verify_ipn_signature(self, ipn_params):
         """
@@ -143,8 +135,12 @@ class MomoPayment:
             return {'success': False, 'message': callback_params.get('message', 'Payment failed')}
         
         try:
-            # Lấy thông tin từ extraData
-            extra_data = json.loads(callback_params.get('extraData', '{}'))
+            # Lấy thông tin từ extraData và giải mã base64
+            import base64
+            extra_data_base64 = callback_params.get('extraData', '')
+            extra_data_json = base64.b64decode(extra_data_base64).decode('utf-8')
+            extra_data = json.loads(extra_data_json)
+            
             user_id = extra_data.get('user_id')
             subscription_type = extra_data.get('subscription_type')
             

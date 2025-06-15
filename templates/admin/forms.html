@@ -19,6 +19,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/responsive.js') }}"></script>
     <script src="{{ url_for('static', filename='js/theme-config.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
             --primary-color: #3b82f6;
@@ -620,7 +621,7 @@
                 <li><a href="{{ url_for('admin_form_history') }}"><i class="fas fa-history"></i> <span>Lịch sử biểu mẫu</span></a></li>
                 <li><a href="{{ url_for('web_config') }}"><i class="fas fa-cog"></i> <span>Cấu hình website</span></a></li>
                 <li><a href="{{ url_for('admin_api_settings') }}"><i class="fas fa-key"></i> <span>Quản lý API</span></a></li>
-                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
+                <li><a href="{{ url_for('admin_index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
                 <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a></li>
             </ul>
         </div>
@@ -685,24 +686,6 @@
                     </div>
                 </div>
             </div>
-            <form id="searchForm" action="{{ url_for('admin_form_history') }}" method="GET" class="search-filter">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" name="search_query" placeholder="Tìm kiếm lịch sử..." value="{{ request.args.get('search_query', '') }}">
-                </div>
-                <div class="filter-dropdown">
-                    <select name="user_filter" id="userFilter">
-                        <option value="">Tất cả người dùng</option>
-                        {% for user in users %}
-                            <option value="{{ user.id }}" {% if request.args.get('user_filter')|string == user.id|string %}selected{% endif %}>{{ user.fullname }} (ID: {{ user.id }})</option>
-                        {% endfor %}
-                    </select>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <button type="submit" class="btn btn-sm"><i class="fas fa-filter"></i> Lọc</button>
-                <a href="{{ url_for('admin_form_history') }}" class="btn btn-outline btn-sm"><i class="fas fa-sync-alt"></i> Đặt lại</a>
-            </form>
-
             <div class="card">
                 <div class="card-header">
                     <h2>Danh sách biểu mẫu</h2>
@@ -712,8 +695,8 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th>Loại biểu mẫu</th>
                                 <th>Tiêu đề</th>
-                                
                                 <th>Ngày tạo</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -722,6 +705,7 @@
                             {% for form in forms %}
                             <tr>
                                 <td>{{ form.form_id }}</td>
+                                <td>{{ form.form_data.form_type }}</td>
                                 <td>{{ form.form_data.document_name }}</td>
                                 <td>{{ form.timestamp if form.timestamp else 'N/A' }}</td>
                                 <td class="actions">

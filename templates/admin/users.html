@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ site_title }}</title>
     <meta name="description" content="{{ site_description }}">
-    <meta name="keywords" content="quản lý biểu mẫu, biểu mẫu tự động, AI, nhập liệu, tự động hóa">
-     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ site_title }}</title>
-    <meta name="description" content="{{ site_description }}">
     <meta name="keywords" content="nhập liệu, AI, tự động, biểu mẫu, thông minh, quản lý">
     <meta property="og:title" content=" {{ site_title }}">
     <meta property="og:description" content="{{ site_description }}">
@@ -20,6 +15,7 @@
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
             --primary-color: #3b82f6;
@@ -80,37 +76,13 @@
             font-size: 1.4rem;
         }
 
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
 
-        .sidebar-menu li {
-            margin-bottom: 5px;
-        }
 
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: var(--text-color);
-            text-decoration: none;
-            transition: var(--transition-normal);
-            border-left: 3px solid transparent;
-        }
+       
 
-        .sidebar-menu a:hover, .sidebar-menu a.active {
-            background-color: rgba(59, 130, 246, 0.1);
-            color: var(--primary-color);
-            border-left-color: var(--primary-color);
-        }
+      
 
-        .sidebar-menu i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-        }
+        
 
         .main-content {
             flex: 1;
@@ -355,20 +327,9 @@
                 padding: 20px 0;
             }
 
-            .sidebar-header h2, .sidebar-menu span {
-                display: none;
-            }
+        
 
-            .sidebar-menu a {
-                justify-content: center;
-                padding: 15px;
-            }
-
-            .sidebar-menu i {
-                margin-right: 0;
-                font-size: 1.2rem;
-            }
-
+    
             .main-content {
                 margin-left: 70px;
                 padding: 20px;
@@ -381,6 +342,48 @@
             .table-responsive {
                 overflow-x: auto;
             }
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: var(--transition-normal);
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
         }
     </style>
 </head>
@@ -399,7 +402,7 @@
                 <li><a href="{{ url_for('admin_form_history') }}"><i class="fas fa-history"></i> <span>Lịch sử biểu mẫu</span></a></li>
                 <li><a href="{{ url_for('web_config') }}"><i class="fas fa-cog"></i> <span>Cấu hình website</span></a></li>
                 <li><a href="{{ url_for('admin_api_settings') }}"><i class="fas fa-key"></i> <span>Quản lý API</span></a></li>
-                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
+                <li><a href="{{ url_for('admin_index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
                 <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a></li>
             </ul>
         </div>

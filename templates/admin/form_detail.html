@@ -18,6 +18,7 @@
     {% endif %}
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
             --primary-color: #3b82f6;
@@ -422,7 +423,7 @@
                 <li><a href="{{ url_for('admin_form_history') }}"><i class="fas fa-history"></i> <span>Lịch sử biểu mẫu</span></a></li>
                 <li><a href="{{ url_for('web_config') }}"><i class="fas fa-cog"></i> <span>Cấu hình website</span></a></li>
                 <li><a href="{{ url_for('admin_api_settings') }}"><i class="fas fa-key"></i> <span>Quản lý API</span></a></li>
-                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
+                <li><a href="{{ url_for('admin_index') }}"><i class="fas fa-home"></i> <span>Về trang chủ</span></a></li>
                 <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a></li>
             </ul>
         </div>
@@ -505,31 +506,31 @@
                         <span class="badge badge-primary">{{ (form.form_data|length - 2) if form.form_data else 0 }} trường</span>
                     </div>
                 </div>
-                <div class="form-fields">
-                    {% if form.form_data %}
-                        <div class="form-fields-grid">
-                        {% for field_name, field_value in form.form_data.items() %}
-                            {% if field_name not in ['form_id', 'document_name'] %}
-                            <div class="form-field-card">
-                                <div class="field-header">
-                                    <div class="form-field-name">{{ field_name }}</div>
-                                    <div class="field-type-badge">{{ field_value|type }}</div>
-                                </div>
-                                <div class="form-field-value">
-                                    {% if field_value is sequence and field_value is not string %}
-                                        {{ field_value|join(', ') }}
-                                    {% else %}
-                                        {{ field_value }}
-                                    {% endif %}
-                                </div>
+               <div class="form-fields">
+                {% if form.form_data %}
+                    <div class="form-fields-grid">
+                    {% for field_name, field_value in form.form_data.items() %}
+                        {% if field_name not in ['form_id', 'document_name'] %}
+                        <div class="form-field-card">
+                            <div class="field-header">
+                                <div class="form-field-name">{{ field_name }}</div>
+                                <div class="field-type-badge">{{ field_value.__class__.__name__ }}</div>
                             </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <p>Không có dữ liệu biểu mẫu.</p>
-                    {% endif %}
-                </div>
+                            <div class="form-field-value">
+                                {% if field_value is sequence and field_value is not string %}
+                                    {{ field_value|join(', ') }}
+                                {% else %}
+                                    {{ field_value }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p>Không có dữ liệu biểu mẫu.</p>
+                {% endif %}
             </div>
+
         </div>
     </div>
 

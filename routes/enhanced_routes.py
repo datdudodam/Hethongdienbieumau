@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify,session
 from flask_login import current_user
 from utils.field_matcher import EnhancedFieldMatcher
 from utils.document_utils import get_doc_path, load_document, extract_all_fields,extract_fields
@@ -98,6 +98,48 @@ def register_enhanced_routes(app):
                 filled_fields[field_code] = value  # Gán trực tiếp value đơn giản
 
             return jsonify({"fields": filled_fields})  # ✅ frontend sẽ hiểu được
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+
+    @app.route('/update_field_name', methods=['POST'])
+    def update_field_name():
+        try:
+            data = request.get_json()
+            field_code = data.get("field_code")
+            new_field_name = data.get("new_field_name")
+            
+            if not field_code or not new_field_name:
+                return jsonify({"error": "Field code and new field name are required"}), 400
+
+            doc_path = get_doc_path()
+            if not doc_path:
+                return jsonify({"error": "No document loaded"}), 400
+
+            # Lấy danh sách fields hiện tại
+            fields = extract_all_fields(doc_path)
+            
+            # Tìm và cập nhật field name
+            updated = False
+            for field in fields:
+                if field.get('field_code') == field_code:
+                    field['field_name'] = new_field_name
+                    updated = True
+                    break
+            
+            if not updated:
+                return jsonify({"error": "Field not found"}), 404
+                
+            # Lưu danh sách fields đã cập nhật vào session
+            session['updated_fields'] = fields
+            
+            return jsonify({
+                "success": True,
+                "message": "Field name updated successfully",
+                "field_code": field_code,
+                "new_field_name": new_field_name
+            })
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500

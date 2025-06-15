@@ -527,50 +527,57 @@ body {
       updatePaymentForm();
       
       // Xử lý yêu cầu thanh toán MoMo qua API
-      momoRequestBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        
-        const phoneNumber = document.getElementById("phone_number").value;
-        const subscriptionType = document.getElementById("subscription_type").value;
-        
-        if (!phoneNumber || phoneNumber.length < 10) {
-          alert("Vui lòng nhập số điện thoại MoMo hợp lệ");
-          return;
-        }
-        
-        // Hiển thị trạng thái đang xử lý
-        momoRequestBtn.disabled = true;
-        momoRequestBtn.textContent = "Đang xử lý...";
-        
-        // Gửi yêu cầu đến API
-        fetch('/payment/momo/request', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            phone_number: phoneNumber,
-            subscription_type: subscriptionType
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          momoRequestBtn.disabled = false;
-          momoRequestBtn.textContent = "Gửi yêu cầu";
+            // Xử lý yêu cầu thanh toán MoMo qua API
+        momoRequestBtn.addEventListener("click", function(e) {
+          e.preventDefault();
           
-          if (data.success) {
-            // Chuyển hướng đến trang thanh toán MoMo
-            window.location.href = data.pay_url;
-          } else {
-            alert("Lỗi: " + data.message);
+          const phoneNumber = document.getElementById("phone_number").value;
+          const subscriptionType = document.getElementById("subscription_type").value;
+          
+          if (!phoneNumber || phoneNumber.length < 10) {
+            alert("Vui lòng nhập số điện thoại MoMo hợp lệ");
+            return;
           }
-        })
-        .catch(error => {
-          momoRequestBtn.disabled = false;
-          momoRequestBtn.textContent = "Gửi yêu cầu";
-          alert("Đã xảy ra lỗi: " + error.message);
+          
+          // Hiển thị trạng thái đang xử lý
+          momoRequestBtn.disabled = true;
+          momoRequestBtn.textContent = "Đang xử lý...";
+          
+          // Gửi yêu cầu đến API
+          fetch('/payment/momo/request', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              phone_number: phoneNumber,
+              subscription_type: subscriptionType
+            })
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Lỗi kết nối đến máy chủ. Mã lỗi: ' + response.status);
+            }
+            return response.json();
+          })
+          .then(data => {
+            momoRequestBtn.disabled = false;
+            momoRequestBtn.textContent = "Gửi yêu cầu";
+            
+            if (data.success) {
+              // Chuyển hướng đến trang thanh toán MoMo
+              window.location.href = data.pay_url;
+            } else {
+              alert("Lỗi: " + data.message);
+            }
+          })
+          .catch(error => {
+            momoRequestBtn.disabled = false;
+            momoRequestBtn.textContent = "Gửi yêu cầu";
+            console.error('Error:', error);
+            alert("Đã xảy ra lỗi: " + error.message);
+          });
         });
-      });
       
       // Xử lý submit form
       paymentForm.addEventListener("submit", function(e) {
