@@ -1,11 +1,13 @@
 from flask import render_template, request, jsonify
 from utils.document_utils import load_document, extract_all_fields, get_doc_path, set_doc_path
-
+from utils.field_matcher import EnhancedFieldMatcher
 from models.data_model import load_db, save_db, load_form_history, save_form_history
 import os
 import uuid
 import datetime
-
+from collections import defaultdict
+_field_map_cache = None
+_reverse_field_map_cache = None
 def register_form_routes(app):
     """
     Đăng ký các route cho biểu mẫu
@@ -19,6 +21,92 @@ def register_form_routes(app):
         fields = extract_all_fields(doc_path)
         db_data = load_db()
         return render_template("index.html", fields=fields)
+   
+
+
+    def load_field_mappings(doc_path):
+        """Load and cache field mappings"""
+        global _field_map_cache, _reverse_field_map_cache
+        if _field_map_cache is None or _reverse_field_map_cache is None:
+            fields = extract_all_fields(doc_path)
+            _field_map_cache = {field['field_code']: field['field_name'] for field in fields}
+            _reverse_field_map_cache = {field['field_name'].lower(): field['field_code'] for field in fields}
+        return _field_map_cache, _reverse_field_map_cache
+
+    @app.route('/get_field_history', methods=['POST'])
+    def get_field_history():
+        try:
+            # Lấy field_name hoặc field_code từ request
+            data = request.get_json()
+            field_identifier = data.get('field_name')
+            if not field_identifier:
+                return jsonify({'error': 'Field identifier is required'}), 400
+
+            # Lấy doc_path
+            doc_path = get_doc_path()
+            if not doc_path:
+                return jsonify({'error': 'No document loaded'}), 400
+
+            # Load field mappings from cache
+            field_map, reverse_field_map = load_field_mappings(doc_path)
+
+            # Xác định field_code và field_name
+            field_code = field_identifier
+            field_name = field_map.get(field_identifier)
+            if not field_name:
+                field_code = reverse_field_map.get(field_identifier.lower(), field_identifier)
+                field_name = field_map.get(field_code, field_identifier)
+            from flask_login import current_user
+            # Khởi tạo EnhancedFieldMatcher
+            from config.config import FORM_HISTORY_PATH
+            matcher = EnhancedFieldMatcher(form_history_path=FORM_HISTORY_PATH)
+            user_id = current_user.id if current_user.is_authenticated else None
+
+            # Lấy gợi ý từ EnhancedFieldMatcher với fast_mode
+            suggestions = matcher.match_fields(field_name, threshold=0.65, user_id=user_id, fast_mode=True)
+
+            # Thu thập lịch sử giá trị
+            history = []
+            seen_values = set()
+
+            # Lấy từ suggestions
+            if field_name in suggestions:
+                for suggestion in suggestions[field_name]:
+                    value = suggestion.get('value')
+                    if value and value not in seen_values:
+                        history.append({
+                            'value': value,
+                            'timestamp': suggestion.get('timestamp', ''),
+                            'form_id': suggestion.get('form_id', '')
+                        })
+                        seen_values.add(value)
+
+            # Sử dụng field_index để truy xuất nhanh các bản ghi liên quan
+            normalized_field = matcher._normalize_field_name(field_name)
+            if normalized_field in matcher.field_index:
+                for record_idx, matched_field in matcher.field_index[normalized_field][:5]:  # Giới hạn 5 bản ghi gần nhất
+                    if record_idx < len(matcher.form_history):
+                        form_data = matcher.form_history[record_idx].get('form_data', {})
+                        value = form_data.get(matched_field)
+                        if value and value not in seen_values:
+                            history.append({
+                                'value': value,
+                                'timestamp': matcher.form_history[record_idx].get('timestamp', ''),
+                                'form_id': matcher.form_history[record_idx].get('form_id', '')
+                            })
+                            seen_values.add(value)
+
+            # Sắp xếp theo thời gian giảm dần
+            history.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+
+            # Giới hạn số lượng kết quả trả về (ví dụ: 10 giá trị)
+            unique_history = history[:10]
+
+            return jsonify({'history': unique_history}), 200
+
+        except Exception as e:
+            print(f"Error in get_field_history: {str(e)}")
+            return jsonify({'error': f'Failed to load field history: {str(e)}'}), 500
     @app.route('/save-and-generate-docx', methods=['POST'])
     def save_and_generate_docx():
         try:

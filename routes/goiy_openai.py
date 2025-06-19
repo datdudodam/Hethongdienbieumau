@@ -177,17 +177,15 @@ def GOI_Y_AI(app):
             # Get document context if available
             doc_path = get_doc_path()
             form_context = ""
-            if doc_path:
-                text = load_document(doc_path)
-                form_context = ai_matcher.extract_context_from_form_text(text)
+            field_name = field_code  # Default to field_code
             
-            # Get field name
-            field_name = field_code  # Default to field_code if we can't find the name
             if doc_path:
-                fields = extract_fields(text)
-                field_info = next((f for f in fields if f['field_code'] == field_code), None)
-                if field_info:
-                    field_name = field_info['field_name']
+                try:
+                    text = load_document(doc_path)
+                    form_context = ai_matcher.extract_context_from_form_text(text)
+                except Exception as e:
+                    logger.warning(f"Failed to load document or extract context: {str(e)}")
+                    form_context = ""  # Fallback to empty context if loading fails
             
             # Get improved text
             improved_text = ai_matcher.rewrite_user_input(

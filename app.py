@@ -126,7 +126,7 @@ def inject_config():
 register_routes(app)
 
 def run_app():
-    app.run(host="0.0.0.0", port=5500,debug=True)
+    app.run(host="0.0.0.0", port=55003)
 
 if __name__ == '__main__':
     run_app()

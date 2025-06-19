@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ site_title }}</title>
     <meta name="description" content="{{ site_description }}">
-    <meta name="keywords" content="nhập liệu, AI, tự động, biểu mẫu, thông minh, quản lý">
-    <meta property="og:title" content=" {{ site_title }}">
+    <meta name="keywords" content="nhập liệu, AI, tự động, biểu mẫu, thông minh, quản lý, excel">
+    <meta property="og:title" content="{{ site_title }}">
     <meta property="og:description" content="{{ site_description }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://yourdomain.com/">
@@ -17,6 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="{{ url_for('static', filename='js/field_editor.js') }}" defer></script>
     
     <style>
@@ -31,16 +32,320 @@
             --error-color: #ef4444;
             --card-bg: rgba(255, 255, 255, 0.98);
             --back-button-color: #4f46e5;
+            --excel-button-color: #16a34a;
+        }
+
+        .excel-upload-btn {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px -3px rgba(22, 163, 74, 0.4);
+            background: linear-gradient(to right, var(--excel-button-color), #15803d);
         }
         
-        input.loading {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-6.219-8.56'%3E%3C/path%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 16px 16px;
-            padding-right: 36px;
+        .excel-upload-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -3px rgba(22, 163, 74, 0.5);
+        }
+
+        .excel-upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Improved Multi-select dropdown styles */
+        .multi-select-container {
+            position: relative;
+            margin-top: 0.5rem;
+        }
+
+        .multi-select-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(203, 213, 225, 0.5);
+            border-radius: 0.5rem;
+            min-height: 3rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .multi-select-tags:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+
+        .multi-select-tag {
+            display: flex;
+            align-items: center;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.4rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .multi-select-tag-remove {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        .multi-select-tag-remove:hover {
+            color: #f87171;
+            transform: scale(1.2);
+        }
+
+        .multi-select-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 0.75rem;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15);
+            max-height: 400px;
+            overflow-y: auto;
+            animation: slideDown 0.3s ease-out;
+            padding: 0.5rem 0;
+        }
+
+        .multi-select-search {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 0.75rem 1rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .multi-select-search input {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(203, 213, 225, 0.5);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            background: rgba(255, 255, 255, 0.95);
+            transition: all 0.2s ease;
+        }
+
+        .multi-select-search input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+
+        .multi-select-header {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            background: rgba(79, 70, 229, 0.03);
+            margin: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+        }
+
+        .multi-select-header:hover {
+            background: rgba(79, 70, 229, 0.08);
+        }
+
+        .multi-select-values {
+            display: none;
+            padding: 0.5rem 0;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .multi-select-values.show {
+            display: block;
+        }
+
+        .multi-select-option {
+            padding: 0.75rem 2rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .multi-select-option:hover, .multi-select-option:focus {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary-color);
+            outline: none;
+        }
+
+        .multi-select-option.selected {
+            background: rgba(79, 70, 229, 0.15);
+            font-weight: 500;
+        }
+
+        .multi-select-option input[type="checkbox"] {
+            accent-color: var(--primary-color);
+        }
+
+        .multi-select-actions {
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+            padding: 0.75rem 1rem;
+            background: var(--card-bg);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .multi-select-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .multi-select-actions .select-all {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .multi-select-actions .select-all:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .multi-select-actions .clear-all {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .multi-select-actions .clear-all:hover {
+            background: #fee2e2;
+            transform: translateY(-1px);
+        }
+
+        .history-icon-container {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(203, 213, 225, 0.5);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         
+        .history-icon-container:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .history-icon-container.loading {
+            background: var(--primary-color);
+            color: white;
+            cursor: wait;
+        }
+
+        .history-icon-container.loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --excel-button-color: #22c55e;
+                --primary-color: #6366f1;
+                --primary-hover: #818cf8;
+                --secondary-color: #1e293b;
+                --text-primary: #f8fafc;
+                --text-secondary: #94a3b8;
+                --card-bg: rgba(15, 23, 42, 0.8);
+                --back-button-color: #818cf8;
+            }
+
+            .excel-upload-btn {
+                background: linear-gradient(to right, var(--excel-button-color), #15803d);
+            }
+
+            .multi-select-tags {
+                background: rgba(15, 23, 42, 0.7);
+                border-color: rgba(100, 116, 139, 0.3);
+            }
+
+            .multi-select-tag {
+                background: var(--primary-hover);
+            }
+
+            .multi-select-dropdown {
+                background: rgba(15, 23, 42, 0.95);
+                border-color: rgba(100, 116, 139, 0.2);
+            }
+
+            .multi-select-search input {
+                background: rgba(15, 23, 42, 0.7);
+                border-color: rgba(100, 116, 139, 0.3);
+                color: #f8fafc;
+            }
+
+            .multi-select-header {
+                background: rgba(79, 70, 229, 0.1);
+            }
+
+            .multi-select-header:hover {
+                background: rgba(79, 70, 229, 0.2);
+            }
+
+            .multi-select-values {
+                background: rgba(15, 23, 42, 0.9);
+            }
+
+            .multi-select-option:hover, .multi-select-option:focus {
+                background: rgba(79, 70, 229, 0.2);
+            }
+
+            .multi-select-option.selected {
+                background: rgba(79, 70, 229, 0.3);
+            }
+
+            .multi-select-actions .select-all {
+                background: var(--primary-hover);
+            }
+
+            .multi-select-actions .clear-all {
+                background: #7f1d1d;
+                color: #fecaca;
+            }
+
+            .history-icon-container {
+                background: rgba(15, 23, 42, 0.9);
+                border-color: rgba(100, 116, 139, 0.3);
+                color: #f8fafc;
+            }
+
+            .history-icon-container:hover {
+                background-color: var(--primary-hover);
+                border-color: var(--primary-hover);
+            }
+        }
+
         body {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             font-family: 'Source Sans 3', 'Inter', sans-serif;
@@ -66,20 +371,6 @@
             position: relative;
             overflow: hidden;
             padding: 1.5rem 2rem;
-        }
-        
-        .header-gradient::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            right: -50%;
-            bottom: -50%;
-            background: linear-gradient(to bottom right, 
-                        rgba(255,255,255,0.1) 0%, 
-                        rgba(255,255,255,0) 50%);
-            transform: rotate(30deg);
-            pointer-events: none;
         }
         
         .form-input-group label {
@@ -113,26 +404,79 @@
         }
         
         .suggestions-list {
-            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border-radius: 0.75rem;
-            z-index: 50;
+            position: absolute;
+            width: 100%;
             max-height: 300px;
             overflow-y: auto;
+            z-index: 100;
+            background: var(--card-bg);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
             border: 1px solid rgba(0, 0, 0, 0.05);
+            margin-top: 0.5rem;
+            animation: fadeIn 0.2s ease-out;
         }
         
-        .suggestions-list li {
+        .suggestion-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
             transition: all 0.2s ease;
-        }
-        
-        .suggestions-list li:hover {
-            background-color: rgba(79, 70, 229, 0.08);
-        }
-        
-        .suggestions-list li:not(:last-child) {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            color: var(--text-primary);
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .suggestion-item:hover {
+            background-color: rgba(79, 70, 229, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .suggestion-value {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .suggestion-source {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-left: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .suggestion-header {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background-color: rgba(79, 70, 229, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .suggestions-list {
+                background: rgba(15, 23, 42, 0.95);
+                border-color: rgba(100, 116, 139, 0.2);
+            }
+            
+            .suggestion-item:hover {
+                background-color: rgba(79, 70, 229, 0.2);
+            }
+            
+            .suggestion-source {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+            
+            .suggestion-header {
+                background-color: rgba(79, 70, 229, 0.1);
+                color: #f8fafc;
+            }
         }
         
         .submit-button {
@@ -146,28 +490,6 @@
         .submit-button:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 30px -5px rgba(79, 70, 229, 0.5);
-        }
-        
-        .submit-button::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                to bottom right,
-                rgba(255,255,255,0.3) 0%,
-                rgba(255,255,255,0) 60%
-            );
-            transform: rotate(30deg);
-            transition: all 0.5s ease;
-            opacity: 0;
-        }
-        
-        .submit-button:hover::after {
-            opacity: 1;
-            left: 100%;
         }
         
         .tooltip {
@@ -200,62 +522,81 @@
             flex-wrap: wrap;
         }
         
-        /* Animation */
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(-5px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        .form-input:focus, .form-input:active {
+            transform: scale(1.01);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
         }
         
-        /* Progress indicator */
-        .progress-container {
-            height: 4px;
-            background: rgba(203, 213, 225, 0.3);
-            overflow: hidden;
+        .header-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             position: relative;
         }
         
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(to right, var(--primary-color), var(--primary-hover));
-            width: 0;
-            transition: width 0.4s ease;
-            position: relative;
+        .form-section {
+            padding: 2rem;
         }
         
-        .progress-bar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(
-                to right,
-                rgba(255,255,255,0.8) 0%,
-                rgba(255,255,255,0) 100%
-            );
-            animation: progress-shimmer 1.5s infinite;
+        @media (max-width: 640px) {
+            .form-section {
+                padding: 1.5rem;
+            }
+            
+            .card-container {
+                border-radius: 1rem;
+            }
+            
+            .header-gradient {
+                padding: 1.5rem;
+            }
+            
+            .back-button {
+                position: relative;
+                left: 0;
+                top: 0;
+                margin-bottom: 1rem;
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .header-content {
+                padding-top: 0;
+            }
         }
         
-        @keyframes progress-shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        .auto-fill-all-btn-ai {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px -3px rgba(124, 58, 237, 0.4);
+            background: linear-gradient(to right, #7c3aed, #3b82f6);
         }
-        
-        /* Back button styles */
+
+        .auto-fill-all-btn-ai:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -3px rgba(124, 58, 237, 0.5);
+        }
+
         .back-button {
             position: absolute;
             left: 1.5rem;
@@ -282,148 +623,31 @@
             transform: translateX(-2px);
         }
         
-        /* Header content adjustments */
-        .header-content {
-            position: relative;
-            z-index: 2;
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 640px) {
-            .input-button-group {
-                flex-direction: column;
-            }
-            
-            .action-button {
-                width: 100%;
-                margin-top: 8px;
-            }
-            
-            .button-group {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-            
-            .button-group .action-button {
-                width: 100%;
-                margin-top: 0;
-            }
-            
-            .card-container {
-                border-radius: 1rem;
-            }
-            
-            .header-gradient {
-                padding: 1.5rem;
-            }
-            
-            .back-button {
-                position: relative;
-                left: 0;
-                top: 0;
-                margin-bottom: 1rem;
-                justify-content: center;
-                width: 100%;
-            }
-            
-            .header-content {
-                padding-top: 0;
-            }
-        }
-        
-        /* Dark mode support */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --primary-color: #6366f1;
-                --primary-hover: #818cf8;
-                --secondary-color: #1e293b;
-                --text-primary: #f8fafc;
-                --text-secondary: #94a3b8;
-                --card-bg: rgba(15, 23, 42, 0.8);
-                --back-button-color: #818cf8;
-            }
-            
-            body {
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            }
-            
-            .form-input {
-                background: rgba(15, 23, 42, 0.7);
-                border-color: rgba(100, 116, 139, 0.3);
-                color: #f8fafc;
-            }
-            
-            .form-input:focus {
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
-            }
-            
-            .suggestions-list {
-                background: rgba(15, 23, 42, 0.95);
-                border-color: rgba(100, 116, 139, 0.2);
-            }
-            
-            .suggestions-list li:hover {
-                background-color: rgba(79, 70, 229, 0.2);
-            }
-            
-            .back-button {
-                color: #e0e7ff;
-            }
-        }
-        
-        .auto-fill-all-btn-ai {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 6px 20px -3px rgba(124, 58, 237, 0.4);
-            background: linear-gradient(to right, #7c3aed, #3b82f6);
-        }
-
-        .auto-fill-all-btn-ai:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px -3px rgba(124, 58, 237, 0.5);
-        }
-        
-        /* Enhanced form input effects */
-        .form-input:focus, .form-input:active {
-            transform: scale(1.01);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-        }
-
-        .suggestions-list {
-            z-index: 100;
-            animation: fadeIn 0.2s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Enhanced header layout */
-        .header-inner {
+        .input-button-group {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
+            gap: 0.5rem;
         }
         
-        /* Form section padding */
-        .form-section {
-            padding: 2rem;
+        .input-button-group .form-input {
+            flex: 1;
         }
         
-        @media (max-width: 640px) {
-            .form-section {
-                padding: 1.5rem;
-            }
+        .form-input {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+        
+        input.loading {
+            background-image: none;
+            padding-right: 1rem;
         }
     </style>
 </head>
 <body class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
     <div class="max-w-4xl mx-auto">
         <div class="card-container rounded-2xl overflow-hidden border border-gray-100/30 animate__animated animate__fadeIn">
-            <!-- Header with back button -->
             <div class="header-gradient relative">
                 <a href="/dashboard" class="back-button">
                     <i class="fas fa-arrow-left"></i>
@@ -439,9 +663,7 @@
                 </div>
             </div>
             
-            <!-- Form section -->
             <div class="form-section bg-white">
-                <!-- Auto-fill section with improved layout -->
                 <div class="mb-8 bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 sm:p-5">
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div class="flex-1">
@@ -450,7 +672,7 @@
                                 Chức năng thông minh
                             </h3>
                             <p class="text-sm text-indigo-600 mt-1">
-                                Hệ thống AI sẽ tự động phân tích và điền các trường có thể
+                                Hệ thống AI sẽ tự động phân tích và điền các trường có thể, hoặc nhập từ file Excel
                             </p>
                         </div>
                         
@@ -470,38 +692,32 @@
                                     </span>
                                 </span>
                             </button>
-                            
-                            <button 
-                                type="button" 
-                                onclick="autoFillAllFieldsAI()" 
-                                class="auto-fill-all-btn-ai px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg transition-all flex items-center justify-center font-medium group relative overflow-hidden"
+                            <label 
+                                class="excel-upload-btn px-5 py-2.5 text-white rounded-lg transition-all flex items-center justify-center font-medium group relative overflow-hidden cursor-pointer"
                             >
+                                <input type="file" accept=".xlsx,.xls" id="excel-upload" class="hidden" onchange="handleExcelUpload(event)">
                                 <span class="relative z-10 flex items-center">
-                                    <span class="auto-fill-loading hidden mr-2">
+                                    <span class="excel-upload-loading hidden mr-2">
                                         <i class="fas fa-spinner fa-spin"></i>
                                     </span>
-                                    <span class="auto-fill-icon flex items-center">
-                                        <i class="fas fa-robot mr-2"></i>
-                                        Điền tất cả bằng AI
+                                    <span class="excel-upload-icon flex items-center">
+                                        <i class="fas fa-file-excel mr-2"></i>
+                                        Tải lên Excel
                                     </span>
                                 </span>
+                            </label>
+                            <button 
+                                type="button" 
+                                onclick="resetExcelData()" 
+                                class="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all flex items-center justify-center font-medium"
+                            >
+                                <i class="fas fa-trash mr-2"></i>
+                                Xóa dữ liệu Excel
                             </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Progress indicator for auto-fill -->
-                    <div id="auto-fill-progress" class="mt-4 hidden">
-                        <div class="flex justify-between text-xs text-indigo-600 mb-1">
-                            <span>Đang xử lý...</span>
-                            <span id="auto-fill-progress-text">0%</span>
-                        </div>
-                        <div class="progress-container rounded-full">
-                            <div id="auto-fill-progress-bar" class="progress-bar"></div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Form fields -->
                 <form action="/submit" method="post" class="space-y-6">
                     {% for field in fields %}
                     <div class="form-input-group">
@@ -511,58 +727,96 @@
                         
                         <div class="relative">
                             <div class="flex flex-col sm:flex-row gap-3">
-                                <div class="flex-1">
+                                <div class="flex-1 relative">
                                     <input 
                                         type="text" 
                                         id="{{ field.field_code }}" 
                                         name="{{ field.field_code }}" 
-                                        class="form-input w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder-gray-400"
+                                        class="form-input w-full px-4 py-3 pr-14 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder-gray-400"
                                         required
                                         placeholder="Nhập {{ field.field_name | lower }}"
                                         autocomplete="off"
                                         value="{{ field.value if field.value else '' }}"
+                                        data-field-name="{{ field.field_name }}"
                                     >
+                                    <span 
+                                        class="history-icon-container" 
+                                        data-field-code="{{ field.field_code }}" 
+                                        title="Xem lịch sử giá trị"
+                                        aria-label="Xem lịch sử giá trị của {{ field.field_name }}"
+                                    >
+                                        <i class="fas fa-history"></i>
+                                    </span>
                                 </div>
                                 
                                 <div class="button-group">
-                                    <!-- Auto-fill button -->
                                     <button 
                                         type="button" 
-                                        onclick="autoFillFieldAI('{{ field.field_code }}')" 
-                                        class="action-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300 rounded-lg flex items-center justify-center shadow-sm focus:ring-2 focus:ring-green-200 relative group"
-                                        title="Hỗ trợ AI"
-                                        aria-label="Điền tự động cho {{ field.field_name }}"
+                                        onclick="rewriteFieldAI('{{ field.field_code }}')" 
+                                        class="action-button rewrite px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-300 rounded-lg flex items-center justify-center shadow-sm focus:ring-2 focus:ring-purple-200 relative group"
+                                        title="Viết lại bằng AI"
+                                        aria-label="Viết lại nội dung cho {{ field.field_name }}"
                                     >
-                                        <span class="auto-fill-loading hidden">
+                                        <span class="rewrite-loading hidden">
                                             <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
                                         </span>
-                                        <span class="auto-fill-icon flex items-center">
-                                             <i class="fas fa-robot mr-1.5"></i>
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                                            </svg>
-                                            <span class="hidden sm:inline ml-1">AI</span>
+                                        <span class="rewrite-icon flex items-center">
+                                            <i class="fas fa-pen"></i>
                                         </span>
                                         <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                                            Điền tự động bằng AI cho {{ field.field_name }}
+                                            Viết lại nội dung bằng AI cho {{ field.field_name }}
+                                        </div>
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onclick="toggleMultiSelect('{{ field.field_code }}')" 
+                                        class="action-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300 rounded-lg flex items-center justify-center shadow-sm focus:ring-2 focus:ring-green-200 relative group"
+                                        title="Chọn giá trị từ Excel"
+                                        aria-label="Chọn giá trị từ Excel cho {{ field.field_name }}"
+                                    >
+                                        <span class="excel-select-loading hidden">
+                                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="excel-select-icon flex items-center">
+                                            <i class="fas fa-table"></i>
+                                        </span>
+                                        <div class="tooltip absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                            Chọn giá trị từ Excel cho {{ field.field_name }}
                                         </div>
                                     </button>
                                 </div>
                             </div>
                             
-                            <ul id="suggestions-{{ field.field_code }}" class="suggestions-list absolute z-10 w-full mt-2 rounded-lg border border-gray-100 hidden max-h-60 overflow-y-auto divide-y divide-gray-100">
-                                <!-- Suggestions will be populated here -->
+                            <ul id="suggestions-{{ field.field_code }}" class="suggestions-list absolute z-10 w-full mt-2 rounded-lg border border-gray-100 hidden max-h-60 overflow-y-auto" role="listbox" aria-label="Lịch sử, gợi ý và giá trị Excel cho {{ field.field_name }}">
                             </ul>
+                            
+                            <div id="multi-select-{{ field.field_code }}" class="multi-select-container hidden">
+                                <div class="multi-select-tags" id="multi-select-tags-{{ field.field_code }}" onclick="toggleMultiSelect('{{ field.field_code }}')">
+                                    <span class="text-gray-500 text-sm p-2">Chọn giá trị...</span>
+                                </div>
+                                <div class="multi-select-dropdown hidden" id="multi-select-dropdown-{{ field.field_code }}">
+                                    <div class="multi-select-search">
+                                        <input type="text" placeholder="Tìm kiếm giá trị..." oninput="filterMultiSelectOptions('{{ field.field_code }}', this.value)">
+                                    </div>
+                                    <div class="multi-select-options"></div>
+                                    <div class="multi-select-actions">
+                                        <button type="button" class="select-all" onclick="selectAllValues('{{ field.field_code }}')">Chọn tất cả</button>
+                                        <button type="button" class="clear-all" onclick="clearAllValues('{{ field.field_code }}')">Xóa tất cả</button>
+                                    </div>
+                                </div>
+                            </div>
                             
                             <div id="error-{{ field.field_code }}" class="hidden mt-2 text-red-500 text-sm"></div>
                         </div>
                     </div>
                     {% endfor %}
                     
-                    <!-- Form actions -->
                     <div class="pt-8 flex flex-col sm:flex-row gap-4">
                         <a href="/dashboard" class="flex-1">
                             <button 
@@ -589,183 +843,505 @@
             </div>
         </div>
         
-        <!-- Footer -->
         <div class="text-center mt-8 text-sm text-gray-500 animate__animated animate__fadeIn animate__delay-1s">
-            <p>© 2024 Hệ Thống Nhập Liệu Thông Minh. Bản quyền thuộc về công ty chúng tôi.</p>
-            <p class="mt-1 text-xs text-gray-400">Phiên bản 2.0.0 | Đã được cải tiến với AI</p>
+            <p>© 2025 Hệ Thống Nhập Liệu Thông Minh. Bản quyền thuộc về công ty chúng tôi.</p>
+            <p class="mt-1 text-xs text-gray-400">Phiên bản 2.1.0 | Đã được cải tiến với AI và hỗ trợ Excel</p>
         </div>
     </div>
 
     <script>
-        // Thêm các hàm xử lý tự động điền vào phần script
-       function autoFillField(fieldName) {
-            const input = document.getElementById(fieldName);
-            const errorDiv = document.getElementById(`error-${fieldName}`);
-            const suggestionsList = document.getElementById(`suggestions-${fieldName}`);
+        let historyCache = new Map();
+        let excelDataCache = new Map();
+        const DEBOUNCE_DELAY = 300;
 
-            // Nếu dropdown đang hiển thị thì ẩn đi và không làm gì thêm
-            if (!suggestionsList.classList.contains('hidden')) {
-                suggestionsList.classList.add('hidden');
+        function debounce(func, delay) {
+            let timeoutId;
+            return function (...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        function handleExcelUpload(event) {
+            const fileInput = event.target;
+            const file = fileInput.files[0];
+            const button = fileInput.closest('label');
+            const loadingIcon = button?.querySelector('.excel-upload-loading');
+            const uploadIcon = button?.querySelector('.excel-upload-icon');
+
+            if (!file) return;
+
+            if (!loadingIcon || !uploadIcon || !button) {
+                console.error('Excel upload button elements not found');
+                showToast('Lỗi giao diện, vui lòng tải lại trang', 'error');
                 return;
             }
 
-            // Thêm class loading để tránh gọi nhiều lần
-            input.classList.add('loading');
-            errorDiv.classList.add('hidden');
-            
-            // Ẩn dropdown nếu đang hiển thị
-            suggestionsList.classList.add('hidden');
+            loadingIcon.classList.remove('hidden');
+            uploadIcon.classList.add('hidden');
+            button.disabled = true;
 
-            // Lấy dữ liệu form hiện tại
-            const formData = {};
-            document.querySelectorAll('form input[type="text"]').forEach(input => {
-                if (input.value.trim()) {
-                    formData[input.id] = input.value.trim();
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                    if (jsonData.length <= 1) {
+                        showToast('File Excel không chứa dữ liệu hoặc chỉ có tiêu đề', 'error');
+                        throw new Error('No data in Excel file');
+                    }
+
+                    if (!jsonData[0] || jsonData[0].every(cell => cell == null)) {
+                        showToast('Tiêu đề Excel không hợp lệ', 'error');
+                        throw new Error('Invalid Excel headers');
+                    }
+
+                    excelDataCache.clear();
+                    const excelDataObject = {};
+                    jsonData.forEach((row, index) => {
+                        if (index === 0) return;
+                        row.forEach((cell, colIndex) => {
+                            if (cell != null) {
+                                const header = jsonData[0][colIndex] || `Cột ${colIndex + 1}`;
+                                if (!excelDataObject[header]) {
+                                    excelDataObject[header] = [];
+                                }
+                                excelDataObject[header].push(cell.toString());
+                            }
+                        });
+                    });
+
+                    console.log('Processed Excel data:', excelDataObject);
+
+                    document.querySelectorAll('form input[type="text"]').forEach(input => {
+                        input.dataset.excelValues = JSON.stringify(excelDataObject);
+                        console.log(`Assigned Excel data to input ${input.id}:`, excelDataObject);
+                    });
+
+                    for (const [header, values] of Object.entries(excelDataObject)) {
+                        excelDataCache.set(header, values);
+                    }
+
+                    showToast('Đã tải lên file Excel thành công', 'success');
+                } catch (error) {
+                    console.error('Error processing Excel:', error);
+                    showToast('Có lỗi khi xử lý file Excel: ' + error.message, 'error');
+                } finally {
+                    loadingIcon.classList.add('hidden');
+                    uploadIcon.classList.remove('hidden');
+                    button.disabled = false;
+                    fileInput.value = '';
                 }
+            };
+            reader.onerror = function() {
+                console.error('Error reading file');
+                showToast('Không thể đọc file Excel', 'error');
+                loadingIcon.classList.add('hidden');
+                uploadIcon.classList.remove('hidden');
+                button.disabled = false;
+                fileInput.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function toggleMultiSelect(fieldCode) {
+            const multiSelectContainer = document.getElementById(`multi-select-${fieldCode}`);
+            const dropdown = document.getElementById(`multi-select-dropdown-${fieldCode}`);
+            const input = document.getElementById(fieldCode);
+            const button = input.closest('.form-input-group').querySelector('button[onclick*="toggleMultiSelect"]');
+            const errorDiv = document.getElementById(`error-${fieldCode}`);
+
+            console.log(`Toggling multi-select for ${fieldCode}, excelValues:`, input.dataset.excelValues);
+
+            const excelData = input.dataset.excelValues ? JSON.parse(input.dataset.excelValues) : {};
+            if (Object.keys(excelData).length === 0) {
+                errorDiv.textContent = 'Không có giá trị Excel nào được tải lên';
+                errorDiv.classList.remove('hidden');
+                showToast('Vui lòng tải lên file Excel trước', 'error');
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+            multiSelectContainer.classList.toggle('hidden');
+            dropdown.classList.toggle('hidden');
+
+            if (!dropdown.classList.contains('hidden')) {
+                renderMultiSelectOptions(fieldCode);
+                dropdown.querySelector('.multi-select-search input')?.focus();
+            } else {
+                dropdown.querySelectorAll('.multi-select-values').forEach(values => {
+                    values.classList.remove('show');
+                });
+            }
+        }
+
+        function resetExcelData() {
+            excelDataCache.clear();
+            document.querySelectorAll('form input[type="text"]').forEach(input => {
+                input.dataset.excelValues = '{}';
+            });
+            showToast('Đã xóa dữ liệu Excel', 'success');
+        }
+
+        function renderMultiSelectOptions(fieldCode, searchTerm = '') {
+            const input = document.getElementById(fieldCode);
+            const dropdown = document.getElementById(`multi-select-dropdown-${fieldCode}`);
+            const tagsContainer = document.getElementById(`multi-select-tags-${fieldCode}`);
+            const optionsContainer = dropdown.querySelector('.multi-select-options');
+            const excelData = JSON.parse(input.dataset.excelValues || '{}');
+            const selectedValues = input.value ? input.value.split(', ').filter(v => v) : [];
+
+            optionsContainer.innerHTML = '';
+
+            const headers = Object.keys(excelData).filter(header =>
+                header.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                excelData[header].some(value => value.toLowerCase().includes(searchTerm.toLowerCase()))
+            );
+
+            if (headers.length === 0) {
+                const emptyOption = document.createElement('div');
+                emptyOption.className = 'px-4 py-2 text-gray-500 text-center';
+                emptyOption.textContent = 'Không tìm thấy giá trị phù hợp';
+                optionsContainer.appendChild(emptyOption);
+            } else {
+                headers.forEach(column => {
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'multi-select-header';
+                    headerDiv.tabIndex = 0;
+                    headerDiv.innerHTML = `
+                        <span>${column}</span>
+                        <i class="fas fa-chevron-down"></i>
+                    `;
+                    headerDiv.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleHeaderValues(headerDiv);
+                    };
+                    headerDiv.onkeydown = (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleHeaderValues(headerDiv);
+                        } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const nextHeader = headerDiv.nextElementSibling;
+                            if (nextHeader) nextHeader.focus();
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            const prevHeader = headerDiv.previousElementSibling;
+                            if (prevHeader) prevHeader.focus();
+                        }
+                    };
+
+                    const valuesDiv = document.createElement('div');
+                    valuesDiv.className = 'multi-select-values';
+                    const values = excelData[column].filter(value =>
+                        value.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                    if (values.length === 0) {
+                        const emptyOption = document.createElement('div');
+                        emptyOption.className = 'multi-select-option';
+                        emptyOption.textContent = 'Không có giá trị phù hợp';
+                        valuesDiv.appendChild(emptyOption);
+                    } else {
+                        values.forEach(value => {
+                            const option = document.createElement('div');
+                            option.className = `multi-select-option ${selectedValues.includes(value) ? 'selected' : ''}`;
+                            option.tabIndex = 0;
+                            option.innerHTML = `
+                                <input type="checkbox" ${selectedValues.includes(value) ? 'checked' : ''}>
+                                <span>${value}</span>
+                            `;
+                            option.dataset.column = column;
+                            option.onclick = (e) => {
+                                e.stopPropagation();
+                                toggleSelectValue(fieldCode, value);
+                            };
+                            option.onkeydown = (e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    toggleSelectValue(fieldCode, value);
+                                } else if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    const nextOption = option.nextElementSibling;
+                                    if (nextOption) nextOption.focus();
+                                } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    const prevOption = option.previousElementSibling;
+                                    if (prevOption) prevOption.focus();
+                                    else headerDiv.focus();
+                                } else if (e.key === 'Escape') {
+                                    dropdown.classList.add('hidden');
+                                    multiSelectContainer.classList.add('hidden');
+                                    input.focus();
+                                }
+                            };
+                            valuesDiv.appendChild(option);
+                        });
+                    }
+
+                    optionsContainer.appendChild(headerDiv);
+                    optionsContainer.appendChild(valuesDiv);
+                });
+            }
+
+            renderSelectedTags(fieldCode, selectedValues);
+        }
+
+        function filterMultiSelectOptions(fieldCode, searchTerm) {
+            debounce(() => renderMultiSelectOptions(fieldCode, searchTerm), DEBOUNCE_DELAY)();
+        }
+
+        function toggleHeaderValues(headerDiv) {
+            const valuesDiv = headerDiv.nextElementSibling;
+            if (valuesDiv) {
+                valuesDiv.classList.toggle('show');
+                headerDiv.parentElement.querySelectorAll('.multi-select-values').forEach(other => {
+                    if (other !== valuesDiv) other.classList.remove('show');
+                });
+                const icon = headerDiv.querySelector('i');
+                icon.className = valuesDiv.classList.contains('show') ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+                if (valuesDiv.classList.contains('show')) {
+                    valuesDiv.querySelector('.multi-select-option')?.focus();
+                }
+            }
+        }
+
+        function toggleSelectValue(fieldCode, value) {
+            const input = document.getElementById(fieldCode);
+            let selectedValues = input.value ? input.value.split(', ').filter(v => v) : [];
+
+            if (selectedValues.includes(value)) {
+                selectedValues = selectedValues.filter(v => v !== value);
+            } else {
+                selectedValues.push(value);
+            }
+
+            input.value = selectedValues.join(', ');
+            renderMultiSelectOptions(fieldCode);
+        }
+
+        function selectAllValues(fieldCode) {
+            const input = document.getElementById(fieldCode);
+            const excelData = JSON.parse(input.dataset.excelValues || '{}');
+            const headers = Object.keys(excelData);
+            let selectedValues = input.value ? input.value.split(', ').filter(v => v) : [];
+
+            headers.forEach(column => {
+                excelData[column].forEach(value => {
+                    if (!selectedValues.includes(value)) {
+                        selectedValues.push(value);
+                    }
+                });
             });
 
-            // Thêm delay tối thiểu để hiệu ứng loading rõ ràng
-            const loadingPromise = new Promise(resolve => setTimeout(resolve, 300));
+            input.value = selectedValues.join(', ');
+            renderMultiSelectOptions(fieldCode);
+            showToast('Đã chọn tất cả giá trị', 'success');
+        }
+
+        function clearAllValues(fieldCode) {
+            const input = document.getElementById(fieldCode);
+            input.value = '';
+            renderMultiSelectOptions(fieldCode);
+            showToast('Đã xóa tất cả giá trị', 'success');
+        }
+
+        function renderSelectedTags(fieldCode, selectedValues) {
+            const tagsContainer = document.getElementById(`multi-select-tags-${fieldCode}`);
+            tagsContainer.innerHTML = '';
+
+            if (selectedValues.length === 0) {
+                tagsContainer.innerHTML = '<span class="text-gray-500 text-sm p-2">Chọn giá trị...</span>';
+            } else {
+                selectedValues.forEach(value => {
+                    const tag = document.createElement('div');
+                    tag.className = 'multi-select-tag';
+                    tag.innerHTML = `
+                        <span>${value}</span>
+                        <span class="multi-select-tag-remove" onclick="toggleSelectValue('${fieldCode}', '${value}')">✕</span>
+                    `;
+                    tagsContainer.appendChild(tag);
+                });
+                const countTag = document.createElement('div');
+                countTag.className = 'multi-select-tag bg-gray-100 text-gray-600';
+                countTag.textContent = `+${selectedValues.length} đã chọn`;
+                tagsContainer.appendChild(countTag);
+            }
+        }
+
+        function fetchFieldData(fieldCode, fieldName, inputValue = '') {
+            if (historyCache.has(fieldCode)) {
+                return Promise.resolve({ history: historyCache.get(fieldCode), suggestions: [] });
+            }
             
-            // Gọi API
-            const apiPromise = fetch('/auto_fill_field', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    field_name: fieldName,
-                    partial_form: formData
-                })
-            });
+            const iconContainer = document.querySelector(`.history-icon-container[data-field-code="${fieldCode}"]`);
+            if (iconContainer) iconContainer.classList.add('loading');
 
-            Promise.all([loadingPromise, apiPromise])
-            .then(([_, response]) => {
+            return fetch('/get_field_history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field_name: fieldName })
+            })
+            .then(response => {
                 if (!response.ok) {
                     return response.json().then(err => { throw err; });
                 }
                 return response.json();
             })
             .then(data => {
-                if (data.all_suggestions?.length > 0) {
-                    renderSuggestions(input, suggestionsList, data.all_suggestions);
-                    suggestionsList.classList.remove('hidden');
-                    
-                    // Focus vào dropdown để có thể dùng keyboard navigation
-                    suggestionsList.querySelector('li')?.focus();
-                } else {
-                    errorDiv.textContent = data.error || 'Không tìm thấy giá trị phù hợp';
-                    errorDiv.classList.remove('hidden');
+                if (data.history?.length >= 0) {
+                    historyCache.set(fieldCode, data.history);
+                    if (historyCache.size > 50) {
+                        historyCache.delete(historyCache.keys().next().value);
+                    }
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                errorDiv.textContent = error.error || 'Có lỗi xảy ra khi điền tự động. Vui lòng thử lại.';
-                errorDiv.classList.remove('hidden');
+                return { history: data.history || [], suggestions: [] };
             })
             .finally(() => {
-                input.classList.remove('loading');
+                if (iconContainer) iconContainer.classList.remove('loading');
             });
         }
 
-        function renderSuggestions(input, container, suggestions) {
+        function renderSuggestions(input, container, data, inputValue = '') {
             container.innerHTML = '';
-            
-            // Tạo tiêu đề cho dropdown
-            const dropdownHeader = document.createElement('li');
-            dropdownHeader.className = 'px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm';
-            dropdownHeader.textContent = 'Chọn một giá trị phù hợp:';
-            container.appendChild(dropdownHeader);
-            
-            // Thêm các gợi ý vào dropdown
-            suggestions.forEach((suggestion, index) => {
-                const suggestionItem = document.createElement('li');
-                suggestionItem.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200';
-                suggestionItem.tabIndex = 0; // Cho phép focus
-                suggestionItem.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <span class="font-medium">${suggestion.value}</span>
-                        </div>
-                        <div class="text-xs text-gray-500">
-                            <span>${suggestion.matched_field}</span>
-                            <span class="ml-1">(${Math.round(suggestion.similarity * 100)}%)</span>
-                        </div>
-                    </div>
-                `;
-                
-                // Xử lý click
-                suggestionItem.onclick = () => selectSuggestion(input, container, suggestion.value);
-                
-                // Xử lý keyboard
-                suggestionItem.onkeydown = (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        selectSuggestion(input, container, suggestion.value);
-                    } else if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const next = suggestionItem.nextElementSibling;
-                        if (next) next.focus();
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        const prev = suggestionItem.previousElementSibling;
-                        (prev || container.querySelector('li:last-child')).focus();
-                    }
-                };
-                
-                container.appendChild(suggestionItem);
-            });
-        }
-        function handleInputClick(event) {
-            const input = event.target;
-            const suggestionsList = document.getElementById(`suggestions-${input.id}`);
-            
-            // Đóng tất cả dropdown khác trước khi mở dropdown mới
-            document.querySelectorAll('.suggestions-list').forEach(dropdown => {
-                if (dropdown.id !== `suggestions-${input.id}`) {
-                    dropdown.classList.add('hidden');
+            const fieldCode = input.id;
+            const fieldName = input.dataset.fieldName || fieldCode;
+            const maxItems = 5;
+            const excelData = JSON.parse(input.dataset.excelValues || '{}');
+
+            const filterItems = (items) => {
+                if (!inputValue.trim()) return items.slice(0, maxItems);
+                return items
+                    .filter(item => item.value.toLowerCase().includes(inputValue.toLowerCase()))
+                    .slice(0, maxItems);
+            };
+
+            if (Object.keys(excelData).length > 0) {
+                const excelHeader = document.createElement('li');
+                excelHeader.className = 'suggestion-header';
+                excelHeader.textContent = 'Giá trị từ Excel';
+                container.appendChild(excelHeader);
+
+                Object.keys(excelData).forEach(column => {
+                    const filteredValues = filterItems(excelData[column].map(value => ({ value })));
+                    filteredValues.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'suggestion-item';
+                        li.tabIndex = 0;
+                        li.role = 'option';
+                        li.innerHTML = `
+                            <span class="suggestion-value">${item.value}</span>
+                            <span class="suggestion-source">${column}</span>
+                        `;
+                        li.onclick = () => selectSuggestion(input, container, item.value);
+                        li.onkeydown = handleSuggestionKeyboardNavigation;
+                        container.appendChild(li);
+                    });
+                });
+            }
+
+            if (data.history.length) {
+                const historyHeader = document.createElement('li');
+                historyHeader.className = 'suggestion-header';
+                historyHeader.textContent = 'Lịch sử giá trị';
+                container.appendChild(historyHeader);
+
+                const filteredHistory = filterItems(data.history);
+                filteredHistory.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'suggestion-item';
+                    li.tabIndex = 0;
+                    li.role = 'option';
+                    li.innerHTML = `
+                        <span class="suggestion-value">${item.value}</span>
+                        <span class="suggestion-source">${new Date(item.timestamp).toLocaleDateString('vi-VN')}</span>
+                    `;
+                    li.onclick = () => selectSuggestion(input, container, item.value);
+                    li.onkeydown = handleSuggestionKeyboardNavigation;
+                    container.appendChild(li);
+                });
+
+                if (data.history.length > maxItems) {
+                    const viewMore = document.createElement('li');
+                    viewMore.className = 'suggestion-item text-blue-600 font-medium';
+                    viewMore.tabIndex = 0;
+                    viewMore.textContent = 'Xem thêm lịch sử...';
+                    viewMore.onclick = () => {
+                        console.log('Xem thêm lịch sử:', data.history);
+                    };
+                    viewMore.onkeydown = handleSuggestionKeyboardNavigation;
+                    container.appendChild(viewMore);
                 }
-            });
-            
-            // Nếu có giá trị, hiển thị dropdown với giá trị hiện tại
-            if (input.value.trim()) {
-                suggestionsList.innerHTML = `
-                    <li class="px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm">
-                        Giá trị hiện tại
-                    </li>
-                    <li class="px-4 py-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center">
-                        <span>${input.value.trim()}</span>
-                        <span class="text-xs text-gray-500">Nhấn để giữ nguyên</span>
-                    </li>
-                    <li class="px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm">
-                        Tùy chọn khác
-                    </li>
-                    <li class="px-4 py-3 hover:bg-blue-50 cursor-pointer" onclick="autoFillField('${input.id}')">
-                        <span class="text-indigo-600 flex items-center">
-                            <i class="fas fa-magic mr-2"></i>
-                            Điền tự động
-                        </span>
-                    </li>
-                `;
-                suggestionsList.classList.remove('hidden');
-            } 
-            // Nếu không có giá trị, thực hiện auto-fill
-            else {
-                autoFillField(input.id);
+            }
+
+            if (data.suggestions.length) {
+                const suggestionsHeader = document.createElement('li');
+                suggestionsHeader.className = 'suggestion-header';
+                suggestionsHeader.textContent = 'Gợi ý AI';
+                container.appendChild(suggestionsHeader);
+
+                const filteredSuggestions = filterItems(data.suggestions);
+                filteredSuggestions.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'suggestion-item';
+                    li.tabIndex = 0;
+                    li.role = 'option';
+                    li.innerHTML = `
+                        <span class="suggestion-value">${item.value}</span>
+                        <span class="suggestion-source">AI (${Math.round(item.similarity * 100)}%)</span>
+                    `;
+                    li.onclick = () => selectSuggestion(input, container, item.value);
+                    li.onkeydown = handleSuggestionKeyboardNavigation;
+                    container.appendChild(li);
+                });
+            }
+
+            if (!Object.keys(excelData).length && !data.history.length && !data.suggestions.length) {
+                const emptyItem = document.createElement('li');
+                emptyItem.className = 'suggestion-item text-gray-500';
+                emptyItem.textContent = 'Không có lịch sử, gợi ý hoặc giá trị Excel';
+                container.appendChild(emptyItem);
+            }
+
+            if (container.children.length > 0) {
+                container.classList.remove('hidden');
+                container.querySelector('li')?.focus();
             }
         }
 
         function selectSuggestion(input, container, value) {
-            input.value = value;
-            container.classList.add('hidden');
-            input.focus();
-            
-            // Thêm hiệu ứng để người dùng biết giá trị đã được chọn
-            input.classList.add('bg-green-50', 'border-green-200');
-            setTimeout(() => {
-                input.classList.remove('bg-green-50', 'border-green-200');
-            }, 1000);
+            const currentValues = input.value ? input.value.split(', ').filter(v => v) : [];
+            if (!currentValues.includes(value)) {
+                currentValues.push(value);
+                input.value = currentValues.join(', ');
+                input.classList.add('bg-green-50', 'border-green-200');
+                setTimeout(() => {
+                    input.classList.remove('bg-green-50', 'border-green-200');
+                }, 1000);
+            }
+            container.querySelector('li')?.focus();
         }
-        
+
+        function handleSuggestionKeyboardNavigation(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.target.click();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const next = e.target.nextElementSibling;
+                if (next) next.focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = e.target.previousElementSibling;
+                if (prev) prev.focus();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.target.closest('.suggestions-list').classList.add('hidden');
+                e.target.closest('.form-input-group').querySelector('input').focus();
+            }
+        }
 
         function autoFillAllFields() {
             const inputs = document.querySelectorAll('form input[type="text"]');
@@ -779,9 +1355,7 @@
 
             fetch('/auto_fill_all_fields', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
             })
             .then(response => {
                 if (!response.ok) {
@@ -792,7 +1366,6 @@
             .then(data => {
                 if (data.fields && typeof data.fields === 'object') {
                     let filledCount = 0;
-                    // Tối ưu: Xử lý tất cả các trường cùng một lúc để tăng hiệu suất
                     const fieldsToFill = [];
                     
                     for (const fieldName in data.fields) {
@@ -806,10 +1379,12 @@
                         }
                     }
                     
-                    // Áp dụng các giá trị vào form
                     fieldsToFill.forEach(({ input, value, fieldName }) => {
-                        input.value = value;
-                        // Hiệu ứng highlight cho trường được điền
+                        const currentValues = input.value ? input.value.split(', ').filter(v => v) : [];
+                        if (!currentValues.includes(value)) {
+                            currentValues.push(value);
+                            input.value = currentValues.join(', ');
+                        }
                         input.classList.add('bg-yellow-50');
                         setTimeout(() => {
                             input.classList.remove('bg-yellow-50');
@@ -837,250 +1412,210 @@
             });
         }
 
+        function rewriteFieldAI(fieldCode) {
+            const input = document.getElementById(fieldCode);
+            const formGroup = input.closest('.form-input-group');
+            const button = formGroup.querySelector('button[onclick*="rewriteFieldAI"]');
+            const loadingIcon = button?.querySelector('.rewrite-loading');
+            const rewriteIcon = button?.querySelector('.rewrite-icon');
+            const errorDiv = document.getElementById(`error-${fieldCode}`);
 
-    function initializeEventListeners() {
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', handleFormSubmit);
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeEventListeners();
-
-        const inputs = document.querySelectorAll('form input[type="text"]');
-
-        inputs.forEach(input => {
-            const fillIfEmpty = () => {
-                if (!input.value.trim()) {
-                    autoFillField(input.id);
-                }
-            };
-
-            input.addEventListener('click', handleInputClick);
-            input.addEventListener('focus', handleInputClick);
-        });
-
-        // Đóng dropdown khi click ra ngoài
-        document.addEventListener('click', function(event) {
-            const isInput = event.target.matches('input[type="text"]');
-            const isSuggestion = event.target.closest('.suggestions-list');
-
-            if (!isInput && !isSuggestion) {
-                document.querySelectorAll('.suggestions-list').forEach(dropdown => {
-                    dropdown.classList.add('hidden');
-                });
-            }
-        });
-    });
-
-   
-
-   
-    function autoFillFieldAI(fieldName) {
-        const input = document.getElementById(fieldName);
-        if (!input) {
-            console.error(`Không tìm thấy input với id = ${fieldName}`);
-            return;
-        }
-
-    // Tìm các phần tử UI liên quan
-        const formGroup = input.closest('.form-input-group');
-        const button = formGroup.querySelector('button[onclick*="autoFillFieldAI"]');
-        const loadingIcon = button?.querySelector('.auto-fill-loading');
-        const fillIcon = button?.querySelector('.auto-fill-icon');
-        const errorDiv = document.getElementById(`error-${fieldName}`);
-
-        // Lấy dữ liệu hiện tại từ form
-        const formInputs = document.querySelectorAll('form input[type="text"]');
-        const formData = {};
-        formInputs.forEach(i => {
-            if (i.value.trim()) {
-                formData[i.id] = i.value.trim();
-            }
-        });
-
-        // Hiển thị trạng thái loading
-        if (loadingIcon) loadingIcon.classList.remove('hidden');
-        if (fillIcon) fillIcon.classList.add('hidden');
-        if (button) button.disabled = true;
-        if (errorDiv) errorDiv.classList.add('hidden');
-
-        // Gọi API AI_FILL
-        fetch('/AI_FILL', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                field_name: fieldName,
-                partial_form: formData
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
-            if (data.value) {
-                input.value = data.value;
-                showToast(`Đã tự động điền "${data.field_name || fieldName}" bằng AI`, 'success');
-                
-                // Hiển thị chi tiết nếu có
-                if (data.details) {
-                    showAutoFillDetails(input, data);
-                }
-            } else {
-                const errorMsg = data.message || 'Không tìm thấy dữ liệu phù hợp.';
-                if (errorDiv) {
-                    errorDiv.textContent = errorMsg;
-                    errorDiv.classList.remove('hidden');
-                }
-                showToast(errorMsg, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Lỗi:', error);
-            if (errorDiv) {
-                errorDiv.textContent = error.error || 'Có lỗi xảy ra khi gọi AI.';
+            if (!input.value.trim()) {
+                errorDiv.textContent = 'Vui lòng nhập nội dung cần viết lại';
                 errorDiv.classList.remove('hidden');
+                showToast('Vui lòng nhập nội dung trước khi viết lại', 'error');
+                return;
             }
-            showToast(error.message || 'Có lỗi khi điền tự động', 'error');
-        })
-        .finally(() => {
-            if (loadingIcon) loadingIcon.classList.add('hidden');
-            if (fillIcon) fillIcon.classList.remove('hidden');
-            if (button) button.disabled = false;
-        });
-    }
-        function autoFillAllFieldsAI() {
-            const button = document.querySelector('button[onclick="autoFillAllFieldsAI()"]');
-            const loadingIcon = button?.querySelector('.auto-fill-loading');
-            const fillIcon = button?.querySelector('.auto-fill-icon');
-            const progressContainer = document.getElementById('auto-fill-progress');
-            const progressBar = document.getElementById('auto-fill-progress-bar');
-            const progressText = document.getElementById('auto-fill-progress-text');
 
-            // Lấy dữ liệu form hiện tại
-            const formData = {};
-            document.querySelectorAll('form input[type="text"]').forEach(input => {
-                if (input.value.trim()) {
-                    formData[input.id] = input.value.trim();
-                }
-            });
-
-            // Hiển thị trạng thái loading
             if (loadingIcon) loadingIcon.classList.remove('hidden');
-            if (fillIcon) fillIcon.classList.add('hidden');
+            if (rewriteIcon) rewriteIcon.classList.add('hidden');
             if (button) button.disabled = true;
-            if (progressContainer) progressContainer.classList.remove('hidden');
-            if (progressBar) progressBar.style.width = '0%';
-            if (progressText) progressText.textContent = '0%';
+            if (errorDiv) errorDiv.classList.add('hidden');
 
-            // Gọi API AI_FILL_ALL
-            fetch('/AI_FILL_ALL', {
+            fetch('/AI_REWRITE', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    partial_form: formData
+                    field_code: fieldCode,
+                    user_input: input.value.trim(),
+                    form_type: '{{ fields[0].form_type if fields else "" }}'
                 })
             })
             .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw err; });
-                }
+                if (!response.ok) return response.json().then(err => { throw err; });
                 return response.json();
             })
             .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                if (data.fields && typeof data.fields === 'object') {
-                    let filledCount = 0;
-                    const totalFields = data.total_fields || Object.keys(data.fields).length;
-                    
-                    // Cập nhật progress bar
-                    const updateProgress = () => {
-                        const progress = Math.round((filledCount / totalFields) * 100);
-                        if (progressBar) progressBar.style.width = `${progress}%`;
-                        if (progressText) progressText.textContent = `${progress}%`;
-                    };
-                    
-                    // Điền từng trường với hiệu ứng tuần tự
-                    const fieldKeys = Object.keys(data.fields);
-                    fieldKeys.forEach((fieldCode, index) => {
-                        setTimeout(() => {
-                            const fieldData = data.fields[fieldCode];
-                            const input = document.getElementById(fieldCode);
-                            const errorDiv = document.getElementById(`error-${fieldCode}`);
-                            
-                            if (input && fieldData.value) {
-                                input.value = fieldData.value;
-                                // Hiệu ứng highlight
-                                input.classList.add('bg-blue-50', 'border-blue-200');
-                                setTimeout(() => {
-                                    input.classList.remove('bg-blue-50', 'border-blue-200');
-                                }, 2000);
-                                
-                                // Hiển thị tooltip lý do
-                                if (fieldData.reason) {
-                                    showAutoFillTooltip(input, fieldData.reason);
-                                }
-                                
-                                filledCount++;
-                                updateProgress();
-                            }
-                        }, index * 200); // Delay mỗi trường 200ms để tạo hiệu ứng tuần tự
-                    });
-                    
-                    // Hiển thị thông báo khi hoàn thành
+                if (data.error) throw new Error(data.error);
+                if (data.improved) {
+                    input.value = data.improved;
+                    showToast(`Đã viết lại nội dung cho "${data.field_name || input.dataset.fieldName}"`, 'success');
+                    input.classList.add('bg-purple-50', 'border-purple-200');
                     setTimeout(() => {
-                        showToast(`Đã điền tự động ${filledCount}/${totalFields} trường bằng AI`, 'success');
-                    }, fieldKeys.length * 200 + 500);
+                        input.classList.remove('bg-purple-50', 'border-purple-200');
+                    }, 1000);
                 } else {
-                    showToast('Không có trường nào được điền tự động', 'info');
+                    errorDiv.textContent = data.message || 'Không thể cải thiện nội dung';
+                    errorDiv.classList.remove('hidden');
+                    showToast(errorDiv.textContent, 'error');
                 }
             })
             .catch(error => {
-                console.error('Lỗi:', error);
-                showToast(error.message || 'Có lỗi khi điền tự động tất cả bằng AI', 'error');
+                errorDiv.textContent = error.error || 'Có lỗi khi gọi AI viết lại';
+                errorDiv.classList.remove('hidden');
+                showToast(error.message || 'Có lỗi khi viết lại nội dung', 'error');
             })
             .finally(() => {
                 if (loadingIcon) loadingIcon.classList.add('hidden');
-                if (fillIcon) fillIcon.classList.remove('hidden');
+                if (rewriteIcon) rewriteIcon.classList.remove('hidden');
                 if (button) button.disabled = false;
-                
-                // Ẩn progress bar sau 3 giây
-                setTimeout(() => {
-                    if (progressContainer) progressContainer.classList.add('hidden');
-                }, 3000);
             });
         }
 
-        function showAutoFillTooltip(input, reason) {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'absolute z-50 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-normal max-w-xs';
-            tooltip.textContent = `AI gợi ý: ${reason}`;
-            tooltip.style.top = `${input.offsetTop - 30}px`;
-            tooltip.style.left = `${input.offsetLeft}px`;
-            
-            input.parentNode.appendChild(tooltip);
-            
-            // Tự động ẩn sau 5 giây
-            setTimeout(() => {
-                tooltip.remove();
-            }, 5000);
+        function handleKeyboardNavigation(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.target.click();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const next = e.target.nextElementSibling;
+                if (next) next.focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = e.target.previousElementSibling;
+                if (prev) prev.focus();
+            } else if (e.key === 'Escape') {
+                e.target.closest('.suggestions-list').classList.add('hidden');
+                e.target.closest('.form-input-group').querySelector('input').focus();
+            }
         }
 
-        
+        const debouncedInputHandler = debounce((input, suggestionsList) => {
+            const fieldCode = input.id;
+            const fieldName = input.dataset.fieldName || fieldCode;
+            const errorDiv = document.getElementById(`error-${fieldCode}`);
+
+            if (!suggestionsList.classList.contains('hidden')) {
+                if (errorDiv) errorDiv.classList.add('hidden');
+                fetchFieldData(fieldCode, fieldName, input.value)
+                    .then(data => {
+                        renderSuggestions(input, suggestionsList, data, input.value);
+                    })
+                    .catch(error => {
+                        if (errorDiv) {
+                            errorDiv.textContent = error.error || 'Có lỗi khi tải dữ liệu';
+                            errorDiv.classList.remove('hidden');
+                        }
+                    });
+            }
+        }, DEBOUNCE_DELAY);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('form input[type="text"]');
+            inputs.forEach(input => {
+                const suggestionsList = document.getElementById(`suggestions-${input.id}`);
+                input.addEventListener('input', () => debouncedInputHandler(input, suggestionsList));
+            });
+
+            document.querySelectorAll('.history-icon-container').forEach(icon => {
+                icon.addEventListener('click', () => {
+                    const fieldCode = icon.dataset.fieldCode;
+                    const input = document.getElementById(fieldCode);
+                    const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
+                    const errorDiv = document.getElementById(`error-${fieldCode}`);
+
+                    if (!suggestionsList.classList.contains('hidden')) {
+                        suggestionsList.classList.add('hidden');
+                        return;
+                    }
+
+                    document.querySelectorAll('.suggestions-list').forEach(dropdown => {
+                        if (dropdown.id !== `suggestions-${fieldCode}`) {
+                            dropdown.classList.add('hidden');
+                        }
+                    });
+
+                    document.querySelectorAll('.multi-select-container').forEach(container => {
+                        container.classList.add('hidden');
+                        container.querySelector('.multi-select-dropdown')?.classList.add('hidden');
+                    });
+
+                    if (errorDiv) errorDiv.classList.add('hidden');
+                    input.classList.add('loading');
+
+                    fetchFieldData(fieldCode, input.dataset.fieldName, input.value)
+                        .then(data => {
+                            renderSuggestions(input, suggestionsList, data, input.value);
+                        })
+                        .catch(error => {
+                            if (errorDiv) {
+                                errorDiv.textContent = error.error || 'Có lỗi khi tải dữ liệu';
+                                errorDiv.classList.remove('hidden');
+                            }
+                        })
+                        .finally(() => {
+                            input.classList.remove('loading');
+                        });
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.matches('input[type="text"]') && 
+                    !e.target.closest('.suggestions-list') && 
+                    !e.target.closest('.history-icon-container') && 
+                    !e.target.closest('.multi-select-container') && 
+                    !e.target.closest('.multi-select-dropdown')) {
+                    document.querySelectorAll('.suggestions-list').forEach(dropdown => {
+                        dropdown.classList.add('hidden');
+                    });
+                    document.querySelectorAll('.multi-select-container').forEach(container => {
+                        container.classList.add('hidden');
+                        container.querySelector('.multi-select-dropdown')?.classList.add('hidden');
+                        container.querySelectorAll('.multi-select-values').forEach(values => {
+                            values.classList.remove('show');
+                        });
+                    });
+                }
+            });
+        });
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium animate__animated animate__fadeInUp ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.replace('animate__fadeInUp', 'animate__fadeOutDown');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        function saveAndGenerateDocx() {
+            let isValid = true;
+            document.querySelectorAll('form input[type="text"][required]').forEach(input => {
+                if (!input.value.trim()) {
+                    isValid = false;
+                    const errorDiv = document.getElementById(`error-${input.id}`);
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Vui lòng điền thông tin vào trường này';
+                        errorDiv.classList.remove('hidden');
+                    }
+                }
+            });
+            
+            if (isValid) {
+                generateDocx();
+            } else {
+                showToast('Vui lòng điền đầy đủ các trường bắt buộc', 'error');
+                const firstError = document.querySelector('[id^="error-"]:not(.hidden)');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
         function generateDocx() { 
             const button = event.target.closest('button');
             const originalContent = button.innerHTML;
@@ -1097,11 +1632,9 @@
                 }
             });
             
-            // Tạo tên tài liệu tự động dựa trên nội dung form
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             let documentName = 'Tài-liệu-' + timestamp;
             
-            // Nếu có trường quan trọng, sử dụng nó làm tên tài liệu
             if (formData.get('contract_number')) {
                 documentName = 'Hợp-đồng-' + formData.get('contract_number');
             } else if (formData.get('customer_name')) {
@@ -1157,165 +1690,6 @@
                 showToast(error.message || 'Có lỗi xảy ra khi tạo tài liệu. Vui lòng thử lại.', 'error');
             });
         }
-
-        function loadMlSuggestions(fieldCode) {
-            const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
-            const input = document.getElementById(fieldCode);
-            const button = input.nextElementSibling.querySelector('button[onclick^="loadMlSuggestions"]');
-            const loadingIcon = button.querySelector('.ml-suggestion-loading');
-            const suggestionIcon = button.querySelector('.ml-suggestion-icon');
-            const errorDiv = document.getElementById(`error-${fieldCode}`);
-            
-            const formData = {};
-            document.querySelectorAll('form input[type="text"]').forEach(input => {
-                if (input.value.trim()) {
-                    formData[input.id] = input.value.trim();
-                }
-            });
-            
-            let contextText = Object.values(formData).join(' ');
-    
-            loadingIcon.classList.remove('hidden');
-            suggestionIcon.classList.add('hidden');
-            button.disabled = true;
-            errorDiv.classList.add('hidden');
-    
-            fetch('/get_ml_suggestions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    field_code: fieldCode,
-                    partial_form: formData,
-                    context_text: contextText
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                suggestionsList.innerHTML = '';
-                if (data.suggestions && data.suggestions.length > 0) {
-                    data.suggestions.forEach((suggestion, index) => {
-                        const li = document.createElement('li');
-                        li.className = 'px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors duration-200';
-                        li.textContent = suggestion;
-                        li.setAttribute('role', 'option');
-                        li.setAttribute('tabindex', '0');
-                        li.onclick = () => {
-                            input.value = suggestion;
-                            suggestionsList.classList.add('hidden');
-                            input.focus();
-                        };
-                        li.onkeypress = (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                input.value = suggestion;
-                                suggestionsList.classList.add('hidden');
-                                input.focus();
-                            }
-                        };
-                        suggestionsList.appendChild(li);
-                    });
-                    suggestionsList.classList.remove('hidden');
-                    suggestionsList.setAttribute('role', 'listbox');
-                    suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý thông minh');
-                } else {
-                    if (data.error_details) {
-                        errorDiv.textContent = `Không có gợi ý thông minh: ${data.error_details}`;
-                    } else {
-                        errorDiv.textContent = 'Không có gợi ý thông minh nào cho trường này';
-                    }
-                    errorDiv.classList.remove('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                errorDiv.textContent = 'Có lỗi xảy ra khi tải gợi ý thông minh. Vui lòng thử lại.';
-                errorDiv.classList.remove('hidden');
-            })
-            .finally(() => {
-                loadingIcon.classList.add('hidden');
-                suggestionIcon.classList.remove('hidden');
-                button.disabled = false;
-            });
-        }
-        
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium animate__animated animate__fadeInUp ${
-                type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            }`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.remove('animate__fadeInUp');
-                toast.classList.add('animate__fadeOutDown');
-                setTimeout(() => {
-                    document.body.removeChild(toast);
-                }, 500);
-            }, 3000);
-        }
-        
-        function saveAndGenerateDocx() {
-            // Validate form first
-            let isValid = true;
-            document.querySelectorAll('form input[type="text"][required]').forEach(input => {
-                if (!input.value.trim()) {
-                    isValid = false;
-                    const errorDiv = document.getElementById(`error-${input.id}`);
-                    if (errorDiv) {
-                        errorDiv.textContent = 'Vui lòng điền thông tin vào trường này';
-                        errorDiv.classList.remove('hidden');
-                    }
-                }
-            });
-            
-            if (isValid) {
-                generateDocx();
-            } else {
-                showToast('Vui lòng điền đầy đủ các trường bắt buộc', 'error');
-                // Scroll to first error
-                const firstError = document.querySelector('[id^="error-"]:not(.hidden)');
-                if (firstError) {
-                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-        }
-       
-
-        function showAutoFillDetails(input, data) {
-        // Xóa thông tin cũ nếu có
-                const oldDetails = input.parentNode.querySelector('.auto-fill-details');
-                if (oldDetails) oldDetails.remove();
-                
-                if (data.details) {
-                    const details = document.createElement('div');
-                    details.className = 'auto-fill-details mt-2 text-sm text-gray-600 bg-blue-50 p-2 rounded-lg border border-blue-100';
-                    details.innerHTML = `
-                        <div class="font-medium text-blue-700">Thông tin tự động điền:</div>
-                        <div class="mt-1 grid grid-cols-2 gap-1">
-                            <div class="text-blue-600">Nguồn:</div>
-                            <div>${data.details.source_name || 'Không rõ'}</div>
-                            ${data.details.similarity ? `<div class="text-blue-600">Độ tương đồng:</div><div>${Math.round(data.details.similarity * 100)}%</div>` : ''}
-                            ${data.details.confidence ? `<div class="text-blue-600">Độ tin cậy:</div><div>${Math.round(data.details.confidence * 100)}%</div>` : ''}
-                            ${data.details.method ? `<div class="text-blue-600">Phương pháp:</div><div>${data.details.method}</div>` : ''}
-                        </div>
-                    `;
-                    input.parentNode.insertBefore(details, input.nextSibling);
-                    
-                    // Tự động ẩn sau 5 giây
-                    setTimeout(() => {
-                        details.remove();
-                    }, 5000);
-                }
-            }
-
-          
     </script>
 </body>
 </html>
